@@ -151,6 +151,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       await Promise.all([
         preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.profile, userId)),
         preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.preferences, userId)),
+        preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.reminders, userId)),
+        preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.necessities, userId)),
+        preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.context, userId)),
       ]);
     }
     setProfile(defaultUserProfile(userId));

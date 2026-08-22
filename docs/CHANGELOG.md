@@ -2,6 +2,29 @@
 
 All notable changes to B4UGO are documented here.
 
+## [Unreleased] — Memory engines (product logic)
+
+Before U Go, On the Way Back, and Specific are real local lists — not hardcoded
+university/cat-food fixtures.
+
+- Destination is asked; never invented
+- Checks, Always items, and context persist in the existing keystore store
+- Local rule packs fill "for this trip" after the user names a place
+- Weather/GPS/Maps/AI are interfaces + stubs only — see `docs/MEMORY.md`
+
+---
+
+## [Unreleased] — Before U Go detail
+
+A dedicated scrapbook page for what to take before leaving.
+
+- Route `/before-ugo` opened from the Home **before u go** paper
+- Three sections: always, for this trip, blugo suggests
+- Checkable items; suggestions show a readable reason
+- Mock data only — no weather, maps, or intelligence engine
+
+---
+
 ## [Unreleased] — Home screen (journey concept)
 
 Home now communicates B4UGO's core idea: remembering things **before leaving**

@@ -53,17 +53,11 @@ Reused scrapbook primitives: `PaperPanel`, `Handwriting`, `ButterButton`.
 
 ## Mock data
 
-`getHomeMockData()` in `src/lib/home/mock-data.ts` returns a static object:
+`getHomeMockData()` is gone. Home reads `ReminderProvider` (open Before U Go
+items, open On the Way Back items, today counts). No destination or trip is
+invented for the desk.
 
-- `beforeUgo` — items to take before leaving (no place attached)
-- `onTheWayBack` — items with a `placeName` for contextual surfacing later
-- `today` — aggregate counts and an optional upcoming trip
-
-Replace this function with a real fetch when the reminder engine exists.
-The UI components accept typed props and do not import the mock module
-directly except from the screen.
-
-**Nothing is persisted, geofenced, or location-aware yet.**
+See [MEMORY.md](./MEMORY.md).
 
 ---
 
@@ -71,11 +65,11 @@ directly except from the screen.
 
 | Action | Route |
 |--------|-------|
-| Tap Before U Go section | `/(tabs)/reminders` |
-| Tap On the way back section | `/(tabs)/reminders` |
+| Tap Before U Go section | `/before-ugo` |
+| Tap On the way back section | `/on-the-way-back` |
 | "+ leave something" | `/(tabs)/add` |
 
-Full list experiences and filtering by journey kind are not implemented.
+See [MEMORY.md](./MEMORY.md) for the reminder store and engine stubs.
 
 ---
 

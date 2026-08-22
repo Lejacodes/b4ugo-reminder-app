@@ -15,6 +15,9 @@ import { secureStorage, type SecureStorage } from './secure-storage';
 const STORAGE_KEYS = {
   preferences: 'blugo.preferences',
   profile: 'blugo.profile',
+  reminders: 'blugo.reminders',
+  necessities: 'blugo.necessities',
+  context: 'blugo.context',
 } as const;
 
 export type StorageKeyBase = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

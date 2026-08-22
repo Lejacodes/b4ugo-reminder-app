@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Handwriting, PaperPanel } from '@/components/scrapbook';
 import { palette } from '@/constants/colors';
 import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
-import { formatThingsWaiting } from '@/lib/home/mock-data';
+import { formatThingsWaiting } from '@/lib/home/copy';
 import type { OnTheWayBackItem } from '@/types/home';
 
 type OnTheWayBackSectionProps = {
@@ -48,21 +48,27 @@ export function OnTheWayBackSection({ items, onPress }: OnTheWayBackSectionProps
         </Handwriting>
 
         <View style={styles.list}>
-          {preview.map((item) => (
-            <View key={item.id} style={styles.row}>
-              <Text style={styles.bullet} accessibilityElementsHidden>
-                •
-              </Text>
-              <View style={styles.copy}>
-                <Text style={styles.itemLabel} numberOfLines={2}>
-                  {item.label}
+          {preview.length === 0 ? (
+            <Text style={styles.more}>nothing along your way yet</Text>
+          ) : (
+            preview.map((item) => (
+              <View key={item.id} style={styles.row}>
+                <Text style={styles.bullet} accessibilityElementsHidden>
+                  •
                 </Text>
-                <Text style={styles.place} numberOfLines={1}>
-                  Near {item.placeName}
-                </Text>
+                <View style={styles.copy}>
+                  <Text style={styles.itemLabel} numberOfLines={2}>
+                    {item.label}
+                  </Text>
+                  {item.placeName ? (
+                    <Text style={styles.place} numberOfLines={1}>
+                      Near {item.placeName}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
-            </View>
-          ))}
+            ))
+          )}
         </View>
 
         {count > preview.length && (

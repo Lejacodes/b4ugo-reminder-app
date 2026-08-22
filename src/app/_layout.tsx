@@ -10,6 +10,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useSessionGuard } from '@/hooks/use-session-guard';
 import { AuthProvider, useAuth } from '@/store/AuthProvider';
 import { PreferencesProvider } from '@/store/PreferencesProvider';
+import { ReminderProvider } from '@/store/ReminderProvider';
 
 import 'react-native-gesture-handler';
 
@@ -34,7 +35,9 @@ function RootNavigator() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="opening" options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="auth" options={{ animation: 'fade', gestureEnabled: false }} />
-        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(tabs)" options={{ freezeOnBlur: false }} />
+        <Stack.Screen name="before-ugo" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="on-the-way-back" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen
           name="onboarding"
           options={{ gestureEnabled: false, animation: 'fade' }}
@@ -57,7 +60,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <PreferencesProvider>
-          <RootNavigator />
+          <ReminderProvider>
+            <RootNavigator />
+          </ReminderProvider>
         </PreferencesProvider>
       </AuthProvider>
     </SafeAreaProvider>

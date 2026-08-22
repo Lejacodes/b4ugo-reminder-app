@@ -1,4 +1,5 @@
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,7 +16,8 @@ import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTabBarInset } from '@/hooks/use-tab-bar-inset';
-import { getHomeMockData } from '@/lib/home/mock-data';
+import { formatThingsWaiting } from '@/lib/home/copy';
+import { useReminders } from '@/store/ReminderProvider';
 
 import '@/components/opening-login/opening-login.css';
 
@@ -29,7 +31,25 @@ export default function HomeScreen() {
   const reduceMotion = useReducedMotion();
   const tabBarInset = useTabBarInset();
   const { horizontalPadding, isCompact, isTablet } = useResponsive();
-  const data = getHomeMockData();
+  const { beforeUgoOpen, onTheWayBackOpen, context } = useReminders();
+  // Native stack keeps Home mounted under /before-ugo. Re-render on focus
+  // so the open-only lists from ReminderProvider are what the preview shows.
+  const [, setHomeEpoch] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      setHomeEpoch((n) => n + 1);
+    }, []),
+  );
+  const beforeItems = beforeUgoOpen.map((item) => ({ id: item.id, label: item.title }));
+  const wayBackItems = onTheWayBackOpen.map((item) => ({
+    id: item.id,
+    label: item.title,
+    placeName: item.location?.placeName ?? null,
+  }));
+  const today = {
+    thingsWaiting: beforeUgoOpen.length,
+    alongTheWay: onTheWayBackOpen.length,
+  };
 
   return (
     <SafeAreaView className="opening-desk" style={styles.desk} edges={['top']}>
@@ -52,21 +72,29 @@ export default function HomeScreen() {
 
         <FadeInSection reduceMotion={reduceMotion} delayMs={80}>
           <BeforeUgoSection
-            items={data.beforeUgo}
-            onPress={() => router.push('/(tabs)/reminders')}
+            items={beforeItems}
+            waitingLabel={formatThingsWaiting(beforeItems.length)}
+            emptyHint={
+              beforeItems.length === 0 && !context
+                ? 'open this to tell BLUGO where you are headed'
+                : beforeItems.length === 0
+                  ? "you're all set"
+                  : undefined
+            }
+            onPress={() => router.push('/before-ugo')}
           />
         </FadeInSection>
 
         <FadeInSection reduceMotion={reduceMotion} delayMs={160}>
           <OnTheWayBackSection
-            items={data.onTheWayBack}
-            onPress={() => router.push('/(tabs)/reminders')}
+            items={wayBackItems}
+            onPress={() => router.push('/on-the-way-back')}
           />
         </FadeInSection>
 
         <FadeInSection reduceMotion={reduceMotion} delayMs={240}>
           <View style={styles.todaySlot}>
-            <TodayNote summary={data.today} />
+            <TodayNote summary={today} />
           </View>
         </FadeInSection>
 

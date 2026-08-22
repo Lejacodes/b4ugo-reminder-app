@@ -4,11 +4,14 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Handwriting, PaperPanel } from '@/components/scrapbook';
 import { palette } from '@/constants/colors';
 import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
-import { formatThingsWaiting } from '@/lib/home/mock-data';
+import { formatThingsWaiting } from '@/lib/home/copy';
 import type { BeforeUgoItem } from '@/types/home';
 
 type BeforeUgoSectionProps = {
   items: BeforeUgoItem[];
+  waitingLabel?: string;
+  emptyHint?: string;
+  completeHint?: string;
   onPress: () => void;
 };
 
@@ -18,14 +21,22 @@ type BeforeUgoSectionProps = {
  * Uses small paper-slip rows rather than a flat checklist so the list still
  * reads as part of the notebook, not a productivity widget.
  */
-export function BeforeUgoSection({ items, onPress }: BeforeUgoSectionProps) {
+export function BeforeUgoSection({
+  items,
+  waitingLabel,
+  emptyHint,
+  completeHint = "you're all set",
+  onPress,
+}: BeforeUgoSectionProps) {
   const preview = items.slice(0, 4);
   const count = items.length;
+  const label = waitingLabel ?? formatThingsWaiting(count);
+  const emptyMessage = emptyHint ?? (count === 0 ? completeHint : undefined);
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Before U Go. ${formatThingsWaiting(count)}. Open full list.`}
+      accessibilityLabel={`Before U Go. ${label}. Open.`}
       onPress={onPress}
       style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}>
       <PaperPanel tilt={tiltAt(0)} tape="top-left" contentStyle={styles.panel}>
@@ -41,21 +52,25 @@ export function BeforeUgoSection({ items, onPress }: BeforeUgoSectionProps) {
           />
         </View>
 
-        <Text style={styles.count}>{formatThingsWaiting(count)}</Text>
+        <Text style={styles.count}>{label}</Text>
 
         <Handwriting variant="aside" tone="soft" style={styles.aside}>
           take these with you
         </Handwriting>
 
         <View style={styles.list}>
-          {preview.map((item, index) => (
-            <View key={item.id} style={[styles.slip, index > 0 && styles.slipGap]}>
-              <View style={styles.box} accessibilityElementsHidden />
-              <Text style={styles.itemLabel} numberOfLines={2}>
-                {item.label}
-              </Text>
-            </View>
-          ))}
+          {preview.length === 0 && emptyMessage ? (
+            <Text style={styles.more}>{emptyMessage}</Text>
+          ) : (
+            preview.map((item, index) => (
+              <View key={item.id} style={[styles.slip, index > 0 && styles.slipGap]}>
+                <View style={styles.box} accessibilityElementsHidden />
+                <Text style={styles.itemLabel} numberOfLines={2}>
+                  {item.label}
+                </Text>
+              </View>
+            ))
+          )}
         </View>
 
         {count > preview.length && (

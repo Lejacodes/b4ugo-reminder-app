@@ -12,22 +12,17 @@ export type BeforeUgoItem = {
   label: string;
 };
 
-/** Things to remember while out, tied to a place for later geofencing. */
+/** Things to remember while out, optionally tied to a place. */
 export type OnTheWayBackItem = {
   id: string;
   label: string;
-  /** Human-readable place name — not coordinates. Location is contextual only. */
-  placeName: string;
+  placeName: string | null;
 };
 
 /** Quiet summary for the small "today" note. */
 export type TodaySummary = {
   thingsWaiting: number;
-  placesNearby: number;
-  upcomingTrip?: {
-    destination: string;
-    daysUntil: number;
-  };
+  alongTheWay: number;
 };
 
 export type HomeJourneyData = {

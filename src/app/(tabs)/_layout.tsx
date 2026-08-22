@@ -123,9 +123,9 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
-          tabBarAccessibilityLabel: "Profile tab",
+          tabBarAccessibilityLabel: "Profile and settings tab",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="person-outline" color={color} focused={focused} />
+            <TabIcon name="options-outline" color={color} focused={focused} />
           ),
         }}
       />

@@ -19,8 +19,12 @@ src/
 │   ├── opening/         # Scrapbook login opening (first window)
 │   ├── auth/            # Create account / log in
 │   ├── onboarding/      # Name + "getting to know you" (after auth)
+│   ├── before-ugo/      # Before U Go detail (from Home)
+│   ├── on-the-way-back/ # On the Way Back detail
 │   └── (tabs)/          # Main tab navigator
 ├── components/
+│   ├── home/            # Home journey sections
+│   ├── before-ugo/      # Checklist rows for the Before U Go page
 │   ├── little-guy/      # Mascot placeholder + MemoryParticle
 │   ├── opening-login/   # Logo, paper ball, unfolding sheet, login copy
 │   ├── scrapbook/       # Shared paper/sticky primitives for auth + onboarding
@@ -29,6 +33,7 @@ src/
 ├── hooks/               # Shared React hooks
 ├── lib/
 │   ├── auth/            # Provider-agnostic authentication layer
+│   ├── engines/         # Reminder/context/suggestion + location stubs
 │   └── storage/         # Keystore-backed storage abstractions
 ├── store/               # React context providers (Auth, Preferences)
 └── types/               # Shared TypeScript interfaces
@@ -44,6 +49,9 @@ docs/                    # Project documentation
 | `/auth/create-account`, `/auth/sign-in` | Email + password |
 | `/onboarding/name` | "What should I call you?" — asked once per account |
 | `/onboarding/getting-to-know-you` | Sticky-note interests, skippable |
+| `/before-ugo` | Before U Go — ask destination, then always / this trip / suggestions |
+| `/on-the-way-back` | Things to buy/do while out |
+| `/(tabs)/add` | Leave something — choose which list it belongs on |
 | `/(tabs)/` | Main app — Home, Reminders, Add, Trips, Profile |
 
 `useSessionGuard` (`src/hooks/use-session-guard.ts`) owns all of this routing.

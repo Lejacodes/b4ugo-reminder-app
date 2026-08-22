@@ -7,6 +7,12 @@ export { interestOptions } from './onboarding';
 export type { BeforeUgoItem, HomeJourneyData, OnTheWayBackItem, TodaySummary } from './home';
 
 export type {
+  BeforeUgoDetailData,
+  BeforeUgoListItem,
+  BeforeUgoSource,
+} from './before-ugo';
+
+export type {
   NotificationPreferences,
   ReminderPreferences,
   PrivacyPreferences,
@@ -19,5 +25,16 @@ export {
   defaultUserPreferences,
 } from './preferences';
 
+export type {
+  BeforeUgoContext,
+  BeforeUgoLayer,
+  CreateReminderInput,
+  PersonalNecessity,
+  Reminder,
+  ReminderCategory,
+  ReminderLocation,
+  ReminderSource,
+  ReminderStatus,
+} from './reminder';
 export type { Place, CreatePlaceInput } from './place';
 export type { Routine, CreateRoutineInput } from './routine';

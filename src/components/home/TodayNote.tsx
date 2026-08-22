@@ -2,11 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Handwriting } from '@/components/scrapbook';
-import {
-  formatPlacesNearby,
-  formatThingsWaiting,
-  formatTripCountdown,
-} from '@/lib/home/mock-data';
+import { formatAlongTheWay, formatThingsWaiting } from '@/lib/home/copy';
 import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
 import type { TodaySummary } from '@/types/home';
 
@@ -16,18 +12,13 @@ type TodayNoteProps = {
 
 /**
  * A small status slip — quieter than the two journey sections above it.
+ * Only reports real open counts from the reminder store.
  */
 export function TodayNote({ summary }: TodayNoteProps) {
-  const lines: string[] = [
+  const lines = [
     formatThingsWaiting(summary.thingsWaiting),
-    formatPlacesNearby(summary.placesNearby),
+    formatAlongTheWay(summary.alongTheWay),
   ];
-
-  if (summary.upcomingTrip) {
-    lines.push(
-      formatTripCountdown(summary.upcomingTrip.destination, summary.upcomingTrip.daysUntil),
-    );
-  }
 
   return (
     <View
