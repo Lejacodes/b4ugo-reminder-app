@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     backgroundColor: openingPalette.paperWarm,
     borderWidth: 1,
-    borderColor: 'rgba(92, 58, 40, 0.22)',
+    borderColor: 'rgba(96, 51, 20, 0.22)',
   },
   scrapA: {
     width: 38,

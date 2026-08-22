@@ -1,11 +1,8 @@
 /**
- * Tokens for the scrapbook screens that follow the opening window —
- * account creation, log in, name, and "getting to know you".
+ * Tokens for the scrapbook screens — account creation, log in, home, and trips.
  *
- * Built on the opening palette so everything reads as the same desk, with a
- * few extras the opening window never needed (sticky notes, error slips).
- * The opening tokens are re-exported rather than redefined, and nothing here
- * feeds back into Window 1.
+ * Opening and scrapbook share the same oat desk, cream paper, and matcha marks
+ * so the first window and the signed-in app feel like one place.
  */
 import { palette } from './colors';
 import { openingPalette, STARRY_NIGHT_FONT } from './opening';
@@ -81,7 +78,6 @@ export const scrapbookPalette: ScrapbookPalette = {
 
 /**
  * Dark scrapbook: deep espresso desk, lighter paper, oat text, matcha accent.
- * Window 1 still uses openingPalette and is not restyled from here.
  */
 export const scrapbookPaletteDark: ScrapbookPalette = {
   desk: palette.darkSurface,

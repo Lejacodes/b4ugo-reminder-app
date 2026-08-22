@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LittleGuy } from '@/components/little-guy/LittleGuy';
 import { TripCard } from '@/components/trips';
 import { ButterButton, Handwriting, PaperPanel, QuietLink } from '@/components/scrapbook';
 import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
@@ -9,7 +10,9 @@ import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTabBarInset } from '@/hooks/use-tab-bar-inset';
+import { pixelsToParticles } from '@/lib/ai/pixels-to-particles';
 import { tripHref } from '@/lib/trips/routes';
+import { useLittleGuy } from '@/store/LittleGuyProvider';
 import { useTrips } from '@/store/TripProvider';
 
 import '@/components/opening-login/opening-login.css';
@@ -21,9 +24,19 @@ export default function TripsScreen() {
   const tabBarInset = useTabBarInset();
   const { horizontalPadding, isTablet } = useResponsive();
   const { upcomingTrips, pastTrips, templates, packingProgress, isLoading } = useTrips();
+  const { mood, whisper, pixels } = useLittleGuy();
+  const guySize = isTablet ? 64 : 52;
 
   return (
     <SafeAreaView className="opening-desk" style={desk} edges={['top']}>
+      <View style={styles.desk}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={whisper ? `Little Guy. ${whisper}. Open chat.` : 'Little Guy. Open chat.'}
+        onPress={() => router.push('/little-guy')}
+        style={({ pressed }) => [styles.corner, pressed && styles.pressed]}>
+        <LittleGuy mood={mood} size={guySize} floating particles={pixelsToParticles(pixels)} />
+      </Pressable>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -104,11 +117,15 @@ export default function TripsScreen() {
           />
         </View>
       </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  desk: {
+    flex: 1,
+  },
   scrollView: {
     flex: 1,
   },
@@ -135,5 +152,14 @@ const styles = StyleSheet.create({
   action: {
     alignItems: 'center',
     paddingTop: spacing.xs,
+  },
+  corner: {
+    position: 'absolute',
+    top: 4,
+    right: 8,
+    zIndex: 2,
+  },
+  pressed: {
+    opacity: 0.8,
   },
 });

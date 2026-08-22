@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { palette as brand } from '@/constants/colors';
 import { openingEase, openingPalette, openingTiming, STARRY_NIGHT_FONT } from '@/constants/opening';
 import { minTouchTarget } from '@/constants/typography';
 
@@ -114,13 +115,13 @@ const styles = StyleSheet.create({
     left: 0,
     backgroundColor: openingPalette.butter,
     borderWidth: 1,
-    borderColor: 'rgba(92, 58, 40, 0.2)',
+    borderColor: openingPalette.ink,
     transform: [{ rotate: '1.5deg' }],
   },
   sealLabel: {
     fontFamily: STARRY_NIGHT_FONT,
     fontSize: 24,
-    color: openingPalette.ink,
+    color: brand.cream,
     textAlign: 'center',
   },
   quiet: {

@@ -127,6 +127,8 @@ type ReminderContextValue = {
   addOnTheWayBack: (title: string, placeName?: string) => Promise<void>;
   addSpecific: (title: string, extras?: { person?: string; placeName?: string }) => Promise<void>;
   addReminder: (input: CreateReminderInput) => Promise<void>;
+  updateReminder: (id: string, patch: { title?: string; dueAt?: string | null }) => Promise<void>;
+  deleteReminder: (id: string) => Promise<void>;
 };
 
 const ReminderContext = createContext<ReminderContextValue | null>(null);
@@ -278,6 +280,34 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
           : item,
       );
       await persistReminders(next);
+    },
+    [persistReminders],
+  );
+
+  const updateReminder = useCallback(
+    async (id: string, patch: { title?: string; dueAt?: string | null }) => {
+      const current = remindersRef.current;
+      if (!current.some((item) => item.id === id)) return;
+      const next = current.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              title: patch.title?.trim() || item.title,
+              dueAt: patch.dueAt !== undefined ? patch.dueAt : item.dueAt,
+              updatedAt: nowIso(),
+            }
+          : item,
+      );
+      await persistReminders(next);
+    },
+    [persistReminders],
+  );
+
+  const deleteReminder = useCallback(
+    async (id: string) => {
+      const current = remindersRef.current;
+      if (!current.some((item) => item.id === id)) return;
+      await persistReminders(current.filter((item) => item.id !== id));
     },
     [persistReminders],
   );
@@ -544,6 +574,8 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       addOnTheWayBack,
       addSpecific,
       addReminder,
+      updateReminder,
+      deleteReminder,
     }),
     [
       reminders,
@@ -568,6 +600,8 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       addOnTheWayBack,
       addSpecific,
       addReminder,
+      updateReminder,
+      deleteReminder,
     ],
   );
 

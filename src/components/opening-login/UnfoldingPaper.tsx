@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 3,
     borderWidth: 1,
-    borderColor: 'rgba(92, 58, 40, 0.18)',
+    borderColor: openingPalette.line,
     overflow: 'hidden',
     transform: [{ rotate: '-0.7deg' }],
     shadowColor: openingPalette.ink,

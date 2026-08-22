@@ -12,7 +12,8 @@ import {
   QuietLink,
   SlipNote,
 } from '@/components/scrapbook';
-import { readableType, scrapbookPalette, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import {
   AuthError,
   MAX_PASSWORD_LENGTH,
@@ -31,6 +32,7 @@ const MAX_EMAIL_LENGTH = 254;
 
 export default function CreateAccountScreen() {
   const router = useRouter();
+  const colors = useScrapbookPalette();
   const { createAccount, isSubmitting } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -142,7 +144,7 @@ export default function CreateAccountScreen() {
           />
         </View>
 
-        <Text style={styles.fineprint}>
+        <Text style={[styles.fineprint, { color: colors.inkSoft }]}>
           We keep your email address so you can get back in. Your password is handled by the
           sign-in service and is never stored on this device.
         </Text>
@@ -179,7 +181,6 @@ const styles = StyleSheet.create({
     fontFamily: TEXT_FONT,
     fontSize: readableType.fine.fontSize,
     lineHeight: readableType.fine.lineHeight,
-    color: scrapbookPalette.inkSoft,
   },
   footer: {
     marginTop: 26,

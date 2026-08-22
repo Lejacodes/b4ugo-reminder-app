@@ -10,6 +10,7 @@ import {
   OnTheWayBackSection,
   TodayNote,
 } from '@/components/home';
+import { LittleGuyPresence } from '@/components/little-guy';
 import { ButterButton } from '@/components/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useDeskStyle } from '@/hooks/use-scrapbook-palette';
@@ -71,6 +72,10 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}>
         <FadeInSection reduceMotion={reduceMotion} delayMs={0}>
           <HomeHeader compact={isCompact} />
+        </FadeInSection>
+
+        <FadeInSection reduceMotion={reduceMotion} delayMs={40}>
+          <LittleGuyPresence />
         </FadeInSection>
 
         <FadeInSection reduceMotion={reduceMotion} delayMs={80}>

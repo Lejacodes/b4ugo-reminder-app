@@ -1,26 +1,27 @@
 /**
- * Tokens for the opening / login window only.
- * Warm cream paper, butter-yellow marks, espresso ink.
- * Illustrated stationery — not a dashboard palette.
+ * Tokens for the opening / login window.
+ * Same oat desk, cream paper, and matcha marks as the rest of the light-mode app.
  */
 import { cubicBezier } from 'react-native-reanimated';
 
+import { palette } from './colors';
+
 export const openingPalette = {
-  desk: '#EDE4D0',
-  deskDot: 'rgba(232, 201, 106, 0.18)',
-  paper: '#F7F3E8',
-  paperWarm: '#EFE6D4',
-  paperBacking: '#EAD6D0',
-  ink: '#5C3A28',
-  inkSoft: '#7A5A48',
-  line: 'rgba(92, 58, 40, 0.14)',
-  marginLine: 'rgba(201, 143, 154, 0.35)',
-  butter: '#E8C96A',
-  butterDeep: '#D4B24A',
-  tape: '#EED48A',
-  clip: '#E8C96A',
-  doodle: '#3F4A62',
-  shadow: 'rgba(92, 58, 40, 0.16)',
+  desk: palette.oat,
+  deskDot: 'rgba(118, 132, 91, 0.22)',
+  paper: palette.cream,
+  paperWarm: palette.oat,
+  paperBacking: palette.softMatcha,
+  ink: palette.espresso,
+  inkSoft: palette.warmGraySecondary,
+  line: 'rgba(177, 183, 190, 0.7)',
+  marginLine: 'rgba(118, 132, 91, 0.28)',
+  butter: palette.softMatcha,
+  butterDeep: palette.deepForest,
+  tape: palette.softMatcha,
+  clip: palette.softMatcha,
+  doodle: palette.softMatcha,
+  shadow: 'rgba(96, 51, 20, 0.16)',
 } as const;
 
 export const STARRY_NIGHT_FONT = 'StarryNight';

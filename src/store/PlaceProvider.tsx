@@ -25,6 +25,7 @@ type PlaceContextValue = {
     longitude?: number | null;
     label?: string | null;
   }) => Promise<Place | null>;
+  deletePlace: (id: string) => Promise<void>;
 };
 
 const PlaceContext = createContext<PlaceContextValue | null>(null);
@@ -142,11 +143,19 @@ export function PlaceProvider({ children }: { children: ReactNode }) {
     [persist, places],
   );
 
+  const deletePlace = useCallback(
+    async (id: string) => {
+      if (!places.some((place) => place.id === id && place.type !== 'home')) return;
+      await persist(places.filter((place) => place.id !== id));
+    },
+    [persist, places],
+  );
+
   const home = useMemo(() => places.find((place) => place.type === 'home') ?? null, [places]);
 
   const value = useMemo<PlaceContextValue>(
-    () => ({ places, home, isLoading, setHome, upsertPlace }),
-    [places, home, isLoading, setHome, upsertPlace],
+    () => ({ places, home, isLoading, setHome, upsertPlace, deletePlace }),
+    [places, home, isLoading, setHome, upsertPlace, deletePlace],
   );
 
   return <PlaceContext.Provider value={value}>{children}</PlaceContext.Provider>;

@@ -13,6 +13,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
+import '@/components/opening-login/opening-login.css';
+
 type DeskScreenProps = {
   children: ReactNode;
   /** Wraps content in a ScrollView. Use for anything taller than the sheet. */
@@ -61,7 +63,10 @@ export function DeskScreen({ children, scroll = false, contentStyle }: DeskScree
   const body = <View style={[styles.content, padding, contentStyle]}>{children}</View>;
 
   return (
-    <SafeAreaView style={[styles.desk, { backgroundColor: palette.desk }]} edges={['top']}>
+    <SafeAreaView
+      className="opening-desk"
+      style={[styles.desk, { backgroundColor: palette.desk }]}
+      edges={['top']}>
       <DeskDoodles />
       <KeyboardAvoidingView
         style={styles.fill}

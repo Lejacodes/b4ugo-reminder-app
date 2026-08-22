@@ -11,6 +11,7 @@ import { useSessionGuard } from '@/hooks/use-session-guard';
 import { AppearanceProvider } from '@/store/AppearanceProvider';
 import { AuthProvider } from '@/store/AuthProvider';
 import { ContextIntelligenceProvider } from '@/store/ContextIntelligenceProvider';
+import { LittleGuyProvider } from '@/store/LittleGuyProvider';
 import { PlaceProvider } from '@/store/PlaceProvider';
 import { PreferencesProvider } from '@/store/PreferencesProvider';
 import { ReminderProvider } from '@/store/ReminderProvider';
@@ -42,6 +43,7 @@ function RootNavigator() {
         <Stack.Screen name="before-ugo" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="on-the-way-back" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="trip" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="little-guy" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen
           name="onboarding"
           options={{ gestureEnabled: false, animation: 'fade' }}
@@ -68,9 +70,11 @@ export default function RootLayout() {
             <ReminderProvider>
               <TripProvider>
                 <PlaceProvider>
-                  <ContextIntelligenceProvider>
-                    <RootNavigator />
-                  </ContextIntelligenceProvider>
+                  <LittleGuyProvider>
+                    <ContextIntelligenceProvider>
+                      <RootNavigator />
+                    </ContextIntelligenceProvider>
+                  </LittleGuyProvider>
                 </PlaceProvider>
               </TripProvider>
             </ReminderProvider>

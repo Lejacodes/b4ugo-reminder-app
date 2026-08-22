@@ -41,11 +41,21 @@ export const palette = {
   warmGrayMutedDark: '#A89F96',
   warmGrayDisabledDark: '#6A6258',
 
-  // Little Guy placeholder — tuned to sit on cream/oat backgrounds
-  guyBody: '#E8E0D0',
+  // Little Guy — warm cream fluff with soft ink linework, per the character sheet
+  guyBody: '#FDFBF4',
   guyBodyDark: '#3A342C',
-  guyFeature: '#465442',
-  guyFeatureDark: '#D8D3B3',
+  guyShade: '#F0E7D6',
+  guyShadeDark: '#463E33',
+  guyOutline: '#A08B74',
+  guyOutlineDark: '#8B7A65',
+  guyFeature: '#4A3B30',
+  guyFeatureDark: '#EDE6D6',
+  guyBlush: '#F2BFAF',
+  guyBlushDark: '#A9705F',
+  guyStar: '#F7D66F',
+  guyStarOutline: '#D8B04A',
+  guyWand: '#C6A57B',
+  guyRibbon: '#C7B6E4',
 } as const;
 
 export type PaletteColor = keyof typeof palette;
@@ -57,20 +67,23 @@ export type MemoryParticleColor =
   | 'task'
   | 'memory';
 
-/** Memory particles map to intentional accent colors. */
+/**
+ * Constellation dot colors, one hue per kind of memory Little Guy is holding.
+ * Kept in sync with PIXEL_COLORS in lib/ai/constellation.ts.
+ */
 export const memoryParticleColors: Record<MemoryParticleColor, string> = {
-  reminder: palette.softAqua,
-  buy: palette.mutedCoral,
-  trip: palette.dustyRose,
-  task: palette.sage,
-  memory: palette.softMatcha,
+  reminder: '#7BA3C9',
+  buy: '#E4C36A',
+  trip: '#E08A86',
+  task: '#8FBF8A',
+  memory: '#A48BC4',
 };
 
-/** Light-mode memory particles (same mapping; kept for clarity). */
+/** Dark-mode constellation dots — same hues, lifted slightly to stay readable. */
 export const memoryParticleColorsDark: Record<MemoryParticleColor, string> = {
-  reminder: palette.softAqua,
-  buy: palette.mutedCoral,
-  trip: palette.dustyRose,
-  task: palette.sage,
-  memory: palette.softMatcha,
+  reminder: '#8FB6DA',
+  buy: '#EBD07E',
+  trip: '#EC9E9A',
+  task: '#A2CF9C',
+  memory: '#B69ED6',
 };
