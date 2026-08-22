@@ -21,6 +21,7 @@ src/
 │   ├── onboarding/      # Name + "getting to know you" (after auth)
 │   ├── before-ugo/      # Before U Go detail (from Home)
 │   ├── on-the-way-back/ # On the Way Back detail
+│   ├── trip/            # Trip create / detail / packing / Travel Mode
 │   └── (tabs)/          # Main tab navigator
 ├── components/
 │   ├── home/            # Home journey sections
@@ -51,6 +52,9 @@ docs/                    # Project documentation
 | `/onboarding/getting-to-know-you` | Sticky-note interests, skippable |
 | `/before-ugo` | Before U Go — ask destination, then always / this trip / suggestions |
 | `/on-the-way-back` | Things to buy/do while out |
+| `/(tabs)/trips` | Trips landing — upcoming, templates, plan something |
+| `/trip/new`, `/trip/[id]`, `/trip/[id]/packing`, `/trip/[id]/travel-mode` | Trip flow |
+| `/trip/templates` | Packing templates |
 | `/(tabs)/add` | Leave something — choose which list it belongs on |
 | `/(tabs)/` | Main app — Home, Reminders, Add, Trips, Profile |
 
@@ -72,6 +76,9 @@ Two nested contexts, `AuthProvider` wrapping `PreferencesProvider`:
 - `PreferencesProvider` — `UserProfile` (display name, interests, timestamps)
   and `UserPreferences` (notifications, reminders, privacy, onboarding flag)
   for whoever is signed in. Empties on sign-out.
+- `ReminderProvider` — Before U Go / On the Way Back / Specific lists.
+- `TripProvider` — trips, packing items, templates, travel intentions. See
+  [TRIPS.md](./TRIPS.md).
 
 Storage goes through `src/lib/storage/preferences-storage.ts`, which namespaces
 every key by the authenticated user id on top of the keystore-backed

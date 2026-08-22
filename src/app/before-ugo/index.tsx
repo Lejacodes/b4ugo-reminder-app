@@ -7,15 +7,19 @@ import { BeforeUgoPaperSection } from '@/components/before-ugo/BeforeUgoPaperSec
 import { ChecklistItem } from '@/components/before-ugo/ChecklistItem';
 import { ContextPrompt } from '@/components/before-ugo/ContextPrompt';
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
-import { ButterButton, Handwriting, PaperPanel, QuietLink } from '@/components/scrapbook';
-import { readableType, scrapbookPalette, TEXT_FONT } from '@/constants/scrapbook';
+import { ButterButton, PaperPanel, QuietLink } from '@/components/scrapbook';
+import { readableType, TEXT_FONT } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
+import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { useReminders } from '@/store/ReminderProvider';
+import { useTrips } from '@/store/TripProvider';
 
 import '@/components/opening-login/opening-login.css';
 
 export default function BeforeUgoScreen() {
+  const desk = useDeskStyle();
+  const colors = useScrapbookPalette();
   const insets = useSafeAreaInsets();
   const { horizontalPadding, isTablet } = useResponsive();
   const {
@@ -30,6 +34,7 @@ export default function BeforeUgoScreen() {
     addAlways,
     addThisTrip,
   } = useReminders();
+  const { upcomingTrips } = useTrips();
 
   const [destination, setDestination] = useState('');
   const [purpose, setPurpose] = useState('');
@@ -48,7 +53,7 @@ export default function BeforeUgoScreen() {
   };
 
   return (
-    <SafeAreaView className="opening-desk" style={styles.desk} edges={['top']}>
+    <SafeAreaView className="opening-desk" style={desk} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -74,6 +79,22 @@ export default function BeforeUgoScreen() {
                 purpose={purpose}
                 onPurpose={setPurpose}
               />
+              {upcomingTrips.length > 0 ? (
+                <View style={styles.tripHints}>
+                  <Text style={[styles.tripHintLabel, { color: colors.inkSoft }]}>from your trips</Text>
+                  {upcomingTrips.slice(0, 3).map((trip) => (
+                    <QuietLink
+                      key={trip.id}
+                      label={trip.title}
+                      accessibilityLabel={`Use trip ${trip.title} as this departure`}
+                      onPress={() => {
+                        setDestination(trip.destination || trip.title);
+                        setPurpose(trip.activity ?? '');
+                      }}
+                    />
+                  ))}
+                </View>
+              ) : null}
               <View style={styles.continue}>
                 <ButterButton
                   label="continue"
@@ -87,13 +108,15 @@ export default function BeforeUgoScreen() {
 
             <BeforeUgoPaperSection
               title="always"
-              aside="the things you never leave without"
               tape="top-right"
               tiltIndex={2}>
               {personalNecessities.map((item) => (
-                <Text key={item.id} style={styles.necessityRow}>
-                  {item.title}
-                </Text>
+                <ChecklistItem
+                  key={item.id}
+                  title={item.title}
+                  checked={false}
+                  onToggle={() => {}}
+                />
               ))}
             </BeforeUgoPaperSection>
 
@@ -107,7 +130,6 @@ export default function BeforeUgoScreen() {
           <>
             <BeforeUgoPaperSection
               title="always"
-              aside="the things you never leave without"
               tape="top-left"
               tiltIndex={0}>
               {alwaysChecklistItems.map((item) => (
@@ -126,9 +148,7 @@ export default function BeforeUgoScreen() {
               tape="top-right"
               tiltIndex={2}>
               {thisTripItems.length === 0 ? (
-                <Handwriting variant="aside" tone="soft">
-                  nothing packed for this yet — add something below
-                </Handwriting>
+                <Text style={[styles.necessityRow, { color: colors.inkSoft }]}>nothing yet</Text>
               ) : (
                 thisTripItems.map((item) => (
                   <ChecklistItem
@@ -145,7 +165,6 @@ export default function BeforeUgoScreen() {
             {suggestionItems.length > 0 && (
               <BeforeUgoPaperSection
                 title="blugo suggests"
-                aside="from this context — not from forever"
                 tape="top-left"
                 tiltIndex={4}>
                 {suggestionItems.map((item) => (
@@ -179,10 +198,6 @@ export default function BeforeUgoScreen() {
 }
 
 const styles = StyleSheet.create({
-  desk: {
-    flex: 1,
-    backgroundColor: scrapbookPalette.desk,
-  },
   scrollView: {
     flex: 1,
   },
@@ -195,11 +210,18 @@ const styles = StyleSheet.create({
   continue: {
     marginTop: 18,
   },
+  tripHints: {
+    marginTop: 16,
+  },
+  tripHintLabel: {
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.meta.fontSize,
+    lineHeight: readableType.meta.lineHeight,
+  },
   necessityRow: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
-    color: scrapbookPalette.ink,
     paddingVertical: 8,
     paddingHorizontal: 2,
   },

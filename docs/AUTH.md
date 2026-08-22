@@ -52,9 +52,10 @@ Routing is decided in one place: `src/hooks/use-session-guard.ts`.
 | Session persistence | `src/lib/auth/session-store.ts` | Ready |
 | Provider config | `src/lib/auth/config.ts` | Ready, unconfigured |
 | Client resolution | `src/lib/auth/index.ts` | Ready |
-| **Identity itself** | `src/lib/auth/placeholder-client.ts` | **Placeholder** |
+| **Identity itself** | `src/lib/auth/supabase-client.ts` | Real when env keys are set |
+| Placeholder fallback | `src/lib/auth/placeholder-client.ts` | Dev only, if no Supabase keys |
 | React session state | `src/store/AuthProvider.tsx` | Ready |
-| Profile store | `src/store/PreferencesProvider.tsx` | Device-local |
+| Profile store | `src/store/PreferencesProvider.tsx` | Local cache + Supabase |
 
 Only one box is a stand-in. Everything around it is written against the
 `AuthClient` interface, so swapping the placeholder for a real provider

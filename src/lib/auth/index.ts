@@ -7,9 +7,11 @@
  *
  * Steps are written out in docs/AUTH.md.
  */
-import { authProviderId, isProviderConfigured } from './config';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
+
 import { AuthError } from './errors';
 import { placeholderAuthClient } from './placeholder-client';
+import { createSupabaseAuthClient } from './supabase-client';
 import type { AuthClient, AuthSession } from './types';
 
 /**
@@ -33,17 +35,8 @@ const unconfiguredAuthClient: AuthClient = {
 };
 
 function createAuthClient(): AuthClient {
-  if (isProviderConfigured()) {
-    switch (authProviderId) {
-      // case 'supabase':
-      //   return createSupabaseAuthClient();
-      // case 'clerk':
-      //   return createClerkAuthClient();
-      // case 'firebase':
-      //   return createFirebaseAuthClient();
-      default:
-        break;
-    }
+  if (isSupabaseConfigured()) {
+    return createSupabaseAuthClient();
   }
 
   // The placeholder accepts any password, so it is confined to development.

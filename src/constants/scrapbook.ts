@@ -7,22 +7,108 @@
  * The opening tokens are re-exported rather than redefined, and nothing here
  * feeds back into Window 1.
  */
+import { palette } from './colors';
 import { openingPalette, STARRY_NIGHT_FONT } from './opening';
 import { fontFamily } from './typography';
 
 export { openingPalette, STARRY_NIGHT_FONT };
 
-export const scrapbookPalette = {
-  ...openingPalette,
-  blush: '#F1D2D6',
-  blushDeep: '#DDA9B2',
-  stickyButter: '#F3DE9E',
-  stickyBlush: '#F2D4D7',
-  stickyCream: '#F5EEDB',
-  stickyEdge: 'rgba(92, 58, 40, 0.16)',
-  slipInk: '#8C4A45',
-  slip: '#F6DEDA',
-} as const;
+export type ScrapbookPalette = {
+  desk: string;
+  deskDot: string;
+  paper: string;
+  paperWarm: string;
+  paperBacking: string;
+  ink: string;
+  inkSoft: string;
+  line: string;
+  marginLine: string;
+  butter: string;
+  butterDeep: string;
+  tape: string;
+  clip: string;
+  doodle: string;
+  shadow: string;
+  blush: string;
+  blushDeep: string;
+  stickyButter: string;
+  stickyBlush: string;
+  stickyCream: string;
+  stickyEdge: string;
+  slipInk: string;
+  slip: string;
+  /** Body/subtitle text on matcha or other dark green surfaces. */
+  inkOnMatcha: string;
+};
+
+/** True when a surface uses the dark matcha/green card fill. */
+export function isMatchaSurface(color: string, palette: ScrapbookPalette): boolean {
+  return (
+    color === palette.stickyButter ||
+    color === palette.butter ||
+    color === palette.paperBacking ||
+    color === palette.tape ||
+    color === palette.clip
+  );
+}
+
+export const scrapbookPalette: ScrapbookPalette = {
+  desk: palette.oat,
+  deskDot: 'rgba(118, 132, 91, 0.22)',
+  paper: palette.cream,
+  paperWarm: palette.oat,
+  paperBacking: palette.softMatcha,
+  ink: palette.espresso,
+  inkSoft: palette.warmGraySecondary,
+  line: 'rgba(177, 183, 190, 0.7)',
+  marginLine: 'rgba(118, 132, 91, 0.28)',
+  butter: palette.softMatcha,
+  butterDeep: palette.deepForest,
+  tape: palette.softMatcha,
+  clip: palette.softMatcha,
+  doodle: palette.softMatcha,
+  shadow: 'rgba(96, 51, 20, 0.16)',
+  blush: palette.oat,
+  blushDeep: palette.cloud,
+  stickyButter: palette.softMatcha,
+  stickyBlush: palette.oat,
+  stickyCream: palette.cream,
+  stickyEdge: palette.cloud,
+  slipInk: palette.espresso,
+  slip: palette.oat,
+  inkOnMatcha: palette.cream,
+};
+
+/**
+ * Dark scrapbook: deep espresso desk, lighter paper, oat text, matcha accent.
+ * Window 1 still uses openingPalette and is not restyled from here.
+ */
+export const scrapbookPaletteDark: ScrapbookPalette = {
+  desk: palette.darkSurface,
+  deskDot: 'rgba(118, 132, 91, 0.2)',
+  paper: palette.darkEspresso,
+  paperWarm: palette.darkSurfaceElevated,
+  paperBacking: palette.deepForest,
+  ink: palette.oat,
+  inkSoft: palette.cloud,
+  line: 'rgba(216, 211, 179, 0.28)',
+  marginLine: 'rgba(118, 132, 91, 0.35)',
+  butter: palette.softMatcha,
+  butterDeep: palette.sage,
+  tape: palette.softMatcha,
+  clip: palette.softMatcha,
+  doodle: palette.sage,
+  shadow: 'rgba(26, 24, 20, 0.45)',
+  blush: palette.darkEspresso,
+  blushDeep: palette.cloudDark,
+  stickyButter: palette.softMatcha,
+  stickyBlush: palette.darkSurfaceElevated,
+  stickyCream: palette.darkSurfaceElevated,
+  stickyEdge: palette.cloudDark,
+  slipInk: palette.oat,
+  slip: palette.darkSurface,
+  inkOnMatcha: palette.cream,
+};
 
 /** Sticky notes cycle through these so a grid never looks uniform. */
 export const stickyColors = [

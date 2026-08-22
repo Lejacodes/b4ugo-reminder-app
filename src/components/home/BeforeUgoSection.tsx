@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Handwriting, PaperPanel } from '@/components/scrapbook';
 import { palette } from '@/constants/colors';
-import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { formatThingsWaiting } from '@/lib/home/copy';
 import type { BeforeUgoItem } from '@/types/home';
 
@@ -25,9 +26,11 @@ export function BeforeUgoSection({
   items,
   waitingLabel,
   emptyHint,
-  completeHint = "you're all set",
+  completeHint = 'all set',
   onPress,
 }: BeforeUgoSectionProps) {
+  const colors = useScrapbookPalette();
+  const countColor = palette.softMatcha;
   const preview = items.slice(0, 4);
   const count = items.length;
   const label = waitingLabel ?? formatThingsWaiting(count);
@@ -47,25 +50,31 @@ export function BeforeUgoSection({
           <Ionicons
             name="airplane-outline"
             size={17}
-            color={scrapbookPalette.doodle}
+            color={colors.doodle}
             style={styles.titleIcon}
           />
         </View>
 
-        <Text style={styles.count}>{label}</Text>
+        <Text style={[styles.count, { color: countColor }]}>{label}</Text>
 
-        <Handwriting variant="aside" tone="soft" style={styles.aside}>
-          take these with you
-        </Handwriting>
+        <Text style={[styles.aside, { color: colors.inkSoft }]}>take with you</Text>
 
         <View style={styles.list}>
           {preview.length === 0 && emptyMessage ? (
-            <Text style={styles.more}>{emptyMessage}</Text>
+            <Text style={[styles.more, { color: colors.inkSoft }]}>{emptyMessage}</Text>
           ) : (
             preview.map((item, index) => (
-              <View key={item.id} style={[styles.slip, index > 0 && styles.slipGap]}>
-                <View style={styles.box} accessibilityElementsHidden />
-                <Text style={styles.itemLabel} numberOfLines={2}>
+              <View
+                key={item.id}
+                style={[styles.slip, { borderBottomColor: colors.line }, index > 0 && styles.slipGap]}>
+                <View
+                  style={[
+                    styles.box,
+                    { borderColor: colors.inkSoft, backgroundColor: colors.paperWarm },
+                  ]}
+                  accessibilityElementsHidden
+                />
+                <Text style={[styles.itemLabel, { color: colors.ink }]} numberOfLines={2}>
                   {item.label}
                 </Text>
               </View>
@@ -74,7 +83,9 @@ export function BeforeUgoSection({
         </View>
 
         {count > preview.length && (
-          <Text style={styles.more}>+ {count - preview.length} more on your list</Text>
+          <Text style={[styles.more, { color: colors.inkSoft }]}>
+            + {count - preview.length} more
+          </Text>
         )}
       </PaperPanel>
     </Pressable>
@@ -105,11 +116,13 @@ const styles = StyleSheet.create({
     fontFamily: TEXT_FONT,
     fontSize: readableType.count.fontSize,
     lineHeight: readableType.count.lineHeight,
-    color: palette.deepForest,
     marginTop: 6,
     fontWeight: '500',
   },
   aside: {
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.meta.fontSize,
+    lineHeight: readableType.meta.lineHeight,
     marginTop: 2,
     marginBottom: 16,
   },
@@ -123,30 +136,25 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     paddingHorizontal: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: scrapbookPalette.line,
   },
   slipGap: {},
   box: {
     width: 16,
     height: 16,
     borderWidth: 1.5,
-    borderColor: scrapbookPalette.inkSoft,
     borderRadius: 2,
     transform: [{ rotate: '-1deg' }],
-    backgroundColor: scrapbookPalette.paperWarm,
   },
   itemLabel: {
     flex: 1,
     fontFamily: TEXT_FONT,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
-    color: scrapbookPalette.ink,
   },
   more: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
-    color: scrapbookPalette.inkSoft,
     marginTop: 10,
   },
 });

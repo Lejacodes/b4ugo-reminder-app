@@ -56,10 +56,14 @@ export const defaultPrivacyPreferences = (): PrivacyPreferences => ({
 /**
  * Aggregated user preferences stored locally.
  */
+export type AppearancePreference = 'light' | 'dark';
+
 export type UserPreferences = {
   notifications: NotificationPreferences;
   reminders: ReminderPreferences;
   privacy: PrivacyPreferences;
+  /** Explicit light/dark choice. Persisted with the rest of preferences. */
+  appearance: AppearancePreference;
   /** Whether onboarding has been completed. */
   hasCompletedOnboarding: boolean;
 };
@@ -68,5 +72,6 @@ export const defaultUserPreferences = (): UserPreferences => ({
   notifications: defaultNotificationPreferences(),
   reminders: defaultReminderPreferences(),
   privacy: defaultPrivacyPreferences(),
+  appearance: 'light',
   hasCompletedOnboarding: false,
 });

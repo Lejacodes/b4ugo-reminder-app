@@ -5,5 +5,6 @@ export { PaperField } from './PaperField';
 export { PaperPanel } from './PaperPanel';
 export { PlaceholderAuthNotice } from './PlaceholderAuthNotice';
 export { QuietLink } from './QuietLink';
+export { ScrapbookSwitch } from './ScrapbookSwitch';
 export { SlipNote } from './SlipNote';
 export { StickyNote } from './StickyNote';

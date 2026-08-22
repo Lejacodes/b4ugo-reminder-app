@@ -1,36 +1,59 @@
 /**
  * Persistence for reminders and the current Before U Go context.
- * Uses the same keystore-backed store as profile/preferences, scoped by user.
+ * Local keystore is the cache. Supabase is the source of truth when configured.
  */
+import { ensureMigrated } from '@/lib/api/migration';
+import { reminderRepository } from '@/lib/api/reminder-repository';
 import { STORAGE_KEYS, preferencesStorage, scopedKey } from '@/lib/storage/preferences-storage';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 import type { BeforeUgoContext, PersonalNecessity, Reminder } from '@/types/reminder';
 
-export async function loadReminders(userId: string): Promise<Reminder[]> {
-  const raw = await preferencesStorage.getItem(scopedKey(STORAGE_KEYS.reminders, userId));
+async function readList<T>(key: string): Promise<T[]> {
+  const raw = await preferencesStorage.getItem(key);
   if (!raw) return [];
   try {
-    const parsed = JSON.parse(raw) as Reminder[];
+    const parsed = JSON.parse(raw) as T[];
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
 }
 
+export async function loadReminders(userId: string): Promise<Reminder[]> {
+  const local = await readList<Reminder>(scopedKey(STORAGE_KEYS.reminders, userId));
+  if (!isSupabaseConfigured()) return local;
+  try {
+    await ensureMigrated(userId);
+    const remote = await reminderRepository.listReminders();
+    if (!remote) return local;
+    await preferencesStorage.setItem(scopedKey(STORAGE_KEYS.reminders, userId), JSON.stringify(remote));
+    return remote;
+  } catch {
+    return local;
+  }
+}
+
 export async function saveReminders(userId: string, reminders: Reminder[]): Promise<void> {
-  await preferencesStorage.setItem(
-    scopedKey(STORAGE_KEYS.reminders, userId),
-    JSON.stringify(reminders),
-  );
+  await preferencesStorage.setItem(scopedKey(STORAGE_KEYS.reminders, userId), JSON.stringify(reminders));
+  if (!isSupabaseConfigured()) return;
+  try {
+    await reminderRepository.replaceReminders(reminders);
+  } catch {
+    // Keep the local cache if the remote write fails.
+  }
 }
 
 export async function loadNecessities(userId: string): Promise<PersonalNecessity[]> {
-  const raw = await preferencesStorage.getItem(scopedKey(STORAGE_KEYS.necessities, userId));
-  if (!raw) return [];
+  const local = await readList<PersonalNecessity>(scopedKey(STORAGE_KEYS.necessities, userId));
+  if (!isSupabaseConfigured()) return local;
   try {
-    const parsed = JSON.parse(raw) as PersonalNecessity[];
-    return Array.isArray(parsed) ? parsed : [];
+    await ensureMigrated(userId);
+    const remote = await reminderRepository.listNecessities();
+    if (!remote) return local;
+    await preferencesStorage.setItem(scopedKey(STORAGE_KEYS.necessities, userId), JSON.stringify(remote));
+    return remote;
   } catch {
-    return [];
+    return local;
   }
 }
 
@@ -42,15 +65,35 @@ export async function saveNecessities(
     scopedKey(STORAGE_KEYS.necessities, userId),
     JSON.stringify(necessities),
   );
+  if (!isSupabaseConfigured()) return;
+  try {
+    await reminderRepository.replaceNecessities(necessities);
+  } catch {
+    // Keep the local cache if the remote write fails.
+  }
 }
 
 export async function loadContext(userId: string): Promise<BeforeUgoContext | null> {
   const raw = await preferencesStorage.getItem(scopedKey(STORAGE_KEYS.context, userId));
-  if (!raw) return null;
+  let local: BeforeUgoContext | null = null;
+  if (raw) {
+    try {
+      local = JSON.parse(raw) as BeforeUgoContext;
+    } catch {
+      local = null;
+    }
+  }
+  if (!isSupabaseConfigured()) return local;
   try {
-    return JSON.parse(raw) as BeforeUgoContext;
+    await ensureMigrated(userId);
+    const remote = await reminderRepository.getActiveDeparture();
+    if (remote) {
+      await preferencesStorage.setItem(scopedKey(STORAGE_KEYS.context, userId), JSON.stringify(remote));
+      return remote;
+    }
+    return local;
   } catch {
-    return null;
+    return local;
   }
 }
 
@@ -58,7 +101,13 @@ export async function saveContext(userId: string, context: BeforeUgoContext | nu
   const key = scopedKey(STORAGE_KEYS.context, userId);
   if (!context) {
     await preferencesStorage.removeItem(key);
-    return;
+  } else {
+    await preferencesStorage.setItem(key, JSON.stringify(context));
   }
-  await preferencesStorage.setItem(key, JSON.stringify(context));
+  if (!isSupabaseConfigured()) return;
+  try {
+    await reminderRepository.saveActiveDeparture(context);
+  } catch {
+    // Keep the local cache if the remote write fails.
+  }
 }

@@ -77,20 +77,31 @@ export class LocalSuggestionEngine implements SuggestionEngine {
       out.push(item);
     };
 
-    if (weather?.rainLikely) {
+    if (weather?.isLive && weather.rainLikely) {
       add({
         title: 'Umbrella',
-        reason: weather.isLive ? 'rain expected today' : 'rain flagged on the local weather stub',
+        reason: 'rain expected today',
         source: 'weather',
       });
     }
 
-    if (weather?.temperatureC != null && weather.temperatureC <= 12) {
+    if (weather?.isLive && weather.temperatureC != null && weather.temperatureC <= 12) {
       add({
         title: 'Jacket',
-        reason: weather.isLive
-          ? 'temperature will drop later'
-          : 'cool on the local weather stub',
+        reason: 'it will be cold',
+        source: 'weather',
+      });
+    }
+
+    if (weather?.isLive && weather.temperatureC != null && weather.temperatureC >= 28) {
+      add({
+        title: 'Water bottle',
+        reason: 'it will be hot',
+        source: 'weather',
+      });
+      add({
+        title: 'Sunscreen',
+        reason: 'it will be hot',
         source: 'weather',
       });
     }

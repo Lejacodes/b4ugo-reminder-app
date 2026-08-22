@@ -43,6 +43,9 @@ export const authProviderConfig = {
 } as const;
 
 export function isProviderConfigured(): boolean {
+  if (authProviderConfig.supabase.url && authProviderConfig.supabase.anonKey) {
+    return true;
+  }
   switch (authProviderId) {
     case 'supabase':
       return Boolean(authProviderConfig.supabase.url && authProviderConfig.supabase.anonKey);

@@ -5,7 +5,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
 import { ChecklistItem } from '@/components/before-ugo/ChecklistItem';
 import { ButterButton, Handwriting, PaperPanel, QuietLink } from '@/components/scrapbook';
-import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { minTouchTarget } from '@/constants/typography';
 import { useResponsive } from '@/hooks/use-responsive';
@@ -14,6 +15,8 @@ import { useReminders } from '@/store/ReminderProvider';
 import '@/components/opening-login/opening-login.css';
 
 export default function OnTheWayBackScreen() {
+  const desk = useDeskStyle();
+  const colors = useScrapbookPalette();
   const insets = useSafeAreaInsets();
   const { horizontalPadding, isTablet } = useResponsive();
   const { onTheWayBackItems, toggleReminder, addOnTheWayBack } = useReminders();
@@ -40,7 +43,7 @@ export default function OnTheWayBackScreen() {
   };
 
   return (
-    <SafeAreaView className="opening-desk" style={styles.desk} edges={['top']}>
+    <SafeAreaView className="opening-desk" style={desk} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -57,16 +60,9 @@ export default function OnTheWayBackScreen() {
         keyboardShouldPersistTaps="handled">
         <ScrapbookHeader title="on the way back" icon="return-down-back-outline" />
 
-        <Handwriting variant="aside" tone="soft">
-          things waiting along your route
-        </Handwriting>
-
         {onTheWayBackItems.length === 0 && !composing ? (
           <PaperPanel tilt={tiltAt(1)} tape="top-right">
-            <Handwriting variant="title">nothing waiting for you</Handwriting>
-            <Handwriting variant="aside" tone="soft" style={styles.emptyAside}>
-              if you think of something while you're out, leave it here for later.
-            </Handwriting>
+            <Text style={[styles.fieldLabel, { color: colors.inkSoft, marginTop: 0 }]}>nothing yet</Text>
           </PaperPanel>
         ) : (
           <PaperPanel tilt={tiltAt(1)} tape="top-right">
@@ -94,30 +90,26 @@ export default function OnTheWayBackScreen() {
 
         {composing ? (
           <PaperPanel tilt={tiltAt(3)} tape="top-left">
-            <Handwriting variant="aside">leave something for the way back</Handwriting>
+            <Handwriting variant="title">add</Handwriting>
             <TextInput
               accessibilityLabel="What to remember on the way back"
               placeholder="Buy cat food"
-              placeholderTextColor={scrapbookPalette.inkSoft}
+              placeholderTextColor={colors.inkSoft}
               value={title}
               onChangeText={setTitle}
               autoCorrect={false}
-              style={styles.input}
+              style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
             />
-            <Text style={styles.fieldLabel}>where? (optional)</Text>
+            <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>add a place</Text>
             <TextInput
               accessibilityLabel="Place name"
               placeholder="PetZone, the post office…"
-              placeholderTextColor={scrapbookPalette.inkSoft}
+              placeholderTextColor={colors.inkSoft}
               value={place}
               onChangeText={setPlace}
               autoCorrect={false}
-              style={styles.input}
+              style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
             />
-            <Text style={styles.fine}>
-              The name is stored. GPS and geofencing are not connected yet, so nothing will ping
-              when you walk past.
-            </Text>
             <View style={styles.actions}>
               <ButterButton
                 label="leave it"
@@ -130,8 +122,8 @@ export default function OnTheWayBackScreen() {
           </PaperPanel>
         ) : (
           <QuietLink
-            label="+ leave something for the way back"
-            accessibilityLabel="Leave something for the way back"
+            label="+ add"
+            accessibilityLabel="Add something for the way back"
             onPress={() => setComposing(true)}
           />
         )}
@@ -141,10 +133,6 @@ export default function OnTheWayBackScreen() {
 }
 
 const styles = StyleSheet.create({
-  desk: {
-    flex: 1,
-    backgroundColor: scrapbookPalette.desk,
-  },
   scrollView: {
     flex: 1,
   },
@@ -154,31 +142,18 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     width: '100%',
   },
-  emptyAside: {
-    marginTop: 8,
-  },
   input: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.input.fontSize,
-    color: scrapbookPalette.ink,
     minHeight: minTouchTarget,
     borderBottomWidth: 1,
-    borderBottomColor: scrapbookPalette.line,
     paddingVertical: 8,
     marginTop: 8,
   },
   fieldLabel: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.meta.fontSize,
-    color: scrapbookPalette.inkSoft,
     marginTop: 14,
-  },
-  fine: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.fine.fontSize,
-    lineHeight: readableType.fine.lineHeight,
-    color: scrapbookPalette.inkSoft,
-    marginTop: 12,
   },
   actions: {
     marginTop: 16,

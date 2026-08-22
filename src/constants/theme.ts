@@ -53,15 +53,15 @@ export type ThemeColors = {
 
 export const Colors = {
   light: {
-    background: palette.cream,
-    backgroundSecondary: palette.oat,
+    background: palette.oat,
+    backgroundSecondary: palette.cream,
 
-    surface: palette.oat,
+    surface: palette.cream,
     surfaceElevated: palette.cream,
-    surfaceMuted: '#E8E3D4',
+    surfaceMuted: palette.oat,
 
-    primary: palette.deepForest,
-    primaryMuted: palette.softMatcha,
+    primary: palette.softMatcha,
+    primaryMuted: palette.sage,
     secondary: palette.softMatcha,
     secondarySoft: palette.sage,
 
@@ -69,59 +69,59 @@ export const Colors = {
     textSecondary: palette.warmGraySecondary,
     textMuted: palette.warmGrayMuted,
     textDisabled: palette.warmGrayDisabled,
-    textOnPrimary: palette.cream,
+    textOnPrimary: palette.oat,
     textOnSurface: palette.espresso,
 
     accentWarm: palette.mutedCoral,
     accentRose: palette.dustyRose,
     accentAqua: palette.softAqua,
 
-    border: '#C8C2A8',
-    borderSubtle: '#DDD8C4',
+    border: palette.cloud,
+    borderSubtle: palette.oat,
 
     tabBar: palette.cream,
-    tabBarBorder: '#DDD8C4',
-    tabBarActive: palette.deepForest,
+    tabBarBorder: palette.cloud,
+    tabBarActive: palette.softMatcha,
     tabBarInactive: palette.warmGraySecondary,
-    tabBarAdd: palette.deepForest,
+    tabBarAdd: palette.softMatcha,
 
     pressedOverlay: 'rgba(96, 51, 20, 0.08)',
     disabled: palette.warmGrayDisabled,
   },
   dark: {
-    background: palette.darkBackground,
+    background: palette.darkSurface,
     backgroundSecondary: palette.darkBackgroundElevated,
 
-    surface: palette.darkSurface,
+    surface: palette.darkEspresso,
     surfaceElevated: palette.darkSurfaceElevated,
-    surfaceMuted: palette.darkEspresso,
+    surfaceMuted: palette.darkBackgroundElevated,
 
-    primary: palette.sage,
-    primaryMuted: palette.softMatcha,
+    primary: palette.softMatcha,
+    primaryMuted: palette.sage,
     secondary: palette.softMatcha,
     secondarySoft: palette.sage,
 
-    text: palette.creamText,
-    textSecondary: palette.warmGraySecondaryDark,
-    textMuted: palette.warmGrayMutedDark,
+    text: palette.oat,
+    textSecondary: palette.cloud,
+    textMuted: palette.cloudDark,
     textDisabled: palette.warmGrayDisabledDark,
-    textOnPrimary: palette.darkBackground,
-    textOnSurface: palette.creamText,
+    textOnPrimary: palette.oat,
+    textOnSurface: palette.oat,
 
     accentWarm: palette.mutedCoral,
     accentRose: palette.dustyRose,
     accentAqua: palette.softAqua,
 
-    border: palette.darkBorder,
-    borderSubtle: '#322C26',
+    border: palette.cloudDark,
+    borderSubtle: palette.darkBorder,
 
-    tabBar: palette.darkBackgroundElevated,
+    tabBar: palette.darkBackground,
     tabBarBorder: palette.darkBorder,
-    tabBarActive: palette.sage,
-    tabBarInactive: palette.warmGraySecondaryDark,
-    tabBarAdd: palette.sage,
+    tabBarActive: palette.softMatcha,
+    tabBarInactive: palette.cloud,
+    tabBarAdd: palette.softMatcha,
 
-    pressedOverlay: 'rgba(245, 241, 231, 0.08)',
+    pressedOverlay: 'rgba(216, 211, 179, 0.08)',
     disabled: palette.warmGrayDisabledDark,
   },
 } as const satisfies Record<'light' | 'dark', ThemeColors>;

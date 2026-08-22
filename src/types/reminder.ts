@@ -28,6 +28,11 @@ export type BeforeUgoContext = {
   person: string | null;
   dateTime: string | null;
   createdAt: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  timezone?: string | null;
+  country?: string | null;
+  region?: string | null;
 };
 
 /** Persistent learned/user necessities — survive every trip; never use packed state here. */

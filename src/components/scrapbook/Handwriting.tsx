@@ -1,6 +1,7 @@
 import { StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native';
 
-import { DISPLAY_FONT, scrapbookPalette, scrapbookType } from '@/constants/scrapbook';
+import { DISPLAY_FONT, scrapbookType } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
 type HandwritingProps = {
   children: string;
@@ -22,13 +23,15 @@ export function Handwriting({
   style,
   accessibilityRole,
 }: HandwritingProps) {
+  const palette = useScrapbookPalette();
+
   return (
     <Text
       accessibilityRole={accessibilityRole}
       style={[
         styles.base,
         scrapbookType[variant],
-        tone === 'soft' && styles.soft,
+        { color: tone === 'soft' ? palette.inkSoft : palette.ink },
         style,
       ]}>
       {children}
@@ -39,9 +42,5 @@ export function Handwriting({
 const styles = StyleSheet.create({
   base: {
     fontFamily: DISPLAY_FONT,
-    color: scrapbookPalette.ink,
-  },
-  soft: {
-    color: scrapbookPalette.inkSoft,
   },
 });

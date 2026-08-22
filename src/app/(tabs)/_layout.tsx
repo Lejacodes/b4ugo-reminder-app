@@ -125,7 +125,7 @@ export default function TabLayout() {
           title: "Profile",
           tabBarAccessibilityLabel: "Profile and settings tab",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="options-outline" color={color} focused={focused} />
+            <TabIcon name="leaf-outline" color={color} focused={focused} />
           ),
         }}
       />

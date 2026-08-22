@@ -8,26 +8,27 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { STARRY_NIGHT_FONT } from '@/constants/opening';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useSessionGuard } from '@/hooks/use-session-guard';
-import { AuthProvider, useAuth } from '@/store/AuthProvider';
+import { AppearanceProvider } from '@/store/AppearanceProvider';
+import { AuthProvider } from '@/store/AuthProvider';
 import { PreferencesProvider } from '@/store/PreferencesProvider';
 import { ReminderProvider } from '@/store/ReminderProvider';
+import { TripProvider } from '@/store/TripProvider';
 
 import 'react-native-gesture-handler';
+
+export const unstable_settings = {
+  initialRouteName: 'opening',
+};
 
 SplashScreen.preventAutoHideAsync();
 
 function RootNavigator() {
   const colorScheme = useColorScheme();
-  const { status } = useAuth();
   useSessionGuard();
 
-  // Stay on the splash until the stored session has been checked, so a
-  // returning user never sees the opening window flash past on the way to Home.
   useEffect(() => {
-    if (status !== 'restoring') {
-      SplashScreen.hideAsync();
-    }
-  }, [status]);
+    SplashScreen.hideAsync();
+  }, []);
 
   return (
     <>
@@ -38,6 +39,7 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" options={{ freezeOnBlur: false }} />
         <Stack.Screen name="before-ugo" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="on-the-way-back" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="trip" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen
           name="onboarding"
           options={{ gestureEnabled: false, animation: 'fade' }}
@@ -60,9 +62,13 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <PreferencesProvider>
-          <ReminderProvider>
-            <RootNavigator />
-          </ReminderProvider>
+          <AppearanceProvider>
+            <ReminderProvider>
+              <TripProvider>
+                <RootNavigator />
+              </TripProvider>
+            </ReminderProvider>
+          </AppearanceProvider>
         </PreferencesProvider>
       </AuthProvider>
     </SafeAreaProvider>

@@ -11,13 +11,14 @@ import {
   TodayNote,
 } from '@/components/home';
 import { ButterButton } from '@/components/scrapbook';
-import { scrapbookPalette } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
+import { useDeskStyle } from '@/hooks/use-scrapbook-palette';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTabBarInset } from '@/hooks/use-tab-bar-inset';
 import { formatThingsWaiting } from '@/lib/home/copy';
 import { useReminders } from '@/store/ReminderProvider';
+import { useTrips } from '@/store/TripProvider';
 
 import '@/components/opening-login/opening-login.css';
 
@@ -27,11 +28,13 @@ import '@/components/opening-login/opening-login.css';
  * stays out of the way.
  */
 export default function HomeScreen() {
+  const desk = useDeskStyle();
   const router = useRouter();
   const reduceMotion = useReducedMotion();
   const tabBarInset = useTabBarInset();
   const { horizontalPadding, isCompact, isTablet } = useResponsive();
   const { beforeUgoOpen, onTheWayBackOpen, context } = useReminders();
+  const { upcomingTrips } = useTrips();
   // Native stack keeps Home mounted under /before-ugo. Re-render on focus
   // so the open-only lists from ReminderProvider are what the preview shows.
   const [, setHomeEpoch] = useState(0);
@@ -52,7 +55,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView className="opening-desk" style={styles.desk} edges={['top']}>
+    <SafeAreaView className="opening-desk" style={desk} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -76,9 +79,9 @@ export default function HomeScreen() {
             waitingLabel={formatThingsWaiting(beforeItems.length)}
             emptyHint={
               beforeItems.length === 0 && !context
-                ? 'open this to tell BLUGO where you are headed'
+                ? 'where are you going?'
                 : beforeItems.length === 0
-                  ? "you're all set"
+                  ? 'all set'
                   : undefined
             }
             onPress={() => router.push('/before-ugo')}
@@ -94,7 +97,7 @@ export default function HomeScreen() {
 
         <FadeInSection reduceMotion={reduceMotion} delayMs={240}>
           <View style={styles.todaySlot}>
-            <TodayNote summary={today} />
+            <TodayNote summary={today} tripSoon={upcomingTrips.length > 0} />
           </View>
         </FadeInSection>
 
@@ -113,10 +116,6 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  desk: {
-    flex: 1,
-    backgroundColor: scrapbookPalette.desk,
-  },
   scrollView: {
     flex: 1,
   },

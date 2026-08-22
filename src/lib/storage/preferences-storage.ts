@@ -18,6 +18,10 @@ const STORAGE_KEYS = {
   reminders: 'blugo.reminders',
   necessities: 'blugo.necessities',
   context: 'blugo.context',
+  trips: 'blugo.trips',
+  packingItems: 'blugo.packingItems',
+  packingTemplates: 'blugo.packingTemplates',
+  travelIntentions: 'blugo.travelIntentions',
 } as const;
 
 export type StorageKeyBase = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

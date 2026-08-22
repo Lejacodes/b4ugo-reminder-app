@@ -2,7 +2,8 @@ import { type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Handwriting, PaperPanel } from '@/components/scrapbook';
-import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
 type BeforeUgoPaperSectionProps = {
   title: string;
@@ -26,12 +27,13 @@ export function BeforeUgoPaperSection({
   tiltIndex = 0,
   children,
 }: BeforeUgoPaperSectionProps) {
+  const colors = useScrapbookPalette();
   return (
     <PaperPanel tilt={tiltAt(tiltIndex)} tape={tape} contentStyle={styles.panel}>
       <Handwriting variant="title" accessibilityRole="header">
         {title}
       </Handwriting>
-      {context ? <Text style={styles.context}>{context}</Text> : null}
+      {context ? <Text style={[styles.context, { color: colors.inkSoft }]}>{context}</Text> : null}
       {aside ? (
         <Handwriting variant="aside" tone="soft" style={styles.aside}>
           {aside}
@@ -51,7 +53,6 @@ const styles = StyleSheet.create({
     fontFamily: TEXT_FONT,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
-    color: scrapbookPalette.inkSoft,
     marginTop: 4,
   },
   aside: {

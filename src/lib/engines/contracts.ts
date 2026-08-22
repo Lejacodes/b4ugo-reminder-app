@@ -15,8 +15,13 @@ import type {
   ReminderLocation,
 } from '@/types/reminder';
 
+export type WeatherQuery = {
+  latitude: number;
+  longitude: number;
+};
+
 export type WeatherSnapshot = {
-  /** False until a real weather API is connected. */
+  /** False when the snapshot did not come from a live forecast. */
   isLive: boolean;
   rainLikely: boolean;
   temperatureC: number | null;
@@ -76,7 +81,7 @@ export interface SuggestionEngine {
 }
 
 export interface WeatherService {
-  getSnapshot(): Promise<WeatherSnapshot | null>;
+  getSnapshot(query?: WeatherQuery): Promise<WeatherSnapshot | null>;
 }
 
 export interface LocationService {

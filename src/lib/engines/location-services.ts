@@ -4,6 +4,7 @@
  * None of these talk to GPS, Maps, or a push service. They exist so the rest
  * of the app can depend on an interface instead of a pretend implementation.
  */
+import { resolvePlace } from '@/lib/geocoding/open-meteo';
 import type { Reminder, ReminderLocation } from '@/types/reminder';
 import type {
   DeviceLocation,
@@ -26,11 +27,7 @@ export class LocalLocationService implements LocationService {
 
 export class LocalPlaceService implements PlaceService {
   async resolve(placeName: string): Promise<PlaceLookup> {
-    return {
-      placeName: placeName.trim(),
-      latitude: null,
-      longitude: null,
-    };
+    return resolvePlace(placeName);
   }
 }
 

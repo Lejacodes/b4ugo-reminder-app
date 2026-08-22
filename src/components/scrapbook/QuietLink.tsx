@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
-import { DISPLAY_FONT, scrapbookPalette, scrapbookType } from '@/constants/scrapbook';
+import { readableType, TEXT_FONT } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
 type QuietLinkProps = {
   label: string;
@@ -13,7 +14,7 @@ type QuietLinkProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-/** An underlined pencil note — the secondary action next to a butter seal. */
+/** Underlined secondary action, in the readable face. */
 export function QuietLink({
   label,
   onPress,
@@ -22,6 +23,8 @@ export function QuietLink({
   align = 'flex-start',
   style,
 }: QuietLinkProps) {
+  const palette = useScrapbookPalette();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -37,7 +40,7 @@ export function QuietLink({
         disabled && styles.disabled,
         style,
       ]}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: palette.inkSoft }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -49,10 +52,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   label: {
-    fontFamily: DISPLAY_FONT,
-    fontSize: scrapbookType.aside.fontSize,
-    lineHeight: scrapbookType.aside.lineHeight,
-    color: scrapbookPalette.inkSoft,
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.item.fontSize,
+    lineHeight: readableType.item.lineHeight,
     textDecorationLine: 'underline',
   },
   pressed: {

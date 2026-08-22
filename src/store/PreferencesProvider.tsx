@@ -8,7 +8,10 @@ import {
   type ReactNode,
 } from 'react';
 
+import { ensureMigrated } from '@/lib/api/migration';
+import { profileRepository } from '@/lib/api/profile-repository';
 import { STORAGE_KEYS, preferencesStorage, scopedKey } from '@/lib/storage/preferences-storage';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { useAuth } from '@/store/AuthProvider';
 import {
   defaultUserPreferences,
@@ -70,16 +73,33 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
         if (cancelled) return;
 
-        setProfile(
-          storedProfile
-            ? { ...defaultUserProfile(userId), ...(JSON.parse(storedProfile) as UserProfile) }
-            : defaultUserProfile(userId),
-        );
-        setPreferences(
-          storedPreferences
-            ? { ...defaultUserPreferences(), ...(JSON.parse(storedPreferences) as UserPreferences) }
-            : defaultUserPreferences(),
-        );
+        let nextProfile = storedProfile
+          ? { ...defaultUserProfile(userId), ...(JSON.parse(storedProfile) as UserProfile) }
+          : defaultUserProfile(userId);
+        let nextPreferences = storedPreferences
+          ? { ...defaultUserPreferences(), ...(JSON.parse(storedPreferences) as UserPreferences) }
+          : defaultUserPreferences();
+
+        if (isSupabaseConfigured()) {
+          await ensureMigrated(userId, user?.email);
+          const [remoteProfile, remotePreferences] = await Promise.all([
+            profileRepository.getProfile(),
+            profileRepository.getPreferences(),
+          ]);
+          if (remoteProfile) nextProfile = { ...nextProfile, ...remoteProfile, userId };
+          if (remotePreferences) nextPreferences = { ...nextPreferences, ...remotePreferences };
+        }
+
+        if (cancelled) return;
+        setProfile(nextProfile);
+        setPreferences(nextPreferences);
+        await Promise.all([
+          preferencesStorage.setItem(scopedKey(STORAGE_KEYS.profile, userId), JSON.stringify(nextProfile)),
+          preferencesStorage.setItem(
+            scopedKey(STORAGE_KEYS.preferences, userId),
+            JSON.stringify(nextPreferences),
+          ),
+        ]);
       } catch {
         if (cancelled) return;
         // Unreadable local data is treated as a fresh profile; the account
@@ -95,7 +115,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [status, userId]);
+  }, [status, userId, user?.email]);
 
   const persistProfile = useCallback(
     async (next: UserProfile) => {
@@ -105,6 +125,13 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         scopedKey(STORAGE_KEYS.profile, userId),
         JSON.stringify(next),
       );
+      if (isSupabaseConfigured()) {
+        try {
+          await profileRepository.upsertProfile(next);
+        } catch {
+          // Keep the local cache if the remote write fails.
+        }
+      }
     },
     [userId],
   );
@@ -117,6 +144,13 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         scopedKey(STORAGE_KEYS.preferences, userId),
         JSON.stringify(next),
       );
+      if (isSupabaseConfigured()) {
+        try {
+          await profileRepository.upsertPreferences(next);
+        } catch {
+          // Keep the local cache if the remote write fails.
+        }
+      }
     },
     [userId],
   );
@@ -154,6 +188,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.reminders, userId)),
         preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.necessities, userId)),
         preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.context, userId)),
+        preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.trips, userId)),
+        preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.packingItems, userId)),
+        preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.packingTemplates, userId)),
+        preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.travelIntentions, userId)),
       ]);
     }
     setProfile(defaultUserProfile(userId));

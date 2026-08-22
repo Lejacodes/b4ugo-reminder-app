@@ -5,6 +5,9 @@ How BLUGO decides what to show on Before U Go, On the Way Back, and Specific.
 The UI never invents a destination. Lists come from `ReminderProvider`, which
 talks to small engine interfaces in `src/lib/engines/`.
 
+Trip packing uses a separate `PackingAssistant` and `TripProvider`. Checking a
+packing item does not change personal necessities. See [TRIPS.md](./TRIPS.md).
+
 ---
 
 ## What is genuinely functional (local)

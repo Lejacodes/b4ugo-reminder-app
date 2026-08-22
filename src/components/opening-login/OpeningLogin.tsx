@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -14,15 +15,30 @@ import './opening-login.css';
 type OpeningLoginProps = {
   onCreateAccount: () => void;
   onSignIn: () => void;
+  /** Fires when the paper sequence reaches its last beat. */
+  onSequenceComplete?: () => void;
+  /** When false, the paper still settles but login actions stay hidden. */
+  showLogin?: boolean;
 };
 
 /**
  * First window only: logo → crumpled ball → unfold → settle → login on the paper.
  * Little Guy is not part of this scene.
  */
-export function OpeningLogin({ onCreateAccount, onSignIn }: OpeningLoginProps) {
+export function OpeningLogin({
+  onCreateAccount,
+  onSignIn,
+  onSequenceComplete,
+  showLogin = true,
+}: OpeningLoginProps) {
   const reduceMotion = useReducedMotion();
   const stage = useOpeningStages(reduceMotion);
+
+  useEffect(() => {
+    if (stage === 'login') {
+      onSequenceComplete?.();
+    }
+  }, [stage, onSequenceComplete]);
 
   const paperPhase =
     reduceMotion || stage === 'login' || stage === 'settle'
@@ -33,7 +49,7 @@ export function OpeningLogin({ onCreateAccount, onSignIn }: OpeningLoginProps) {
 
   const showBall = !reduceMotion && (stage === 'ball' || stage === 'unfold');
   const ballExiting = stage === 'unfold';
-  const showLogin = reduceMotion || stage === 'login';
+  const showLoginContent = showLogin && (reduceMotion || stage === 'login');
 
   return (
     <SafeAreaView className="opening-desk" style={styles.desk} edges={['top', 'bottom']}>
@@ -44,7 +60,7 @@ export function OpeningLogin({ onCreateAccount, onSignIn }: OpeningLoginProps) {
       <View style={styles.stage}>
         <UnfoldingPaper phase={paperPhase} reduceMotion={reduceMotion}>
           <LoginContent
-            visible={showLogin}
+            visible={showLoginContent}
             reduceMotion={reduceMotion}
             onCreateAccount={onCreateAccount}
             onSignIn={onSignIn}

@@ -1,8 +1,10 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
-import { DISPLAY_FONT, scrapbookPalette, scrapbookType } from '@/constants/scrapbook';
+import { palette as brand } from '@/constants/colors';
+import { readableType, TEXT_FONT } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
 type ButterButtonProps = {
   label: string;
@@ -16,8 +18,7 @@ type ButterButtonProps = {
 };
 
 /**
- * The butter-yellow stamped seal, in the same hand as the opening window's
- * "come in" button: an offset backing card with the label pressed on top.
+ * Matcha stamped seal. Label is the readable face so the action stays clear.
  */
 export function ButterButton({
   label,
@@ -28,6 +29,7 @@ export function ButterButton({
   fullWidth = false,
   style,
 }: ButterButtonProps) {
+  const palette = useScrapbookPalette();
   const inactive = disabled || busy;
 
   return (
@@ -44,17 +46,21 @@ export function ButterButton({
         disabled && styles.disabled,
         style,
       ]}>
-      <View style={styles.backing} />
-      {/* The label stays mounted while busy so the seal keeps its width. */}
+      <View
+        style={[
+          styles.backing,
+          {
+            backgroundColor: palette.butter,
+            borderColor: palette.ink,
+          },
+        ]}
+      />
       <View style={styles.face}>
-        <Text style={[styles.label, busy && styles.labelHidden]} numberOfLines={1}>
+        <Text style={[styles.label, { color: brand.cream }, busy && styles.labelHidden]} numberOfLines={1}>
           {label}
         </Text>
         {busy && (
-          <ActivityIndicator
-            color={scrapbookPalette.ink}
-            style={StyleSheet.absoluteFill}
-          />
+          <ActivityIndicator color={brand.cream} style={StyleSheet.absoluteFill} />
         )}
       </View>
     </Pressable>
@@ -80,19 +86,17 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: scrapbookPalette.butter,
     borderWidth: 1,
-    borderColor: 'rgba(92, 58, 40, 0.2)',
     transform: [{ rotate: '1.5deg' }],
   },
   face: {
     justifyContent: 'center',
   },
   label: {
-    fontFamily: DISPLAY_FONT,
-    fontSize: scrapbookType.title.fontSize,
-    lineHeight: scrapbookType.title.lineHeight,
-    color: scrapbookPalette.ink,
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.item.fontSize,
+    lineHeight: readableType.item.lineHeight,
+    fontWeight: '600',
     textAlign: 'center',
   },
   labelHidden: {

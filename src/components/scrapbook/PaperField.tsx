@@ -11,11 +11,11 @@ import {
 import {
   DISPLAY_FONT,
   readableType,
-  scrapbookPalette,
   scrapbookType,
   TEXT_FONT,
 } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
 type PaperFieldProps = Omit<TextInputProps, 'style'> & {
   /** Written above the line. Omit when the surrounding copy already says it. */
@@ -48,6 +48,7 @@ export function PaperField({
   variant = 'data',
   ...inputProps
 }: PaperFieldProps) {
+  const palette = useScrapbookPalette();
   const [focused, setFocused] = useState(false);
   const [revealed, setRevealed] = useState(false);
 
@@ -56,25 +57,38 @@ export function PaperField({
 
   return (
     <View style={styles.wrap}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? <Text style={[styles.label, { color: palette.inkSoft }]}>{label}</Text> : null}
 
       <View
         style={[
           styles.line,
-          focused && styles.lineFocused,
-          invalid && styles.lineInvalid,
+          { borderBottomColor: palette.line },
+          focused && { borderBottomColor: palette.butterDeep, borderBottomWidth: 2, paddingBottom: 0 },
+          invalid && { borderBottomColor: palette.blushDeep, borderBottomWidth: 2, paddingBottom: 0 },
           !editable && styles.lineDisabled,
         ]}>
         <TextInput
           ref={inputRef}
           accessibilityLabel={inputProps.accessibilityLabel ?? label}
-          placeholderTextColor={scrapbookPalette.inkSoft}
+          placeholderTextColor={palette.inkSoft}
           autoCorrect={false}
           spellCheck={false}
           {...rest}
           editable={editable}
           secureTextEntry={masked && !revealed}
-          style={[styles.input, variant === 'handwritten' && styles.inputHandwritten]}
+          onFocus={(event) => {
+            setFocused(true);
+            inputProps.onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setFocused(false);
+            inputProps.onBlur?.(event);
+          }}
+          style={[
+            styles.input,
+            { color: palette.ink },
+            variant === 'handwritten' && styles.inputHandwritten,
+          ]}
         />
 
         {masked && (
@@ -86,12 +100,14 @@ export function PaperField({
             onPress={() => setRevealed((current) => !current)}
             hitSlop={10}
             style={({ pressed }) => [styles.reveal, pressed && styles.revealPressed]}>
-            <Text style={styles.revealLabel}>{revealed ? 'hide' : 'show'}</Text>
+            <Text style={[styles.revealLabel, { color: palette.inkSoft }]}>
+              {revealed ? 'hide' : 'show'}
+            </Text>
           </Pressable>
         )}
       </View>
 
-      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      {hint ? <Text style={[styles.hint, { color: palette.inkSoft }]}>{hint}</Text> : null}
     </View>
   );
 }
@@ -104,26 +120,14 @@ const styles = StyleSheet.create({
     fontFamily: DISPLAY_FONT,
     fontSize: scrapbookType.aside.fontSize,
     lineHeight: scrapbookType.aside.lineHeight,
-    color: scrapbookPalette.inkSoft,
     marginBottom: 2,
   },
   line: {
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: scrapbookPalette.line,
     // Reserve the focused/invalid border weight so the line never shifts.
     paddingBottom: 1,
-  },
-  lineFocused: {
-    borderBottomColor: scrapbookPalette.butterDeep,
-    borderBottomWidth: 2,
-    paddingBottom: 0,
-  },
-  lineInvalid: {
-    borderBottomColor: scrapbookPalette.blushDeep,
-    borderBottomWidth: 2,
-    paddingBottom: 0,
   },
   lineDisabled: {
     opacity: 0.5,
@@ -132,7 +136,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: TEXT_FONT,
     fontSize: readableType.input.fontSize,
-    color: scrapbookPalette.ink,
     minHeight: minTouchTarget,
     paddingVertical: 8,
     paddingHorizontal: 2,
@@ -153,14 +156,12 @@ const styles = StyleSheet.create({
   revealLabel: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.helper.fontSize,
-    color: scrapbookPalette.inkSoft,
     textDecorationLine: 'underline',
   },
   hint: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.helper.fontSize,
     lineHeight: readableType.helper.lineHeight,
-    color: scrapbookPalette.inkSoft,
     marginTop: 5,
     paddingHorizontal: 2,
   },

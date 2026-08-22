@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Handwriting } from '@/components/scrapbook';
-import { DISPLAY_FONT, scrapbookPalette } from '@/constants/scrapbook';
+import { DISPLAY_FONT } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { usePreferences } from '@/store/PreferencesProvider';
 
 type HomeHeaderProps = {
@@ -14,19 +15,20 @@ type HomeHeaderProps = {
  */
 export function HomeHeader({ compact = false }: HomeHeaderProps) {
   const { profile } = usePreferences();
+  const colors = useScrapbookPalette();
   const name = profile.displayName?.trim();
   const greeting = name ? `hey, ${name}` : 'hey there';
 
   return (
     <View style={[styles.wrap, compact && styles.wrapCompact]}>
       <View style={styles.wordmarkRow}>
-        <Text accessibilityRole="header" style={styles.wordmark}>
+        <Text accessibilityRole="header" style={[styles.wordmark, { color: colors.ink }]}>
           BLUGO
         </Text>
         <Ionicons
           name="star"
           size={15}
-          color={scrapbookPalette.butterDeep}
+          color={colors.doodle}
           style={styles.wordmarkStar}
         />
       </View>
@@ -57,7 +59,6 @@ const styles = StyleSheet.create({
     fontFamily: DISPLAY_FONT,
     fontSize: 36,
     lineHeight: 44,
-    color: scrapbookPalette.ink,
     letterSpacing: 1,
     textAlign: 'center',
   },

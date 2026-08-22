@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { readableType, scrapbookPalette, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
 type SlipNoteProps = {
   message: string | null;
@@ -17,20 +18,28 @@ type SlipNoteProps = {
  * last place to make them squint.
  */
 export function SlipNote({ message }: SlipNoteProps) {
+  const palette = useScrapbookPalette();
   if (!message) return null;
 
   return (
-    <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.slip}>
-      <Text style={styles.text}>{message}</Text>
+    <View
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+      style={[
+        styles.slip,
+        {
+          backgroundColor: palette.slip,
+          borderColor: 'rgba(140, 74, 69, 0.28)',
+        },
+      ]}>
+      <Text style={[styles.text, { color: palette.slipInk }]}>{message}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   slip: {
-    backgroundColor: scrapbookPalette.slip,
     borderWidth: 1,
-    borderColor: 'rgba(140, 74, 69, 0.28)',
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginBottom: 16,
@@ -40,6 +49,5 @@ const styles = StyleSheet.create({
     fontFamily: TEXT_FONT,
     fontSize: readableType.message.fontSize,
     lineHeight: readableType.message.lineHeight,
-    color: scrapbookPalette.slipInk,
   },
 });

@@ -2,6 +2,59 @@
 
 All notable changes to B4UGO are documented here.
 
+## [Unreleased] — Supabase backend foundation
+
+Local stores remain the cache. Supabase is the source of truth when configured.
+
+- Email/password auth uses Supabase when `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` are set
+- Schema + RLS in `supabase/migrations/0001_init.sql`
+- First-login local data is uploaded once, without completing personal necessities
+- Before U Go and Trips geocode through Open-Meteo and store coordinates
+- Weather suggestions use the real Open-Meteo forecast when a location exists
+- Profile theme and preference toggles persist remotely
+
+## [Unreleased] Visual pass: palette, type, copy
+
+No functionality changes. Tokens and wording only.
+
+- Core palette is Matcha `#76845B`, Oat `#D8D3B3`, Espresso `#603314`, Cloud `#B1B7BE`
+- Light desk is oat. Paper is cream. Accent is matcha, not butter yellow
+- Dark mode uses a deep espresso desk, lighter paper, oat text, cloud secondary, matcha controls
+- Starry Night is titles and short headings. Buttons, lists, settings, and metadata use the system face
+- UI copy is shorter. Technical "not connected yet" notes are gone from the product screens
+- Dark mode toggle is a Matcha switch, not iOS blue
+
+---
+
+## [Unreleased] — Profile + appearance
+
+Profile is a scrapbook settings page, not a generic account screen.
+
+- Header uses the signed-in display name and email (no hardcoded identity)
+- **Your BLUGO** surfaces onboarding interests and the display name; both save through the existing profile store
+- Preference toggles (context-aware, routines, AI parsing) write the existing preference fields. AI parsing is stored only — it is not connected
+- Real dark mode: `preferences.appearance` persists, drives `useColorScheme` / `useTheme`, and restyles the scrapbook desk via `scrapbookPaletteDark`
+- Dark mode is earthy (warm paper, cream ink, matcha tape) — not black/gray
+- Reduce motion is shown as the device setting; it is not a second stored preference
+- Log out and the `__DEV__` onboarding reset are unchanged
+- Profile tab icon is `leaf-outline`
+
+---
+
+## [Unreleased] — Trips section
+
+Trips is a real planning notebook: occasions, packing assistant, templates,
+and Travel Mode. See `docs/TRIPS.md`.
+
+- Tab landing replaces "Coming soon"
+- Create / edit / archive / delete trips
+- Categorised packing lists with local rule generation
+- Reusable templates (seeded starters + user-saved)
+- Travel intentions (try / visit) without Maps
+- Upcoming trips can fill Before U Go destination; necessities stay separate
+
+---
+
 ## [Unreleased] — Memory engines (product logic)
 
 Before U Go, On the Way Back, and Specific are real local lists — not hardcoded

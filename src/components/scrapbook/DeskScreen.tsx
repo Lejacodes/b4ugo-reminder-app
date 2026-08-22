@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { scrapbookPalette } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
 type DeskScreenProps = {
   children: ReactNode;
@@ -22,12 +22,21 @@ type DeskScreenProps = {
 
 /** Faint star scatter on the desk itself, behind everything else. */
 function DeskDoodles() {
+  const palette = useScrapbookPalette();
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <Text style={[styles.deskStar, { top: '9%', left: '8%', fontSize: 13 }]}>★</Text>
-      <Text style={[styles.deskStar, { top: '17%', right: '12%', fontSize: 9 }]}>★</Text>
-      <Text style={[styles.deskStar, { bottom: '22%', left: '11%', fontSize: 10 }]}>✿</Text>
-      <Text style={[styles.deskStar, { bottom: '11%', right: '9%', fontSize: 14 }]}>★</Text>
+      <Text style={[styles.deskStar, { top: '9%', left: '8%', fontSize: 13, color: palette.doodle }]}>
+        ★
+      </Text>
+      <Text style={[styles.deskStar, { top: '17%', right: '12%', fontSize: 9, color: palette.doodle }]}>
+        ★
+      </Text>
+      <Text style={[styles.deskStar, { bottom: '22%', left: '11%', fontSize: 10, color: palette.doodle }]}>
+        ✿
+      </Text>
+      <Text style={[styles.deskStar, { bottom: '11%', right: '9%', fontSize: 14, color: palette.doodle }]}>
+        ★
+      </Text>
     </View>
   );
 }
@@ -43,6 +52,7 @@ function DeskDoodles() {
  */
 export function DeskScreen({ children, scroll = false, contentStyle }: DeskScreenProps) {
   const insets = useSafeAreaInsets();
+  const palette = useScrapbookPalette();
 
   const padding = {
     paddingBottom: insets.bottom + (scroll ? 48 : 24),
@@ -51,7 +61,7 @@ export function DeskScreen({ children, scroll = false, contentStyle }: DeskScree
   const body = <View style={[styles.content, padding, contentStyle]}>{children}</View>;
 
   return (
-    <SafeAreaView style={styles.desk} edges={['top']}>
+    <SafeAreaView style={[styles.desk, { backgroundColor: palette.desk }]} edges={['top']}>
       <DeskDoodles />
       <KeyboardAvoidingView
         style={styles.fill}
@@ -76,7 +86,6 @@ export function DeskScreen({ children, scroll = false, contentStyle }: DeskScree
 const styles = StyleSheet.create({
   desk: {
     flex: 1,
-    backgroundColor: scrapbookPalette.desk,
   },
   fill: {
     flex: 1,
@@ -91,7 +100,6 @@ const styles = StyleSheet.create({
   },
   deskStar: {
     position: 'absolute',
-    color: scrapbookPalette.doodle,
     opacity: 0.24,
   },
 });

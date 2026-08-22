@@ -3,7 +3,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChecklistItem } from '@/components/before-ugo/ChecklistItem';
 import { Handwriting, PaperPanel } from '@/components/scrapbook';
-import { scrapbookPalette, tiltAt } from '@/constants/scrapbook';
+import { tiltAt } from '@/constants/scrapbook';
+import { useDeskStyle } from '@/hooks/use-scrapbook-palette';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTabBarInset } from '@/hooks/use-tab-bar-inset';
@@ -12,12 +13,13 @@ import { useReminders } from '@/store/ReminderProvider';
 import '@/components/opening-login/opening-login.css';
 
 export default function RemindersScreen() {
+  const desk = useDeskStyle();
   const tabBarInset = useTabBarInset();
   const { horizontalPadding, isTablet } = useResponsive();
   const { specificItems, toggleReminder } = useReminders();
 
   return (
-    <SafeAreaView className="opening-desk" style={styles.desk} edges={['top']}>
+    <SafeAreaView className="opening-desk" style={desk} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -34,15 +36,10 @@ export default function RemindersScreen() {
         <Handwriting variant="heading" accessibilityRole="header">
           specific
         </Handwriting>
-        <Handwriting variant="aside" tone="soft">
-          memories that aren't packing lists
-        </Handwriting>
 
         <PaperPanel tilt={tiltAt(2)} tape="top-left">
           {specificItems.length === 0 ? (
-            <Handwriting variant="aside" tone="soft">
-              nothing specific yet. leave something from Add, marked Specific.
-            </Handwriting>
+            <Handwriting variant="title">nothing yet</Handwriting>
           ) : (
             specificItems.map((item) => (
               <ChecklistItem
@@ -63,10 +60,6 @@ export default function RemindersScreen() {
 }
 
 const styles = StyleSheet.create({
-  desk: {
-    flex: 1,
-    backgroundColor: scrapbookPalette.desk,
-  },
   scrollView: {
     flex: 1,
   },

@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Handwriting, PaperPanel } from '@/components/scrapbook';
 import { palette } from '@/constants/colors';
-import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { formatThingsWaiting } from '@/lib/home/copy';
 import type { OnTheWayBackItem } from '@/types/home';
 
@@ -19,6 +20,8 @@ type OnTheWayBackSectionProps = {
  * "when you're near…" idea reads even before geofencing exists.
  */
 export function OnTheWayBackSection({ items, onPress }: OnTheWayBackSectionProps) {
+  const colors = useScrapbookPalette();
+  const countColor = palette.softMatcha;
   const preview = items.slice(0, 4);
   const count = items.length;
 
@@ -36,32 +39,30 @@ export function OnTheWayBackSection({ items, onPress }: OnTheWayBackSectionProps
           <Ionicons
             name="return-down-back-outline"
             size={17}
-            color={scrapbookPalette.doodle}
+            color={colors.doodle}
             style={styles.titleIcon}
           />
         </View>
 
-        <Text style={styles.count}>{formatThingsWaiting(count)}</Text>
+        <Text style={[styles.count, { color: countColor }]}>{formatThingsWaiting(count)}</Text>
 
-        <Handwriting variant="aside" tone="soft" style={styles.aside}>
-          along your way
-        </Handwriting>
+        <Text style={[styles.aside, { color: colors.inkSoft }]}>along your way</Text>
 
         <View style={styles.list}>
           {preview.length === 0 ? (
-            <Text style={styles.more}>nothing along your way yet</Text>
+            <Text style={[styles.more, { color: colors.inkSoft }]}>nothing yet</Text>
           ) : (
             preview.map((item) => (
               <View key={item.id} style={styles.row}>
-                <Text style={styles.bullet} accessibilityElementsHidden>
+                <Text style={[styles.bullet, { color: colors.doodle }]} accessibilityElementsHidden>
                   •
                 </Text>
                 <View style={styles.copy}>
-                  <Text style={styles.itemLabel} numberOfLines={2}>
+                  <Text style={[styles.itemLabel, { color: colors.ink }]} numberOfLines={2}>
                     {item.label}
                   </Text>
                   {item.placeName ? (
-                    <Text style={styles.place} numberOfLines={1}>
+                    <Text style={[styles.place, { color: colors.inkSoft }]} numberOfLines={1}>
                       Near {item.placeName}
                     </Text>
                   ) : null}
@@ -72,7 +73,9 @@ export function OnTheWayBackSection({ items, onPress }: OnTheWayBackSectionProps
         </View>
 
         {count > preview.length && (
-          <Text style={styles.more}>+ {count - preview.length} more along your way</Text>
+          <Text style={[styles.more, { color: colors.inkSoft }]}>
+            + {count - preview.length} more
+          </Text>
         )}
       </PaperPanel>
     </Pressable>
@@ -103,11 +106,13 @@ const styles = StyleSheet.create({
     fontFamily: TEXT_FONT,
     fontSize: readableType.count.fontSize,
     lineHeight: readableType.count.lineHeight,
-    color: palette.deepForest,
     marginTop: 6,
     fontWeight: '500',
   },
   aside: {
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.meta.fontSize,
+    lineHeight: readableType.meta.lineHeight,
     marginTop: 2,
     marginBottom: 16,
   },
@@ -124,7 +129,6 @@ const styles = StyleSheet.create({
     fontFamily: TEXT_FONT,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
-    color: scrapbookPalette.butterDeep,
     marginTop: 1,
   },
   copy: {
@@ -135,20 +139,17 @@ const styles = StyleSheet.create({
     fontFamily: TEXT_FONT,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
-    color: scrapbookPalette.ink,
     fontWeight: '500',
   },
   place: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
-    color: scrapbookPalette.inkSoft,
   },
   more: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
-    color: scrapbookPalette.inkSoft,
     marginTop: 12,
   },
 });

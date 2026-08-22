@@ -2,27 +2,42 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Handwriting } from '@/components/scrapbook';
-import { formatAlongTheWay, formatThingsWaiting } from '@/lib/home/copy';
-import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { formatTodayThings, formatTodayWay } from '@/lib/home/copy';
+import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import type { TodaySummary } from '@/types/home';
 
 type TodayNoteProps = {
   summary: TodaySummary;
+  tripSoon?: boolean;
 };
 
 /**
- * A small status slip — quieter than the two journey sections above it.
- * Only reports real open counts from the reminder store.
+ * A small status slip. Only reports real open counts.
  */
-export function TodayNote({ summary }: TodayNoteProps) {
+export function TodayNote({ summary, tripSoon = false }: TodayNoteProps) {
+  const colors = useScrapbookPalette();
   const lines = [
-    formatThingsWaiting(summary.thingsWaiting),
-    formatAlongTheWay(summary.alongTheWay),
-  ];
+    formatTodayThings(summary.thingsWaiting),
+    formatTodayWay(summary.alongTheWay),
+    tripSoon ? 'trip soon' : null,
+  ].filter((line): line is string => Boolean(line));
+
+  if (lines.length === 0) {
+    lines.push('quiet day');
+  }
 
   return (
     <View
-      style={[styles.note, { transform: [{ rotate: tiltAt(4) }] }]}
+      style={[
+        styles.note,
+        {
+          transform: [{ rotate: tiltAt(4) }],
+          backgroundColor: colors.stickyCream,
+          borderColor: colors.stickyEdge,
+          shadowColor: colors.ink,
+        },
+      ]}
       accessibilityRole="summary"
       accessibilityLabel={`Today. ${lines.join('. ')}`}>
       <View style={styles.headingRow}>
@@ -32,13 +47,13 @@ export function TodayNote({ summary }: TodayNoteProps) {
         <Ionicons
           name="star-outline"
           size={13}
-          color={scrapbookPalette.butterDeep}
+          color={colors.doodle}
           style={styles.headingIcon}
         />
       </View>
 
       {lines.map((line) => (
-        <Text key={line} style={styles.line}>
+        <Text key={line} style={[styles.line, { color: colors.ink }]}>
           {line}
         </Text>
       ))}
@@ -50,12 +65,9 @@ const styles = StyleSheet.create({
   note: {
     alignSelf: 'center',
     maxWidth: 280,
-    backgroundColor: scrapbookPalette.stickyCream,
     borderWidth: 1,
-    borderColor: scrapbookPalette.stickyEdge,
     paddingHorizontal: 18,
     paddingVertical: 14,
-    shadowColor: scrapbookPalette.ink,
     shadowOffset: { width: 1, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -74,7 +86,6 @@ const styles = StyleSheet.create({
     fontFamily: TEXT_FONT,
     fontSize: readableType.count.fontSize,
     lineHeight: readableType.count.lineHeight,
-    color: scrapbookPalette.ink,
     marginTop: 2,
   },
 });

@@ -3,8 +3,8 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Handwriting } from '@/components/scrapbook';
-import { scrapbookPalette } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
 type ScrapbookHeaderProps = {
   title: string;
@@ -13,6 +13,7 @@ type ScrapbookHeaderProps = {
 
 export function ScrapbookHeader({ title, icon }: ScrapbookHeaderProps) {
   const router = useRouter();
+  const colors = useScrapbookPalette();
 
   const goBack = () => {
     if (router.canGoBack()) router.back();
@@ -27,7 +28,7 @@ export function ScrapbookHeader({ title, icon }: ScrapbookHeaderProps) {
         hitSlop={8}
         onPress={goBack}
         style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
-        <Ionicons name="chevron-back" size={22} color={scrapbookPalette.ink} />
+        <Ionicons name="chevron-back" size={22} color={colors.ink} />
       </Pressable>
       <View style={styles.titleRow}>
         <Handwriting variant="heading" accessibilityRole="header">
@@ -37,7 +38,7 @@ export function ScrapbookHeader({ title, icon }: ScrapbookHeaderProps) {
           <Ionicons
             name={icon}
             size={18}
-            color={scrapbookPalette.doodle}
+            color={colors.doodle}
             style={styles.icon}
           />
         ) : null}

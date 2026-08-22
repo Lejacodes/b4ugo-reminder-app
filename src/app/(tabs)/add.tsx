@@ -3,7 +3,9 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ButterButton, Handwriting, PaperPanel } from '@/components/scrapbook';
-import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { palette as brand } from '@/constants/colors';
+import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { minTouchTarget } from '@/constants/typography';
 import { useResponsive } from '@/hooks/use-responsive';
@@ -13,15 +15,17 @@ import type { ReminderCategory } from '@/types/reminder';
 
 import '@/components/opening-login/opening-login.css';
 
-const BELONGINGS: { id: ReminderCategory; label: string; aside: string }[] = [
-  { id: 'beforeUgo', label: 'Before U Go', aside: 'take it before you leave' },
-  { id: 'onTheWayBack', label: 'On the way back', aside: 'while you are already out' },
-  { id: 'specific', label: 'Specific', aside: 'a memory with a moment' },
+const BELONGINGS: { id: ReminderCategory; label: string }[] = [
+  { id: 'beforeUgo', label: 'Before U Go' },
+  { id: 'onTheWayBack', label: 'On the way back' },
+  { id: 'specific', label: 'Specific' },
 ];
 
 type Layer = 'always' | 'thisTrip';
 
 export default function AddScreen() {
+  const desk = useDeskStyle();
+  const colors = useScrapbookPalette();
   const tabBarInset = useTabBarInset();
   const { horizontalPadding, isTablet } = useResponsive();
   const { context, addAlways, addThisTrip, addOnTheWayBack, addSpecific } = useReminders();
@@ -63,7 +67,7 @@ export default function AddScreen() {
   };
 
   return (
-    <SafeAreaView className="opening-desk" style={styles.desk} edges={['top']}>
+    <SafeAreaView className="opening-desk" style={desk} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -81,15 +85,12 @@ export default function AddScreen() {
         <Handwriting variant="heading" accessibilityRole="header">
           leave something
         </Handwriting>
-        <Handwriting variant="aside" tone="soft">
-          what do you want future you to remember?
-        </Handwriting>
 
         <PaperPanel tilt={tiltAt(0)} tape="top-left">
           <TextInput
             accessibilityLabel="What to remember"
             placeholder="write something"
-            placeholderTextColor={scrapbookPalette.inkSoft}
+            placeholderTextColor={colors.inkSoft}
             value={title}
             onChangeText={(value) => {
               setTitle(value);
@@ -97,10 +98,10 @@ export default function AddScreen() {
             }}
             autoCorrect={false}
             autoCapitalize="sentences"
-            style={styles.input}
+            style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
           />
 
-          <Text style={styles.sectionLabel}>where does this belong?</Text>
+          <Text style={[styles.sectionLabel, { color: colors.inkSoft }]}>where does this belong?</Text>
           <View style={styles.choices}>
             {BELONGINGS.map((option) => {
               const selected = category === option.id;
@@ -112,11 +113,15 @@ export default function AddScreen() {
                   onPress={() => setCategory(option.id)}
                   style={({ pressed }) => [
                     styles.choice,
-                    selected && styles.choiceOn,
+                    {
+                      backgroundColor: selected ? colors.stickyButter : colors.stickyCream,
+                      borderColor: selected ? colors.ink : colors.stickyEdge,
+                    },
                     pressed && styles.pressed,
                   ]}>
-                  <Text style={styles.choiceLabel}>{option.label}</Text>
-                  <Text style={styles.choiceAside}>{option.aside}</Text>
+                  <Text style={[styles.choiceLabel, { color: selected ? brand.cream : colors.ink }]}>
+                    {option.label}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -124,75 +129,81 @@ export default function AddScreen() {
 
           {category === 'beforeUgo' && (
             <View style={styles.sub}>
-              <Text style={styles.sectionLabel}>always, or this trip?</Text>
+              <Text style={[styles.sectionLabel, { color: colors.inkSoft }]}>always, or this trip?</Text>
               <View style={styles.row}>
                 <Pressable
                   accessibilityRole="radio"
                   accessibilityState={{ selected: layer === 'always' }}
                   onPress={() => setLayer('always')}
-                  style={[styles.chip, layer === 'always' && styles.chipOn]}>
-                  <Text style={styles.chipLabel}>Always</Text>
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: layer === 'always' ? colors.stickyButter : colors.paperWarm,
+                      borderColor: layer === 'always' ? colors.ink : colors.stickyEdge,
+                    },
+                  ]}>
+                  <Text style={[styles.chipLabel, { color: layer === 'always' ? brand.cream : colors.ink }]}>Always</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="radio"
                   accessibilityState={{ selected: layer === 'thisTrip', disabled: !context }}
                   disabled={!context}
                   onPress={() => setLayer('thisTrip')}
-                  style={[styles.chip, layer === 'thisTrip' && styles.chipOn, !context && styles.chipOff]}>
-                  <Text style={styles.chipLabel}>This trip</Text>
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: layer === 'thisTrip' ? colors.stickyButter : colors.paperWarm,
+                      borderColor: layer === 'thisTrip' ? colors.ink : colors.stickyEdge,
+                    },
+                    !context && styles.chipOff,
+                  ]}>
+                  <Text style={[styles.chipLabel, { color: layer === 'thisTrip' ? brand.cream : colors.ink }]}>This trip</Text>
                 </Pressable>
               </View>
-              {!context ? (
-                <Text style={styles.fine}>
-                  No destination yet — this will go on Always. Set where you're going from Before U
-                  Go first.
+              {context ? (
+                <Text style={[styles.fine, { color: colors.inkSoft }]}>
+                  {context.destination}
                 </Text>
-              ) : (
-                <Text style={styles.fine}>this trip: {context.destination}</Text>
-              )}
+              ) : null}
             </View>
           )}
 
           {category === 'onTheWayBack' && (
             <View style={styles.sub}>
-              <Text style={styles.sectionLabel}>near where? (optional)</Text>
+              <Text style={[styles.sectionLabel, { color: colors.inkSoft }]}>add a place</Text>
               <TextInput
                 accessibilityLabel="Place name"
                 placeholder="PetZone, Migros…"
-                placeholderTextColor={scrapbookPalette.inkSoft}
+                placeholderTextColor={colors.inkSoft}
                 value={place}
                 onChangeText={setPlace}
                 autoCorrect={false}
-                style={styles.input}
+                style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
               />
-              <Text style={styles.fine}>
-                Place names are saved. Walking up to them will not notify you until geofencing is
-                connected.
-              </Text>
             </View>
           )}
 
           {category === 'specific' && (
             <View style={styles.sub}>
-              <Text style={styles.sectionLabel}>person (optional)</Text>
+              <Text style={[styles.sectionLabel, { color: colors.inkSoft }]}>person</Text>
               <TextInput
                 accessibilityLabel="Person"
                 placeholder="Sara, mom…"
-                placeholderTextColor={scrapbookPalette.inkSoft}
+                placeholderTextColor={colors.inkSoft}
                 value={person}
                 onChangeText={setPerson}
                 autoCorrect={false}
-                style={styles.input}
+                style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
               />
-              <Text style={styles.sectionLabel}>place (optional)</Text>
+              <Text style={[styles.sectionLabel, { color: colors.inkSoft }]}>place</Text>
               <TextInput
                 accessibilityLabel="Place"
                 placeholder="dentist, campus…"
-                placeholderTextColor={scrapbookPalette.inkSoft}
+                placeholderTextColor={colors.inkSoft}
                 value={place}
                 onChangeText={setPlace}
                 autoCorrect={false}
-                style={styles.input}
+                style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
               />
             </View>
           )}
@@ -213,10 +224,6 @@ export default function AddScreen() {
 }
 
 const styles = StyleSheet.create({
-  desk: {
-    flex: 1,
-    backgroundColor: scrapbookPalette.desk,
-  },
   scrollView: {
     flex: 1,
   },
@@ -229,16 +236,13 @@ const styles = StyleSheet.create({
   input: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.input.fontSize,
-    color: scrapbookPalette.ink,
     minHeight: minTouchTarget,
     borderBottomWidth: 1,
-    borderBottomColor: scrapbookPalette.line,
     paddingVertical: 8,
   },
   sectionLabel: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.meta.fontSize,
-    color: scrapbookPalette.inkSoft,
     marginTop: 18,
     marginBottom: 8,
   },
@@ -249,24 +253,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: scrapbookPalette.stickyEdge,
-    backgroundColor: scrapbookPalette.stickyCream,
-  },
-  choiceOn: {
-    backgroundColor: scrapbookPalette.stickyButter,
-    borderColor: scrapbookPalette.ink,
   },
   choiceLabel: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.item.fontSize,
-    color: scrapbookPalette.ink,
     fontWeight: '500',
-  },
-  choiceAside: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.meta.fontSize,
-    color: scrapbookPalette.inkSoft,
-    marginTop: 2,
   },
   sub: {
     marginTop: 4,
@@ -281,12 +272,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: scrapbookPalette.stickyEdge,
-    backgroundColor: scrapbookPalette.paperWarm,
-  },
-  chipOn: {
-    backgroundColor: scrapbookPalette.stickyButter,
-    borderColor: scrapbookPalette.ink,
   },
   chipOff: {
     opacity: 0.4,
@@ -294,13 +279,11 @@ const styles = StyleSheet.create({
   chipLabel: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.item.fontSize,
-    color: scrapbookPalette.ink,
   },
   fine: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.fine.fontSize,
     lineHeight: readableType.fine.lineHeight,
-    color: scrapbookPalette.inkSoft,
     marginTop: 8,
   },
   save: {

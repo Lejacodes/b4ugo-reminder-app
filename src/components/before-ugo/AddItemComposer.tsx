@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ButterButton, Handwriting, QuietLink } from '@/components/scrapbook';
-import { readableType, scrapbookPalette, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { minTouchTarget } from '@/constants/typography';
 
 type AddItemComposerProps = {
@@ -17,6 +18,7 @@ export function AddItemComposer({
   onAddAlways,
   onAddThisTrip,
 }: AddItemComposerProps) {
+  const colors = useScrapbookPalette();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
@@ -53,14 +55,14 @@ export function AddItemComposer({
       <TextInput
         accessibilityLabel="Item to take"
         placeholder="Student ID, water bottle…"
-        placeholderTextColor={scrapbookPalette.inkSoft}
+        placeholderTextColor={colors.inkSoft}
         value={title}
         onChangeText={setTitle}
         autoCorrect={false}
         autoCapitalize="sentences"
-        style={styles.input}
+        style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
       />
-      <Text style={styles.hint}>where does it belong?</Text>
+      <Text style={[styles.hint, { color: colors.inkSoft }]}>always, or this trip?</Text>
       <View style={styles.row}>
         <ButterButton
           label="always"
@@ -76,7 +78,7 @@ export function AddItemComposer({
             disabled={busy || title.trim().length === 0}
             onPress={() => save('thisTrip')}
             style={({ pressed }) => [styles.alt, pressed && styles.pressed]}>
-            <Text style={styles.altLabel}>this trip</Text>
+            <Text style={[styles.altLabel, { color: colors.inkSoft }]}>this trip</Text>
           </Pressable>
         ) : null}
       </View>
@@ -93,16 +95,13 @@ const styles = StyleSheet.create({
   input: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.input.fontSize,
-    color: scrapbookPalette.ink,
     minHeight: minTouchTarget,
     borderBottomWidth: 1,
-    borderBottomColor: scrapbookPalette.line,
     paddingVertical: 8,
   },
   hint: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.meta.fontSize,
-    color: scrapbookPalette.inkSoft,
     marginTop: 10,
   },
   row: {
@@ -120,7 +119,6 @@ const styles = StyleSheet.create({
   altLabel: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.item.fontSize,
-    color: scrapbookPalette.inkSoft,
     textDecorationLine: 'underline',
   },
   pressed: {

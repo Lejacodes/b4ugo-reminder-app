@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { readableType, scrapbookPalette, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { useAuth } from '@/store/AuthProvider';
 
 /**
@@ -12,12 +13,13 @@ import { useAuth } from '@/store/AuthProvider';
  */
 export function PlaceholderAuthNotice() {
   const { isProviderConfigured } = useAuth();
+  const palette = useScrapbookPalette();
 
   if (!__DEV__ || isProviderConfigured) return null;
 
   return (
-    <View style={styles.note}>
-      <Text style={styles.text}>
+    <View style={[styles.note, { borderColor: palette.ink }]}>
+      <Text style={[styles.text, { color: palette.inkSoft }]}>
         dev build — no auth provider connected yet. any password is accepted and nothing is
         verified.
       </Text>
@@ -32,13 +34,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: 'rgba(92, 58, 40, 0.3)',
     transform: [{ rotate: '0.6deg' }],
   },
   text: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.fine.fontSize,
     lineHeight: readableType.fine.lineHeight,
-    color: scrapbookPalette.inkSoft,
   },
 });

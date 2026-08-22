@@ -1,23 +1,16 @@
 /**
- * Local weather stub.
+ * Weather service.
  *
- * This is NOT a weather API. It returns a fixed development snapshot so
- * suggestion rules can be exercised offline. Replace this class with a
- * real forecast client when one exists.
+ * Open-Meteo is used when coordinates are available. Without a location,
+ * this returns null — it does not invent rain.
  */
-import type { WeatherService, WeatherSnapshot } from './contracts';
-
-const STUB: WeatherSnapshot = {
-  isLive: false,
-  rainLikely: true,
-  temperatureC: 11,
-  summary: 'Local development stub — not live weather.',
-};
+import type { WeatherQuery, WeatherService, WeatherSnapshot } from './contracts';
+import { liveWeatherService } from '@/lib/weather/open-meteo';
 
 export class LocalWeatherService implements WeatherService {
-  async getSnapshot(): Promise<WeatherSnapshot> {
-    return { ...STUB };
+  async getSnapshot(_query?: WeatherQuery): Promise<WeatherSnapshot | null> {
+    return null;
   }
 }
 
-export const weatherService = new LocalWeatherService();
+export const weatherService: WeatherService = liveWeatherService;

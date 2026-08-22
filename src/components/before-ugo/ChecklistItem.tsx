@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { readableType, scrapbookPalette, TEXT_FONT } from '@/constants/scrapbook';
+import { palette as brand } from '@/constants/colors';
+import { readableType, TEXT_FONT } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
 type ChecklistItemProps = {
   title: string;
@@ -16,6 +18,7 @@ type ChecklistItemProps = {
  * is readable sans so the "why" stays scannable.
  */
 export function ChecklistItem({ title, reason, checked, onToggle }: ChecklistItemProps) {
+  const colors = useScrapbookPalette();
   const label = reason ? `${title}. ${reason}` : title;
 
   return (
@@ -25,18 +28,27 @@ export function ChecklistItem({ title, reason, checked, onToggle }: ChecklistIte
       accessibilityLabel={label}
       onPress={onToggle}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-      <View style={[styles.box, checked && styles.boxChecked]}>
-        {checked && (
-          <Ionicons name="checkmark" size={13} color={scrapbookPalette.ink} />
-        )}
+      <View
+        style={[
+          styles.box,
+          {
+            borderColor: colors.ink,
+            backgroundColor: checked ? colors.butter : colors.paper,
+          },
+        ]}>
+        {checked && <Ionicons name="checkmark" size={14} color={brand.cream} />}
       </View>
 
       <View style={styles.copy}>
-        <Text style={[styles.title, checked && styles.titleChecked]} numberOfLines={2}>
+        <Text
+          style={[styles.title, { color: checked ? colors.inkSoft : colors.ink }, checked && styles.titleChecked]}
+          numberOfLines={2}>
           {title}
         </Text>
         {reason ? (
-          <Text style={[styles.reason, checked && styles.reasonChecked]} numberOfLines={2}>
+          <Text
+            style={[styles.reason, { color: colors.inkSoft }, checked && styles.reasonChecked]}
+            numberOfLines={2}>
             {reason}
           </Text>
         ) : null}
@@ -61,17 +73,11 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     marginTop: 2,
-    borderWidth: 1.5,
-    borderColor: scrapbookPalette.inkSoft,
+    borderWidth: 2,
     borderRadius: 3,
-    backgroundColor: scrapbookPalette.paperWarm,
     alignItems: 'center',
     justifyContent: 'center',
     transform: [{ rotate: '-1.5deg' }],
-  },
-  boxChecked: {
-    backgroundColor: scrapbookPalette.butter,
-    borderColor: scrapbookPalette.ink,
   },
   copy: {
     flex: 1,
@@ -81,17 +87,14 @@ const styles = StyleSheet.create({
     fontFamily: TEXT_FONT,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
-    color: scrapbookPalette.ink,
   },
   titleChecked: {
-    color: scrapbookPalette.inkSoft,
     textDecorationLine: 'line-through',
   },
   reason: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
-    color: scrapbookPalette.inkSoft,
   },
   reasonChecked: {
     opacity: 0.7,

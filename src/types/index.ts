@@ -13,6 +13,7 @@ export type {
 } from './before-ugo';
 
 export type {
+  AppearancePreference,
   NotificationPreferences,
   ReminderPreferences,
   PrivacyPreferences,
@@ -38,3 +39,15 @@ export type {
 } from './reminder';
 export type { Place, CreatePlaceInput } from './place';
 export type { Routine, CreateRoutineInput } from './routine';
+export type {
+  PackingCategory,
+  PackingItem,
+  PackingSource,
+  PackingTemplate,
+  PackingTemplateItem,
+  TravelIntention,
+  TravelIntentionType,
+  Trip,
+  TripDraft,
+  TripStatus,
+} from './trip';

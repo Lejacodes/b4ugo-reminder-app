@@ -1,10 +1,13 @@
 /**
  * B4UGO raw color palette.
  * Components should consume semantic tokens from theme.ts, not these directly.
+ *
+ * Core brand (source of truth):
+ * Matcha #76845B, Oat #D8D3B3, Espresso #603314, Cloud #B1B7BE
  */
 
 export const palette = {
-  // Core brand — light mode bases
+  // Core brand
   cream: '#F5F1E7',
   oat: '#D8D3B3',
   deepForest: '#465442',

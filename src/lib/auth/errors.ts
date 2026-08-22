@@ -56,5 +56,20 @@ export function authErrorMessage(error: unknown): string {
  */
 export function toAuthError(error: unknown): AuthError {
   if (error instanceof AuthError) return error;
+  const record = error as { message?: string; code?: string; status?: number } | null;
+  const code = (record?.code ?? '').toLowerCase();
+  const message = (record?.message ?? '').toLowerCase();
+  if (record?.status === 429 || code.includes('over_request') || message.includes('rate limit')) {
+    return new AuthError('rate-limited');
+  }
+  if (code.includes('email_exists') || message.includes('already registered')) {
+    return new AuthError('email-taken');
+  }
+  if (code.includes('invalid_credentials') || message.includes('invalid login')) {
+    return new AuthError('invalid-credentials');
+  }
+  if (message.includes('network') || message.includes('failed to fetch')) {
+    return new AuthError('network');
+  }
   return new AuthError('unknown');
 }

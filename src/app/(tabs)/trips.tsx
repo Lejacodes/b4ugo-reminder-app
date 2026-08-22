@@ -1,26 +1,139 @@
-import { StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Screen } from '@/components/ui/Screen';
-import { AppText } from '@/components/ui/Text';
-import { spacing } from '@/constants/spacing';
+import { TripCard } from '@/components/trips';
+import { ButterButton, Handwriting, PaperPanel, QuietLink } from '@/components/scrapbook';
+import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
+import { maxContentWidth, spacing } from '@/constants/spacing';
+import { useResponsive } from '@/hooks/use-responsive';
+import { useTabBarInset } from '@/hooks/use-tab-bar-inset';
+import { tripHref } from '@/lib/trips/routes';
+import { useTrips } from '@/store/TripProvider';
+
+import '@/components/opening-login/opening-login.css';
 
 export default function TripsScreen() {
+  const desk = useDeskStyle();
+  const colors = useScrapbookPalette();
+  const router = useRouter();
+  const tabBarInset = useTabBarInset();
+  const { horizontalPadding, isTablet } = useResponsive();
+  const { upcomingTrips, pastTrips, templates, packingProgress, isLoading } = useTrips();
+
   return (
-    <Screen>
-      <View style={styles.content}>
-        <AppText variant="heading">Trips</AppText>
-        <AppText variant="body" color="textSecondary">
-          Coming soon.
-        </AppText>
-      </View>
-    </Screen>
+    <SafeAreaView className="opening-desk" style={desk} edges={['top']}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.scroll,
+          {
+            paddingHorizontal: horizontalPadding,
+            paddingBottom: tabBarInset,
+            maxWidth: isTablet ? maxContentWidth : undefined,
+            alignSelf: isTablet ? ('center' as const) : undefined,
+            width: isTablet ? ('100%' as const) : undefined,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}>
+        <Handwriting variant="heading" accessibilityRole="header">
+          trips
+        </Handwriting>
+
+        {isLoading ? (
+          <Text style={[styles.meta, { color: colors.inkSoft }]}>opening…</Text>
+        ) : upcomingTrips.length === 0 ? (
+          <PaperPanel tilt={tiltAt(1)} tape="top-left">
+            <Text style={[styles.meta, { color: colors.inkSoft }]}>nothing planned</Text>
+          </PaperPanel>
+        ) : (
+          <View style={styles.section}>
+            <Handwriting variant="title">upcoming</Handwriting>
+            {upcomingTrips.map((trip, index) => (
+              <TripCard
+                key={trip.id}
+                trip={trip}
+                tiltIndex={index}
+                progress={packingProgress(trip.id)}
+                onPress={() => router.push(tripHref(`/trip/${trip.id}`))}
+              />
+            ))}
+          </View>
+        )}
+
+        <View style={styles.section}>
+          <Handwriting variant="title">templates</Handwriting>
+          {templates.length === 0 ? (
+            <Text style={[styles.meta, { color: colors.inkSoft }]}>none yet</Text>
+          ) : (
+            templates.slice(0, 5).map((template) => (
+              <Text key={template.id} style={[styles.templateLine, { color: colors.ink }]}>
+                {template.name}
+                <Text style={[styles.meta, { color: colors.inkSoft }]}> · {template.items.length} items</Text>
+              </Text>
+            ))
+          )}
+          <QuietLink
+            label="see all templates"
+            accessibilityLabel="Open packing templates"
+            onPress={() => router.push(tripHref('/trip/templates'))}
+          />
+        </View>
+
+        {pastTrips.length > 0 ? (
+          <View style={styles.section}>
+            <Handwriting variant="title">past</Handwriting>
+            {pastTrips.map((trip, index) => (
+              <TripCard
+                key={trip.id}
+                trip={trip}
+                tiltIndex={index + 2}
+                progress={packingProgress(trip.id)}
+                onPress={() => router.push(tripHref(`/trip/${trip.id}`))}
+              />
+            ))}
+          </View>
+        ) : null}
+
+        <View style={styles.action}>
+          <ButterButton
+            label="+ plan something"
+            accessibilityLabel="Plan a trip or occasion"
+            onPress={() => router.push(tripHref('/trip/new'))}
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scroll: {
+    flexGrow: 1,
     paddingTop: spacing.md,
+    gap: spacing.lg,
+    width: '100%',
+  },
+  section: {
     gap: spacing.sm,
+  },
+  meta: {
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.meta.fontSize,
+    lineHeight: readableType.meta.lineHeight,
+  },
+  templateLine: {
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.item.fontSize,
+    lineHeight: readableType.item.lineHeight,
+    paddingVertical: 4,
+  },
+  action: {
+    alignItems: 'center',
+    paddingTop: spacing.xs,
   },
 });

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 
+import { geocodingService } from '@/lib/geocoding/open-meteo';
 import {
   loadContext,
   loadNecessities,
@@ -283,7 +284,13 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
 
   const buildTripChecklist = useCallback(async (nextContext: BeforeUgoContext): Promise<Reminder[]> => {
     const necessities = necessitiesRef.current;
-    const weather = await weatherService.getSnapshot();
+    const weather =
+      nextContext.latitude != null && nextContext.longitude != null
+        ? await weatherService.getSnapshot({
+            latitude: nextContext.latitude,
+            longitude: nextContext.longitude,
+          })
+        : await weatherService.getSnapshot();
     const pack = suggestionEngine.getTripPack(nextContext);
     const taken = new Set<string>();
     const generated: Reminder[] = [];
@@ -342,6 +349,8 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       const destination = input.destination.trim();
       if (!destination) return;
 
+      const geo = await geocodingService.searchDestination(destination);
+
       const nextContext: BeforeUgoContext = {
         id: createId('ctx'),
         destination,
@@ -349,6 +358,11 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
         person: input.person?.trim() || null,
         dateTime: input.dateTime ?? null,
         createdAt: nowIso(),
+        latitude: geo?.latitude ?? null,
+        longitude: geo?.longitude ?? null,
+        timezone: geo?.timezone ?? null,
+        country: geo?.country ?? null,
+        region: geo?.region ?? null,
       };
 
       const generated = await buildTripChecklist(nextContext);
