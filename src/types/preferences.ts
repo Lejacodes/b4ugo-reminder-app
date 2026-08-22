@@ -1,0 +1,72 @@
+/**
+ * How and when B4UGO may notify the user.
+ * Permission requests are deferred — these are preference intentions only.
+ */
+export type NotificationPreferences = {
+  /** Whether the user wants reminders delivered as push notifications. */
+  pushEnabled: boolean;
+  /** Whether quiet hours should suppress non-urgent reminders. */
+  quietHoursEnabled: boolean;
+  /** 24h format, e.g. "22:00". Only used when quietHoursEnabled is true. */
+  quietHoursStart: string | null;
+  /** 24h format, e.g. "07:00". Only used when quietHoursEnabled is true. */
+  quietHoursEnd: string | null;
+};
+
+export const defaultNotificationPreferences = (): NotificationPreferences => ({
+  pushEnabled: true,
+  quietHoursEnabled: false,
+  quietHoursStart: null,
+  quietHoursEnd: null,
+});
+
+/**
+ * How reminders should behave for this user.
+ */
+export type ReminderPreferences = {
+  /** Prefer context-based reminders over fixed-time reminders. */
+  preferContextual: boolean;
+  /** Allow location-based reminder triggers (requires future permission). */
+  locationRemindersEnabled: boolean;
+  /** Allow routine-based reminder triggers. */
+  routineRemindersEnabled: boolean;
+};
+
+export const defaultReminderPreferences = (): ReminderPreferences => ({
+  preferContextual: true,
+  locationRemindersEnabled: false,
+  routineRemindersEnabled: true,
+});
+
+/**
+ * Privacy-related user choices.
+ */
+export type PrivacyPreferences = {
+  /** Whether analytics may be collected (not implemented — default false). */
+  analyticsEnabled: boolean;
+  /** Whether AI-assisted reminder parsing is allowed (not implemented). */
+  aiParsingEnabled: boolean;
+};
+
+export const defaultPrivacyPreferences = (): PrivacyPreferences => ({
+  analyticsEnabled: false,
+  aiParsingEnabled: false,
+});
+
+/**
+ * Aggregated user preferences stored locally.
+ */
+export type UserPreferences = {
+  notifications: NotificationPreferences;
+  reminders: ReminderPreferences;
+  privacy: PrivacyPreferences;
+  /** Whether onboarding has been completed. */
+  hasCompletedOnboarding: boolean;
+};
+
+export const defaultUserPreferences = (): UserPreferences => ({
+  notifications: defaultNotificationPreferences(),
+  reminders: defaultReminderPreferences(),
+  privacy: defaultPrivacyPreferences(),
+  hasCompletedOnboarding: false,
+});

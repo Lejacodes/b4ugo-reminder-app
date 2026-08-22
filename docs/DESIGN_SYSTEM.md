@@ -1,0 +1,177 @@
+# B4UGO Design System
+
+Central reference for visual tokens and component principles.
+
+## Design direction
+
+B4UGO should feel **calm, friendly, warm, minimal, trustworthy, and slightly whimsical** — appropriate for a broad public audience.
+
+The Little Guy mascot provides most of the personality. The UI supports him rather than competing with him.
+
+### Avoid
+
+- Excessive pink, gradients, neon, or rainbow UI
+- Overly rounded "kids app" styling
+- Heavy shadows and visual clutter
+- Corporate/cold aesthetics
+
+---
+
+## Colors
+
+### Raw palette (`src/constants/colors.ts`)
+
+| Name | Hex | Usage |
+|------|-----|-------|
+| Cream | `#F5F1E7` | Light background |
+| Oat | `#D8D3B3` | Light surfaces |
+| Deep Forest | `#465442` | Primary brand |
+| Soft Matcha | `#76845B` | Secondary |
+| Sage | `#9DB496` | Secondary soft |
+| Espresso | `#603314` | Primary text |
+| Cloud | `#B1B7BE` | Legacy — disabled states only |
+| Warm gray secondary | `#7A6F65` | Secondary text (light) |
+| Warm gray muted | `#8F8278` | Muted text (light, still readable) |
+| Muted Coral | `#D9826B` | Warm accent |
+| Dusty Rose | `#C98F9A` | Soft accent |
+| Soft Aqua | `#90C5BC` | Cool accent |
+
+Accents (Coral, Rose, Aqua) are used **intentionally** — for states, particles, and highlights — not as dominant UI colors.
+
+### Semantic tokens (`src/constants/theme.ts`)
+
+Components use `useTheme()` and reference semantic keys:
+
+- **Backgrounds:** `background`, `backgroundSecondary`
+- **Surfaces:** `surface`, `surfaceElevated`, `surfaceMuted`
+- **Brand:** `primary`, `primaryMuted`, `secondary`, `secondarySoft`
+- **Text:** `text`, `textSecondary`, `textMuted`, `textDisabled`, `textOnPrimary`, `textOnSurface`
+- **Accents:** `accentWarm`, `accentRose`, `accentAqua`
+- **Borders:** `border`, `borderSubtle`
+- **Tab bar:** `tabBar`, `tabBarBorder`, `tabBarActive`, `tabBarInactive`, `tabBarAdd`
+
+### Text hierarchy
+
+| Token | Light | Use |
+|-------|-------|-----|
+| `text` | Espresso `#603314` | Primary content |
+| `textSecondary` | Warm gray `#7A6F65` | Secondary body, inactive tabs, empty states |
+| `textMuted` | Warm gray `#8F8278` | Weaker but readable supporting text |
+| `textDisabled` | Cloud `#B1B7BE` | Disabled controls only |
+
+Do **not** use `textDisabled` or Cloud for normal secondary content.
+
+### Dark mode
+
+Warm deep brown/green backgrounds — not pure black. Cream text on dark espresso surfaces. Sage/matcha for primary interactive elements.
+
+---
+
+## Typography
+
+System font on all platforms (SF Pro on iOS, Roboto on Android, Inter fallback on web).
+
+Distinction through hierarchy, not decorative typefaces.
+
+| Variant | Size | Weight | Use |
+|---------|------|--------|-----|
+| `display` | 22 | 600 | Large greetings (onboarding) |
+| `heading` | 20 | 600 | Home greeting, screen titles |
+| `title` | 17 | 600 | Section titles |
+| `body` | 15 | 400 | Body copy |
+| `bodyMedium` | 15 | 500 | Emphasized body |
+| `caption` | 13 | 400 | Secondary info |
+| `label` | 12 | 600 | Uppercase labels |
+| `button` | 15 | 600 | Button text |
+
+All text supports Dynamic Type via `allowFontScaling` (max 1.4× multiplier).
+
+### Scrapbook screens: two typefaces
+
+The opening window, auth, and onboarding screens use Starry Night alongside
+the system font. The split is deliberate and defined in
+`src/constants/scrapbook.ts` as `DISPLAY_FONT` and `TEXT_FONT`.
+
+| Face | Token | Used for |
+|------|-------|----------|
+| Starry Night | `DISPLAY_FONT` | BLUGO wordmark, headings, short asides, field labels, sticky-note labels, button faces |
+| System sans | `TEXT_FONT` | Typed emails and passwords, error and validation messages, password rules and field hints, privacy/security copy, the "show"/"hide" control |
+
+The rule: Starry Night is only used where a misread costs nothing. Anything a
+person must read exactly or check character by character goes in the system
+face — an address mistyped because an `l` looked like a `1` is a real failure.
+
+Sizes come from `scrapbookType` (handwriting) and `readableType` (system).
+They are separate scales because a sans face reads larger at the same point
+size.
+
+`PaperField` defaults to the readable face for typed values, with
+`variant="handwritten"` available for short expressive answers like a name.
+
+---
+
+## Spacing
+
+4px base scale: `xxs(4)`, `xs(8)`, `sm(12)`, `md(16)`, `lg(24)`, `xl(32)`, `xxl(48)`, `xxxl(64)`.
+
+---
+
+## Radius
+
+`sm(8)`, `md(12)`, `lg(16)`, `xl(20)`, `full(9999)`.
+
+Buttons use `md`. Cards use `lg`.
+
+---
+
+## Shadows
+
+Minimal. Prefer borders and tonal surface differences. Only `shadows.sm` on primary buttons (iOS subtle shadow, Android elevation 1).
+
+---
+
+## Animation
+
+Defined in `src/constants/animation.ts`. Decorative animations (Little Guy float, blink, particles) respect the system **Reduce Motion** setting via `useReducedMotion()`.
+
+---
+
+## Components
+
+| Component | Location | Notes |
+|-----------|----------|-------|
+| `AppText` | `ui/Text.tsx` | Typography variants + theme colors |
+| `Button` | `ui/Button.tsx` | primary / secondary / ghost; 44pt min touch |
+| `Card` | `ui/Card.tsx` | default / muted / elevated; border-based |
+| `Screen` | `ui/Screen.tsx` | SafeArea + tab bar inset + responsive max width |
+| `LittleGuy` | `little-guy/LittleGuy.tsx` | Placeholder mascot — artwork TBD |
+| `MemoryParticle` | `little-guy/MemoryParticle.tsx` | Colored floating particles |
+
+### Button states
+
+- **Primary:** Deep Forest background, cream text
+- **Secondary:** Oat surface, espresso text, border
+- **Ghost:** Transparent, primary text
+- **Disabled:** Muted surface, cloud text, 50% interaction block
+- **Pressed:** 88% opacity
+
+### Memory particle colors
+
+| Type | Color | Hex |
+|------|-------|-----|
+| reminder | Soft Aqua | `#90C5BC` |
+| buy | Muted Coral | `#D9826B` |
+| trip | Dusty Rose | `#C98F9A` |
+| task | Sage | `#9DB496` |
+| memory | Soft Matcha | `#76845B` |
+
+---
+
+## Accessibility
+
+- Minimum touch target: **44pt** (`minTouchTarget` in typography tokens)
+- Tab bar items: accessibility labels on every tab
+- Buttons: `accessibilityRole="button"`, meaningful labels
+- Text: supports Dynamic Type scaling
+- Animations: respect Reduce Motion
+- Contrast: Espresso on Cream, Cream on Deep Forest meet WCAG AA for normal text
