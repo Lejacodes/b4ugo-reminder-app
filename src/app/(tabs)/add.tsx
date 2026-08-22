@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ButterButton, Handwriting, PaperPanel } from '@/components/scrapbook';
+import { ButterButton, Handwriting, PaperField, PaperPanel, PlaceAutocomplete } from '@/components/scrapbook';
 import { palette as brand } from '@/constants/colors';
 import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
@@ -87,18 +87,15 @@ export default function AddScreen() {
         </Handwriting>
 
         <PaperPanel tilt={tiltAt(0)} tape="top-left">
-          <TextInput
+          <PaperField
             accessibilityLabel="What to remember"
             placeholder="write something"
-            placeholderTextColor={colors.inkSoft}
             value={title}
             onChangeText={(value) => {
               setTitle(value);
               setSaved(false);
             }}
-            autoCorrect={false}
             autoCapitalize="sentences"
-            style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
           />
 
           <Text style={[styles.sectionLabel, { color: colors.inkSoft }]}>where does this belong?</Text>
@@ -170,40 +167,29 @@ export default function AddScreen() {
 
           {category === 'onTheWayBack' && (
             <View style={styles.sub}>
-              <Text style={[styles.sectionLabel, { color: colors.inkSoft }]}>add a place</Text>
-              <TextInput
-                accessibilityLabel="Place name"
+              <PlaceAutocomplete
+                label="add a place"
                 placeholder="PetZone, Migros…"
-                placeholderTextColor={colors.inkSoft}
                 value={place}
                 onChangeText={setPlace}
-                autoCorrect={false}
-                style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
               />
             </View>
           )}
 
           {category === 'specific' && (
             <View style={styles.sub}>
-              <Text style={[styles.sectionLabel, { color: colors.inkSoft }]}>person</Text>
-              <TextInput
-                accessibilityLabel="Person"
+              <PaperField
+                label="person"
                 placeholder="Sara, mom…"
-                placeholderTextColor={colors.inkSoft}
                 value={person}
                 onChangeText={setPerson}
-                autoCorrect={false}
-                style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
+                autoCapitalize="words"
               />
-              <Text style={[styles.sectionLabel, { color: colors.inkSoft }]}>place</Text>
-              <TextInput
-                accessibilityLabel="Place"
+              <PlaceAutocomplete
+                label="place"
                 placeholder="dentist, campus…"
-                placeholderTextColor={colors.inkSoft}
                 value={place}
                 onChangeText={setPlace}
-                autoCorrect={false}
-                style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
               />
             </View>
           )}
@@ -232,13 +218,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     gap: spacing.md,
     width: '100%',
-  },
-  input: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.input.fontSize,
-    minHeight: minTouchTarget,
-    borderBottomWidth: 1,
-    paddingVertical: 8,
   },
   sectionLabel: {
     fontFamily: TEXT_FONT,

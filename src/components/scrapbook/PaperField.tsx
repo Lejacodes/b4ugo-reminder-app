@@ -88,6 +88,7 @@ export function PaperField({
             styles.input,
             { color: palette.ink },
             variant === 'handwritten' && styles.inputHandwritten,
+            inputProps.multiline && styles.inputMultiline,
           ]}
         />
 
@@ -143,6 +144,11 @@ const styles = StyleSheet.create({
   inputHandwritten: {
     fontFamily: DISPLAY_FONT,
     fontSize: scrapbookType.body.fontSize,
+  },
+  inputMultiline: {
+    minHeight: 88,
+    paddingTop: 10,
+    textAlignVertical: 'top',
   },
   reveal: {
     minHeight: minTouchTarget,

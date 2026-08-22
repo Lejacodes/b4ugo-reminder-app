@@ -4,19 +4,13 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
-import { ChipRow } from '@/components/trips';
-import { ButterButton, PaperField, PaperPanel } from '@/components/scrapbook';
+import { computedDurationDays, TripFormFields, type TripFormState } from '@/components/trips';
+import { ButterButton, PaperPanel } from '@/components/scrapbook';
 import { readableType, scrapbookPalette, TEXT_FONT } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
-import { parseIsoDate } from '@/lib/trips/dates';
-import {
-  ACCOMMODATION_OPTIONS,
-  ACTIVITY_OPTIONS,
-  SEASON_OPTIONS,
-  TRANSPORT_OPTIONS,
-} from '@/lib/trips/form-options';
+import type { GeocodedDestination } from '@/lib/geocoding';
 import { useTrips } from '@/store/TripProvider';
 
 import '@/components/opening-login/opening-login.css';
@@ -31,18 +25,20 @@ export default function EditTripScreen() {
   const { getTrip, updateTrip } = useTrips();
   const trip = getTrip(id);
 
-  const [title, setTitle] = useState(trip?.title ?? '');
-  const [destination, setDestination] = useState(trip?.destination ?? '');
-  const [startDate, setStartDate] = useState(trip?.startDate ?? '');
-  const [endDate, setEndDate] = useState(trip?.endDate ?? '');
-  const [duration, setDuration] = useState(trip?.durationDays != null ? String(trip.durationDays) : '');
-  const [activity, setActivity] = useState(trip?.activity ?? '');
-  const [season, setSeason] = useState(trip?.season ?? '');
-  const [accommodation, setAccommodation] = useState(trip?.accommodation ?? '');
-  const [transport, setTransport] = useState(
-    trip?.transportation ? trip.transportation.split(' + ') : [],
-  );
-  const [notes, setNotes] = useState(trip?.notes ?? '');
+  const [form, setForm] = useState<TripFormState>({
+    title: trip?.title ?? '',
+    destination: trip?.destination ?? '',
+    startDate: trip?.startDate ?? '',
+    endDate: trip?.endDate ?? '',
+    duration: trip?.durationDays != null ? String(trip.durationDays) : '',
+    activity: trip?.activity ?? '',
+    season: trip?.season ?? '',
+    accommodation: trip?.accommodation ?? '',
+    transport: trip?.transportation ? trip.transportation.split(' + ') : [],
+    notes: trip?.notes ?? '',
+    templateId: '',
+  });
+  const [place, setPlace] = useState<GeocodedDestination | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -55,18 +51,12 @@ export default function EditTripScreen() {
     );
   }
 
+  const canSave = form.title.trim().length > 0 && form.destination.trim().length > 0;
+
   const save = async () => {
-    if (!title.trim() || !destination.trim() || busy) return;
-    if (startDate.trim() && !parseIsoDate(startDate)) {
-      setError('Start date should look like 2026-09-04');
-      return;
-    }
-    if (endDate.trim() && !parseIsoDate(endDate)) {
-      setError('End date should look like 2026-09-12');
-      return;
-    }
-    const nights = duration.trim() ? Number(duration) : null;
-    if (duration.trim() && (!nights || nights <= 0)) {
+    if (!canSave || busy) return;
+    const nights = computedDurationDays(form);
+    if (form.duration.trim() && nights == null) {
       setError('Duration should be a number of days');
       return;
     }
@@ -74,16 +64,21 @@ export default function EditTripScreen() {
     setError(null);
     try {
       await updateTrip(trip.id, {
-        title,
-        destination,
-        startDate: startDate || null,
-        endDate: endDate || null,
+        title: form.title,
+        destination: form.destination,
+        startDate: form.startDate || null,
+        endDate: form.endDate || null,
         durationDays: nights,
-        activity: activity || null,
-        season: season || null,
-        accommodation: accommodation || null,
-        transportation: transport.length ? transport.join(' + ') : null,
-        notes: notes || null,
+        activity: form.activity || null,
+        season: form.season || null,
+        accommodation: form.accommodation || null,
+        transportation: form.transport.length ? form.transport.join(' + ') : null,
+        notes: form.notes || null,
+        latitude: place?.latitude ?? null,
+        longitude: place?.longitude ?? null,
+        timezone: place?.timezone ?? null,
+        country: place?.country ?? null,
+        region: place?.region ?? null,
       });
       router.back();
     } finally {
@@ -109,49 +104,14 @@ export default function EditTripScreen() {
         keyboardShouldPersistTaps="handled">
         <ScrapbookHeader title="edit trip" />
         <PaperPanel tilt="-0.8deg" tape="top-left">
-          <PaperField label="name" value={title} onChangeText={setTitle} />
-          <PaperField label="where" value={destination} onChangeText={setDestination} />
-          <PaperField
-            label="start date"
-            hint="YYYY-MM-DD"
-            value={startDate}
-            onChangeText={setStartDate}
+          <TripFormFields
+            state={form}
+            onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
+            onPlaceSelect={setPlace}
           />
-          <PaperField label="end date" value={endDate} onChangeText={setEndDate} />
-          <PaperField
-            label="duration in days"
-            value={duration}
-            onChangeText={setDuration}
-            keyboardType="number-pad"
-          />
-          <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>activity</Text>
-          <ChipRow options={ACTIVITY_OPTIONS} value={activity} onChange={setActivity} />
-          <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>season</Text>
-          <ChipRow options={SEASON_OPTIONS} value={season} onChange={setSeason} />
-          <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>accommodation</Text>
-          <ChipRow options={ACCOMMODATION_OPTIONS} value={accommodation} onChange={setAccommodation} />
-          <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>transportation</Text>
-          <ChipRow
-            options={TRANSPORT_OPTIONS}
-            value={transport}
-            onChange={(option) =>
-              setTransport((current) =>
-                current.includes(option)
-                  ? current.filter((item) => item !== option)
-                  : [...current, option],
-              )
-            }
-            allowClear={false}
-          />
-          <PaperField label="notes" value={notes} onChangeText={setNotes} />
           {error ? <Text style={[styles.error, { color: colors.slipInk }]}>{error}</Text> : null}
           <View style={styles.actions}>
-            <ButterButton
-              label="save"
-              busy={busy}
-              disabled={!title.trim() || !destination.trim()}
-              onPress={save}
-            />
+            <ButterButton label="save" busy={busy} disabled={!canSave} onPress={save} />
           </View>
         </PaperPanel>
       </ScrollView>
@@ -172,12 +132,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     gap: spacing.lg,
     width: '100%',
-  },
-  fieldLabel: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.meta.fontSize,
-    color: scrapbookPalette.inkSoft,
-    marginTop: 8,
   },
   meta: {
     fontFamily: TEXT_FONT,

@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Handwriting } from '@/components/scrapbook';
+import { Handwriting, PlaceAutocomplete } from '@/components/scrapbook';
 import { palette as brand } from '@/constants/colors';
 import { readableType, TEXT_FONT } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
@@ -30,17 +30,11 @@ export function ContextPrompt({
     <View style={styles.wrap}>
       <Handwriting variant="title">where are you going?</Handwriting>
 
-      <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>destination</Text>
-      <TextInput
-        accessibilityLabel="Destination"
+      <PlaceAutocomplete
+        label="destination"
         placeholder="University, the gym, the airport…"
-        placeholderTextColor={colors.inkSoft}
         value={destination}
         onChangeText={onDestination}
-        autoCorrect={false}
-        autoCapitalize="sentences"
-        returnKeyType="next"
-        style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
       />
 
       <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>what are you going for?</Text>
@@ -79,13 +73,6 @@ const styles = StyleSheet.create({
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     marginTop: 10,
-  },
-  input: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.input.fontSize,
-    minHeight: minTouchTarget,
-    borderBottomWidth: 1,
-    paddingVertical: 8,
   },
   chips: {
     flexDirection: 'row',

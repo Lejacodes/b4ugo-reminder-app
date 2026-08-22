@@ -10,6 +10,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useSessionGuard } from '@/hooks/use-session-guard';
 import { AppearanceProvider } from '@/store/AppearanceProvider';
 import { AuthProvider } from '@/store/AuthProvider';
+import { ContextIntelligenceProvider } from '@/store/ContextIntelligenceProvider';
+import { PlaceProvider } from '@/store/PlaceProvider';
 import { PreferencesProvider } from '@/store/PreferencesProvider';
 import { ReminderProvider } from '@/store/ReminderProvider';
 import { TripProvider } from '@/store/TripProvider';
@@ -65,7 +67,11 @@ export default function RootLayout() {
           <AppearanceProvider>
             <ReminderProvider>
               <TripProvider>
-                <RootNavigator />
+                <PlaceProvider>
+                  <ContextIntelligenceProvider>
+                    <RootNavigator />
+                  </ContextIntelligenceProvider>
+                </PlaceProvider>
               </TripProvider>
             </ReminderProvider>
           </AppearanceProvider>

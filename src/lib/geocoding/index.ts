@@ -1,1 +1,8 @@
-export { geocodingService, resolvePlace, type GeocodedDestination, type GeocodingService } from './open-meteo';
+export {
+  formatPlaceLabel,
+  geocodingService,
+  isTripPlaceSuggestion,
+  resolvePlace,
+  type GeocodedDestination,
+  type GeocodingService,
+} from './open-meteo';

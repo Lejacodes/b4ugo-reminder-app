@@ -37,8 +37,15 @@ export type {
   ReminderSource,
   ReminderStatus,
 } from './reminder';
-export type { Place, CreatePlaceInput } from './place';
+export type { Place, CreatePlaceInput, SavedPlaceType } from './place';
 export type { Routine, CreateRoutineInput } from './routine';
+export type {
+  AppContext,
+  AppContextKind,
+  RankedReminder,
+  RoutineDefinition,
+  RoutineTrigger,
+} from './context';
 export type {
   PackingCategory,
   PackingItem,

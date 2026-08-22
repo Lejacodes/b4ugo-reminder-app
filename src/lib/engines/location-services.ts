@@ -5,6 +5,8 @@
  * of the app can depend on an interface instead of a pretend implementation.
  */
 import { resolvePlace } from '@/lib/geocoding/open-meteo';
+import { deviceLocationService } from '@/lib/location/device-location';
+import { appNotificationService } from '@/lib/notifications/notification-service';
 import type { Reminder, ReminderLocation } from '@/types/reminder';
 import type {
   DeviceLocation,
@@ -17,11 +19,11 @@ import type {
 
 export class LocalLocationService implements LocationService {
   async isAvailable(): Promise<boolean> {
-    return false;
+    return deviceLocationService.isAvailable();
   }
 
   async getCurrentPosition(): Promise<DeviceLocation | null> {
-    return null;
+    return deviceLocationService.getCurrentPosition();
   }
 }
 
@@ -43,11 +45,16 @@ export class LocalGeofenceService implements GeofenceService {
 
 export class LocalNotificationService implements NotificationService {
   async isAvailable(): Promise<boolean> {
-    return false;
+    return appNotificationService.isAvailable();
   }
 
-  async notifyNearby(_reminder: Reminder, _location: ReminderLocation): Promise<void> {
-    // Local/push notifications are not implemented.
+  async notifyNearby(reminder: Reminder, location: ReminderLocation): Promise<void> {
+    await appNotificationService.notifyNow({
+      id: reminder.id,
+      title: location.placeName ? `Near ${location.placeName}` : reminder.title,
+      body: reminder.title,
+      href: reminder.category === 'onTheWayBack' ? '/on-the-way-back' : '/reminders',
+    });
   }
 }
 

@@ -1,6 +1,20 @@
 export function formatPackedProgress(packed: number, total: number): string {
   if (total <= 0) return 'nothing yet';
-  return `${packed} of ${total} packed`;
+  return `${packed} / ${total} packed`;
+}
+
+export function tripIdentityTags(trip: {
+  activity?: string | null;
+  season?: string | null;
+  accommodation?: string | null;
+  transportation?: string | null;
+}): string[] {
+  return [
+    trip.activity,
+    trip.season,
+    trip.accommodation,
+    ...(trip.transportation ? trip.transportation.split(' + ') : []),
+  ].filter((item): item is string => Boolean(item && item.trim()));
 }
 
 export function formatRemaining(packed: number, total: number): string {

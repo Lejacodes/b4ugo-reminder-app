@@ -4,23 +4,31 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
-import { ChipRow } from '@/components/trips';
-import { ButterButton, Handwriting, PaperField, PaperPanel, QuietLink } from '@/components/scrapbook';
+import { computedDurationDays, TripFormFields, type TripFormState } from '@/components/trips';
+import { ButterButton, PaperPanel } from '@/components/scrapbook';
 import { readableType, scrapbookPalette, TEXT_FONT } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
-import {
-  ACCOMMODATION_OPTIONS,
-  ACTIVITY_OPTIONS,
-  SEASON_OPTIONS,
-  TRANSPORT_OPTIONS,
-} from '@/lib/trips/form-options';
-import { parseIsoDate } from '@/lib/trips/dates';
+import type { GeocodedDestination } from '@/lib/geocoding';
 import { tripHref } from '@/lib/trips/routes';
 import { useTrips } from '@/store/TripProvider';
 
 import '@/components/opening-login/opening-login.css';
+
+const EMPTY_FORM: TripFormState = {
+  title: '',
+  destination: '',
+  startDate: '',
+  endDate: '',
+  duration: '',
+  activity: '',
+  season: '',
+  accommodation: '',
+  transport: [],
+  notes: '',
+  templateId: '',
+};
 
 export default function NewTripScreen() {
   const desk = useDeskStyle();
@@ -30,41 +38,17 @@ export default function NewTripScreen() {
   const { horizontalPadding, isTablet } = useResponsive();
   const { templates, createTrip } = useTrips();
 
-  const [step, setStep] = useState<1 | 2>(1);
-  const [title, setTitle] = useState('');
-  const [destination, setDestination] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [duration, setDuration] = useState('');
-  const [activity, setActivity] = useState('');
-  const [season, setSeason] = useState('');
-  const [accommodation, setAccommodation] = useState('');
-  const [transport, setTransport] = useState<string[]>([]);
-  const [notes, setNotes] = useState('');
-  const [templateId, setTemplateId] = useState('');
+  const [form, setForm] = useState<TripFormState>(EMPTY_FORM);
+  const [place, setPlace] = useState<GeocodedDestination | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const canContinue = title.trim().length > 0 && destination.trim().length > 0;
-
-  const toggleTransport = (option: string) => {
-    setTransport((current) =>
-      current.includes(option) ? current.filter((item) => item !== option) : [...current, option],
-    );
-  };
+  const canSave = form.title.trim().length > 0 && form.destination.trim().length > 0;
 
   const save = async () => {
-    if (!canContinue || busy) return;
-    if (startDate.trim() && !parseIsoDate(startDate)) {
-      setError('Start date should look like 2026-09-04');
-      return;
-    }
-    if (endDate.trim() && !parseIsoDate(endDate)) {
-      setError('End date should look like 2026-09-12');
-      return;
-    }
-    const nights = duration.trim() ? Number(duration) : null;
-    if (duration.trim() && (!nights || nights <= 0)) {
+    if (!canSave || busy) return;
+    const nights = computedDurationDays(form);
+    if (form.duration.trim() && nights == null) {
       setError('Duration should be a number of days');
       return;
     }
@@ -74,18 +58,23 @@ export default function NewTripScreen() {
     try {
       const trip = await createTrip(
         {
-          title,
-          destination,
-          startDate: startDate || null,
-          endDate: endDate || null,
+          title: form.title,
+          destination: form.destination,
+          startDate: form.startDate || null,
+          endDate: form.endDate || null,
           durationDays: nights,
-          activity: activity || null,
-          season: season || null,
-          accommodation: accommodation || null,
-          transportation: transport.length ? transport.join(' + ') : null,
-          notes: notes || null,
+          activity: form.activity || null,
+          season: form.season || null,
+          accommodation: form.accommodation || null,
+          transportation: form.transport.length ? form.transport.join(' + ') : null,
+          notes: form.notes || null,
+          latitude: place?.latitude ?? null,
+          longitude: place?.longitude ?? null,
+          timezone: place?.timezone ?? null,
+          country: place?.country ?? null,
+          region: place?.region ?? null,
         },
-        { templateId: templateId || undefined, generate: true },
+        { templateId: form.templateId || undefined, generate: true },
       );
       if (trip) router.replace(tripHref(`/trip/${trip.id}`));
     } finally {
@@ -111,100 +100,18 @@ export default function NewTripScreen() {
         keyboardShouldPersistTaps="handled">
         <ScrapbookHeader title="plan something" icon="airplane-outline" />
 
-        {step === 1 ? (
-          <PaperPanel tilt="-1deg" tape="top-left">
-            <Handwriting variant="title">the trip</Handwriting>
-            <PaperField
-              label="what is this?"
-              placeholder="Thailand, camping, sleepover…"
-              value={title}
-              onChangeText={setTitle}
-              autoCapitalize="sentences"
-            />
-            <PaperField
-              label="where?"
-              placeholder="Bangkok, Şile, a friend's place…"
-              value={destination}
-              onChangeText={setDestination}
-              autoCapitalize="sentences"
-            />
-            <PaperField
-              label="start date"
-              hint="YYYY-MM-DD"
-              placeholder="2026-09-04"
-              value={startDate}
-              onChangeText={setStartDate}
-              autoCapitalize="none"
-            />
-            <PaperField
-              label="end date"
-              hint="or use duration below"
-              placeholder="2026-09-12"
-              value={endDate}
-              onChangeText={setEndDate}
-              autoCapitalize="none"
-            />
-            <PaperField
-              label="or duration in days"
-              hint="if you skip dates"
-              placeholder="8"
-              value={duration}
-              onChangeText={setDuration}
-              keyboardType="number-pad"
-            />
-            <ButterButton
-              label="continue"
-              disabled={!canContinue}
-              onPress={() => setStep(2)}
-            />
-          </PaperPanel>
-        ) : (
-          <PaperPanel tilt="-1deg" tape="top-right">
-            <Handwriting variant="title">details</Handwriting>
-            <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>activity</Text>
-            <ChipRow options={ACTIVITY_OPTIONS} value={activity} onChange={setActivity} />
-            <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>season / climate</Text>
-            <ChipRow options={SEASON_OPTIONS} value={season} onChange={setSeason} />
-            <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>accommodation</Text>
-            <ChipRow options={ACCOMMODATION_OPTIONS} value={accommodation} onChange={setAccommodation} />
-            <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>transportation</Text>
-            <ChipRow
-              options={TRANSPORT_OPTIONS}
-              value={transport}
-              onChange={toggleTransport}
-              allowClear={false}
-            />
-            {transport.length > 0 ? (
-              <Text style={[styles.meta, { color: colors.inkSoft }]}>selected: {transport.join(' + ')}</Text>
-            ) : null}
-            <PaperField
-              label="notes"
-              hint="optional"
-              placeholder="anything else to remember"
-              value={notes}
-              onChangeText={setNotes}
-              autoCapitalize="sentences"
-            />
-            {templates.length > 0 ? (
-              <>
-                <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>template</Text>
-                <ChipRow
-                  options={templates.map((item) => item.name)}
-                  value={templates.find((item) => item.id === templateId)?.name ?? ''}
-                  onChange={(name) => {
-                    const match = templates.find((item) => item.name === name);
-                    setTemplateId(match?.id ?? '');
-                  }}
-                />
-              </>
-            ) : null}
-            {error ? <Text style={[styles.error, { color: colors.slipInk }]}>{error}</Text> : null}
-            <View style={styles.actions}>
-              <ButterButton label="make the list" busy={busy} onPress={save} />
-              <QuietLink label="back" onPress={() => setStep(1)} />
-            </View>
-          </PaperPanel>
-        )}
+        <PaperPanel tilt="-1deg" tape="top-left">
+          <TripFormFields
+            state={form}
+            onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
+            onPlaceSelect={setPlace}
+            templates={templates}
+          />
+          {error ? <Text style={[styles.error, { color: colors.slipInk }]}>{error}</Text> : null}
+          <View style={styles.actions}>
+            <ButterButton label="make the list" busy={busy} disabled={!canSave} onPress={save} />
+          </View>
+        </PaperPanel>
       </ScrollView>
     </SafeAreaView>
   );
@@ -224,18 +131,6 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     width: '100%',
   },
-  fieldLabel: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.meta.fontSize,
-    color: scrapbookPalette.inkSoft,
-    marginTop: 8,
-  },
-  meta: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.meta.fontSize,
-    color: scrapbookPalette.inkSoft,
-    marginTop: 8,
-  },
   error: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.message.fontSize,
@@ -244,6 +139,5 @@ const styles = StyleSheet.create({
   },
   actions: {
     marginTop: 18,
-    gap: 8,
   },
 });

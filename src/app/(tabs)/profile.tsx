@@ -19,8 +19,11 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { useTabBarInset } from '@/hooks/use-tab-bar-inset';
+import { deviceLocationService } from '@/lib/location/device-location';
+import { appNotificationService } from '@/lib/notifications/notification-service';
 import { useAppearance } from '@/store/AppearanceProvider';
 import { useAuth } from '@/store/AuthProvider';
+import { usePlaces } from '@/store/PlaceProvider';
 import { usePreferences } from '@/store/PreferencesProvider';
 import { interestOptions, type OnboardingInterest } from '@/types/onboarding';
 
@@ -35,6 +38,7 @@ export default function ProfileScreen() {
   const reduceMotion = useReducedMotion();
   const { scheme, setAppearance } = useAppearance();
   const { profile, preferences, updateProfile, updatePreferences, resetAll } = usePreferences();
+  const { home, setHome } = usePlaces();
   const { user, signOut } = useAuth();
 
   const [editingName, setEditingName] = useState(false);
@@ -168,6 +172,42 @@ export default function ProfileScreen() {
               })
             }
           />
+          <PreferenceRow
+            title="Location reminders"
+            value={preferences.reminders.locationRemindersEnabled}
+            onValueChange={async (next) => {
+              if (next) {
+                await deviceLocationService.requestPermission();
+                await appNotificationService.requestPermission();
+              }
+              await updatePreferences({
+                reminders: { ...preferences.reminders, locationRemindersEnabled: next },
+              });
+            }}
+          />
+          <View style={[styles.row, { borderBottomColor: colors.line }]}>
+            <View style={styles.rowCopy}>
+              <Text style={[styles.rowTitle, { color: colors.ink }]}>Home</Text>
+              <Text style={[styles.rowState, { color: colors.inkSoft }]}>
+                {home?.latitude != null ? home.name : 'not set'}
+              </Text>
+            </View>
+            <QuietLink
+              label="set from here"
+              accessibilityLabel="Set home from your current place"
+              onPress={async () => {
+                const permission = await deviceLocationService.requestPermission();
+                if (permission !== 'granted') return;
+                const here = await deviceLocationService.getCurrentPosition();
+                if (!here) return;
+                await setHome({
+                  name: 'Home',
+                  latitude: here.latitude,
+                  longitude: here.longitude,
+                });
+              }}
+            />
+          </View>
           <PreferenceRow
             title="AI parsing"
             value={preferences.privacy.aiParsingEnabled}

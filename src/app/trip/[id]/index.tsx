@@ -4,12 +4,13 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
+import { IntentionComposer } from '@/components/trips';
 import { ButterButton, Handwriting, PaperField, PaperPanel, QuietLink } from '@/components/scrapbook';
 import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
-import { formatPackedProgress, formatRemaining } from '@/lib/trips/copy';
+import { formatPackedProgress, tripIdentityTags } from '@/lib/trips/copy';
 import { formatDateRange, formatDuration } from '@/lib/trips/dates';
 import { tripHref } from '@/lib/trips/routes';
 import { TRAVEL_INTENTION_LABELS } from '@/types/trip';
@@ -32,6 +33,8 @@ export default function TripDetailScreen() {
     archiveTrip,
     deleteTrip,
     enterTravelMode,
+    addIntention,
+    deleteIntention,
   } = useTrips();
 
   const trip = getTrip(id);
@@ -40,6 +43,8 @@ export default function TripDetailScreen() {
   const [templateName, setTemplateName] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [addingPlace, setAddingPlace] = useState(false);
+  const [addingBusy, setAddingBusy] = useState(false);
 
   if (!trip) {
     return (
@@ -52,6 +57,8 @@ export default function TripDetailScreen() {
 
   const range = formatDateRange(trip.startDate, trip.endDate);
   const duration = formatDuration(trip.durationDays);
+  const tags = tripIdentityTags(trip);
+  const hasDetails = Boolean(trip.activity || trip.season || trip.accommodation || trip.transportation || trip.notes);
 
   return (
     <SafeAreaView className="opening-desk" style={desk} edges={['top']}>
@@ -73,9 +80,132 @@ export default function TripDetailScreen() {
 
         <PaperPanel tilt={tiltAt(0)} tape="top-left">
           <Text style={[styles.destination, { color: colors.ink }]}>{trip.destination}</Text>
-          {range ? <Text style={[styles.meta, { color: colors.inkSoft }]}>{range}</Text> : null}
-          {duration ? <Text style={[styles.meta, { color: colors.inkSoft }]}>{duration}</Text> : null}
-          {trip.status === 'active' ? <Text style={[styles.meta, { color: colors.inkSoft }]}>travel mode is on</Text> : null}
+          {range ? <Text style={[styles.range, { color: colors.ink }]}>{range}</Text> : null}
+          {duration ? <Text style={[styles.duration, { color: colors.inkSoft }]}>{duration}</Text> : null}
+          {tags.length > 0 ? (
+            <Text style={[styles.tags, { color: colors.inkSoft }]}>{tags.join(' · ')}</Text>
+          ) : null}
+        </PaperPanel>
+
+        <PaperPanel tilt={tiltAt(1)} tape="top-right">
+          <View style={styles.actionBlock}>
+            <Handwriting variant="title">preparation</Handwriting>
+            <Text style={[styles.count, { color: colors.ink }]}>
+              {formatPackedProgress(progress.packed, progress.total)}
+            </Text>
+            <View style={styles.actions}>
+              <ButterButton
+                label="open packing"
+                accessibilityLabel="Open packing checklist"
+                onPress={() => router.push(tripHref(`/trip/${trip.id}/packing`))}
+              />
+            </View>
+          </View>
+          <View style={[styles.divider, { backgroundColor: colors.line }]} />
+          <View style={styles.actionBlock}>
+            <Handwriting variant="title">travel mode</Handwriting>
+            <Text style={[styles.meta, { color: colors.inkSoft, marginTop: 6 }]}>
+              {trip.status === 'active'
+                ? 'on'
+                : intentions.length > 0
+                  ? `${intentions.length} saved`
+                  : 'not started'}
+            </Text>
+            <View style={styles.actions}>
+              <ButterButton
+                label="open travel mode"
+                onPress={async () => {
+                  if (trip.status === 'planned') await enterTravelMode(trip.id);
+                  router.push(tripHref(`/trip/${trip.id}/travel-mode`));
+                }}
+              />
+            </View>
+          </View>
+        </PaperPanel>
+
+        <PaperPanel tilt={tiltAt(2)} tape="top-left">
+          <Handwriting variant="title">places & plans</Handwriting>
+          {intentions.length === 0 && !addingPlace ? (
+            <Text style={[styles.meta, { color: colors.inkSoft, marginTop: 8 }]}>nothing yet</Text>
+          ) : (
+            intentions.map((item) => (
+              <View key={item.id} style={styles.plan}>
+                <Text style={[styles.item, { color: colors.ink }]}>{item.title}</Text>
+                <Text style={[styles.meta, { color: colors.inkSoft }]}>
+                  {TRAVEL_INTENTION_LABELS[item.type]}
+                  {item.placeName ? ` · near ${item.placeName}` : ''}
+                </Text>
+                <QuietLink label="remove" onPress={() => deleteIntention(item.id)} />
+              </View>
+            ))
+          )}
+          {addingPlace ? (
+            <View style={styles.composer}>
+              <IntentionComposer
+                busy={addingBusy}
+                submitLabel="add"
+                onCancel={() => setAddingPlace(false)}
+                onSave={async (draft) => {
+                  setAddingBusy(true);
+                  try {
+                    await addIntention({
+                      tripId: trip.id,
+                      title: draft.title,
+                      type: draft.type,
+                      placeName: draft.placeName,
+                      note: draft.note,
+                      latitude: draft.latitude,
+                      longitude: draft.longitude,
+                    });
+                    setAddingPlace(false);
+                  } finally {
+                    setAddingBusy(false);
+                  }
+                }}
+              />
+            </View>
+          ) : (
+            <QuietLink
+              label="+ add"
+              accessibilityLabel="Add a place or plan"
+              onPress={() => setAddingPlace(true)}
+            />
+          )}
+        </PaperPanel>
+
+        <PaperPanel tilt={tiltAt(3)} tape="none">
+          <Handwriting variant="title">trip details</Handwriting>
+          {trip.activity ? (
+            <View style={styles.detailRow}>
+              <Text style={[styles.detailLabel, { color: colors.inkSoft }]}>activity</Text>
+              <Text style={[styles.item, { color: colors.ink, marginTop: 0 }]}>{trip.activity}</Text>
+            </View>
+          ) : null}
+          {trip.season ? (
+            <View style={styles.detailRow}>
+              <Text style={[styles.detailLabel, { color: colors.inkSoft }]}>season</Text>
+              <Text style={[styles.item, { color: colors.ink, marginTop: 0 }]}>{trip.season}</Text>
+            </View>
+          ) : null}
+          {trip.accommodation ? (
+            <View style={styles.detailRow}>
+              <Text style={[styles.detailLabel, { color: colors.inkSoft }]}>stay</Text>
+              <Text style={[styles.item, { color: colors.ink, marginTop: 0 }]}>{trip.accommodation}</Text>
+            </View>
+          ) : null}
+          {trip.transportation ? (
+            <View style={styles.detailRow}>
+              <Text style={[styles.detailLabel, { color: colors.inkSoft }]}>getting there</Text>
+              <Text style={[styles.item, { color: colors.ink, marginTop: 0 }]}>{trip.transportation}</Text>
+            </View>
+          ) : null}
+          {trip.notes ? (
+            <View style={styles.detailRow}>
+              <Text style={[styles.detailLabel, { color: colors.inkSoft }]}>notes</Text>
+              <Text style={[styles.item, { color: colors.ink, marginTop: 0 }]}>{trip.notes}</Text>
+            </View>
+          ) : null}
+          {!hasDetails ? <Text style={[styles.meta, { color: colors.inkSoft, marginTop: 8 }]}>nothing yet</Text> : null}
           <QuietLink
             label="edit trip"
             accessibilityLabel="Edit this trip"
@@ -83,60 +213,8 @@ export default function TripDetailScreen() {
           />
         </PaperPanel>
 
-        <PaperPanel tilt={tiltAt(1)} tape="top-right">
-          <Handwriting variant="title">preparation</Handwriting>
-          <Text style={[styles.count, { color: colors.ink }]}>{formatPackedProgress(progress.packed, progress.total)}</Text>
-          <Text style={[styles.meta, { color: colors.inkSoft }]}>{formatRemaining(progress.packed, progress.total)}</Text>
-          <View style={styles.actions}>
-            <ButterButton
-              label="open checklist"
-              accessibilityLabel="Open packing checklist"
-              onPress={() => router.push(tripHref(`/trip/${trip.id}/packing`))}
-            />
-          </View>
-        </PaperPanel>
-
-        <PaperPanel tilt={tiltAt(2)} tape="top-left">
-          <Handwriting variant="title">travel mode</Handwriting>
-          {intentions.length === 0 ? (
-            <Text style={[styles.meta, { color: colors.inkSoft }]}>nothing yet</Text>
-          ) : (
-            intentions.slice(0, 4).map((item) => (
-              <Text key={item.id} style={[styles.item, { color: colors.ink }]}>
-                {item.title}
-                <Text style={[styles.meta, { color: colors.inkSoft }]}> · {TRAVEL_INTENTION_LABELS[item.type]}</Text>
-              </Text>
-            ))
-          )}
-          <View style={styles.actions}>
-            <ButterButton
-              label="open travel mode"
-              onPress={async () => {
-                if (trip.status === 'planned') await enterTravelMode(trip.id);
-                router.push(tripHref(`/trip/${trip.id}/travel-mode`));
-              }}
-            />
-          </View>
-        </PaperPanel>
-
-        <PaperPanel tilt={tiltAt(3)} tape="none">
-          <Handwriting variant="title">trip information</Handwriting>
-          {trip.activity ? <Text style={[styles.item, { color: colors.ink }]}>activity · {trip.activity}</Text> : null}
-          {trip.season ? <Text style={[styles.item, { color: colors.ink }]}>season · {trip.season}</Text> : null}
-          {trip.accommodation ? (
-            <Text style={[styles.item, { color: colors.ink }]}>stay · {trip.accommodation}</Text>
-          ) : null}
-          {trip.transportation ? (
-            <Text style={[styles.item, { color: colors.ink }]}>getting there · {trip.transportation}</Text>
-          ) : null}
-          {trip.notes ? <Text style={[styles.item, { color: colors.ink }]}>{trip.notes}</Text> : null}
-          {!trip.activity && !trip.season && !trip.accommodation && !trip.transportation && !trip.notes ? (
-            <Text style={[styles.meta, { color: colors.inkSoft }]}>nothing yet</Text>
-          ) : null}
-        </PaperPanel>
-
         <PaperPanel tilt={tiltAt(4)} tape="top-right">
-          <Handwriting variant="title">save as template</Handwriting>
+          <Handwriting variant="aside">save as template</Handwriting>
           <PaperField
             placeholder="Weekend trip, Camping…"
             value={templateName}
@@ -197,23 +275,40 @@ const styles = StyleSheet.create({
   },
   destination: {
     fontFamily: TEXT_FONT,
-    fontSize: readableType.item.fontSize,
-    lineHeight: readableType.item.lineHeight,
+    fontSize: 20,
+    lineHeight: 26,
     color: scrapbookPalette.ink,
+  },
+  range: {
+    fontFamily: TEXT_FONT,
+    fontSize: 17,
+    lineHeight: 23,
+    marginTop: 8,
+  },
+  duration: {
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.count.fontSize,
+    lineHeight: readableType.count.lineHeight,
+    marginTop: 4,
+  },
+  tags: {
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.meta.fontSize,
+    lineHeight: readableType.meta.lineHeight,
+    marginTop: 10,
   },
   meta: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     color: scrapbookPalette.inkSoft,
-    marginTop: 4,
   },
   count: {
     fontFamily: TEXT_FONT,
     fontSize: readableType.count.fontSize,
     lineHeight: readableType.count.lineHeight,
     color: scrapbookPalette.ink,
-    marginTop: 8,
+    marginTop: 6,
   },
   item: {
     fontFamily: TEXT_FONT,
@@ -223,6 +318,28 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   actions: {
-    marginTop: 14,
+    marginTop: 12,
+  },
+  actionBlock: {
+    paddingVertical: 2,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 16,
+  },
+  plan: {
+    marginTop: 10,
+  },
+  composer: {
+    marginTop: 12,
+  },
+  detailRow: {
+    marginTop: 10,
+  },
+  detailLabel: {
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.meta.fontSize,
+    lineHeight: readableType.meta.lineHeight,
+    marginBottom: 2,
   },
 });

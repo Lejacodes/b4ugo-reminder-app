@@ -49,6 +49,7 @@ export default function PackingScreen() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<PackingCategory>('other');
   const [busy, setBusy] = useState(false);
+  const [listEditing, setListEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
 
@@ -94,6 +95,19 @@ export default function PackingScreen() {
         <Text style={[styles.meta, { color: colors.inkSoft }]}>
           packed for this trip only
         </Text>
+        {items.length > 0 ? (
+          <QuietLink
+            label={listEditing ? 'done' : 'edit list'}
+            accessibilityLabel={listEditing ? 'Finish editing packing list' : 'Edit packing list'}
+            onPress={() => {
+              setListEditing((current) => !current);
+              setEditingId(null);
+            }}
+          />
+        ) : null}
+        {listEditing ? (
+          <Text style={[styles.meta, { color: colors.inkSoft }]}>tap an item to rename or remove it</Text>
+        ) : null}
 
         {PACKING_CATEGORIES.map((key, index) => {
           const group = items.filter((item) => item.category === key);
@@ -107,9 +121,16 @@ export default function PackingScreen() {
                     title={item.title}
                     reason={item.reason ?? SOURCE_LABEL[item.source]}
                     checked={item.checked}
-                    onToggle={() => togglePackingItem(item.id)}
+                    onToggle={() => {
+                      if (listEditing) {
+                        setEditingId(item.id);
+                        setEditTitle(item.title);
+                        return;
+                      }
+                      togglePackingItem(item.id);
+                    }}
                   />
-                  {editingId === item.id ? (
+                  {listEditing && editingId === item.id ? (
                     <View>
                       <PaperField
                         value={editTitle}
@@ -125,25 +146,16 @@ export default function PackingScreen() {
                           }}
                         />
                         <QuietLink
-                          label={item.source === 'user' ? 'delete' : 'reject suggestion'}
+                          label={item.source === 'user' ? 'remove' : 'reject suggestion'}
                           onPress={() =>
                             item.source === 'user'
                               ? deletePackingItem(item.id)
                               : dismissPackingItem(item.id)
                           }
                         />
-                        <QuietLink label="done" onPress={() => setEditingId(null)} />
                       </View>
                     </View>
-                  ) : (
-                    <QuietLink
-                      label="edit"
-                      onPress={() => {
-                        setEditingId(item.id);
-                        setEditTitle(item.title);
-                      }}
-                    />
-                  )}
+                  ) : null}
                 </View>
               ))}
             </PaperPanel>

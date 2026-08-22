@@ -1,8 +1,10 @@
 export { ButterButton } from './ButterButton';
+export { DateField } from './DateField';
 export { DeskScreen } from './DeskScreen';
 export { Handwriting } from './Handwriting';
 export { PaperField } from './PaperField';
 export { PaperPanel } from './PaperPanel';
+export { PlaceAutocomplete } from './PlaceAutocomplete';
 export { PlaceholderAuthNotice } from './PlaceholderAuthNotice';
 export { QuietLink } from './QuietLink';
 export { ScrapbookSwitch } from './ScrapbookSwitch';

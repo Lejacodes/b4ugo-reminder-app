@@ -89,10 +89,33 @@ export function resolveTripDates(input: {
   };
 }
 
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export function formatHumanDate(value: string | null | undefined): string | null {
+  const date = parseIsoDate(value);
+  if (!date) return null;
+  return `${date.getUTCDate()} ${MONTHS_SHORT[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+}
+
 export function formatDateRange(startDate: string | null, endDate: string | null): string | null {
-  if (startDate && endDate) return `${startDate} – ${endDate}`;
-  if (startDate) return `from ${startDate}`;
-  if (endDate) return `until ${endDate}`;
+  const start = parseIsoDate(startDate);
+  const end = parseIsoDate(endDate);
+  if (start && end) {
+    const startDay = `${start.getUTCDate()} ${MONTHS_SHORT[start.getUTCMonth()]}`;
+    const endDay = `${end.getUTCDate()} ${MONTHS_SHORT[end.getUTCMonth()]}`;
+    if (start.getUTCFullYear() === end.getUTCFullYear()) {
+      return `${startDay} — ${endDay} ${end.getUTCFullYear()}`;
+    }
+    return `${startDay} ${start.getUTCFullYear()} — ${endDay} ${end.getUTCFullYear()}`;
+  }
+  if (startDate) {
+    const label = formatHumanDate(startDate);
+    return label ? `from ${label}` : null;
+  }
+  if (endDate) {
+    const label = formatHumanDate(endDate);
+    return label ? `until ${label}` : null;
+  }
   return null;
 }
 

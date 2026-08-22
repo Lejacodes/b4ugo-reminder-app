@@ -49,7 +49,16 @@ async function buildTrip(draft: TripDraft): Promise<Trip> {
     endDate: draft.endDate,
     durationDays: draft.durationDays,
   });
-  const geo = await geocodingService.searchDestination(draft.destination.trim());
+  const geo =
+    draft.latitude != null && draft.longitude != null
+      ? {
+          latitude: draft.latitude,
+          longitude: draft.longitude,
+          timezone: draft.timezone ?? null,
+          country: draft.country ?? null,
+          region: draft.region ?? null,
+        }
+      : await geocodingService.searchDestination(draft.destination.trim());
   return {
     id: createId('trip'),
     title: draft.title.trim(),
@@ -112,6 +121,8 @@ function buildIntention(input: {
   type: TravelIntentionType;
   placeName?: string | null;
   note?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }): TravelIntention {
   const stamp = nowIso();
   return {
@@ -120,8 +131,8 @@ function buildIntention(input: {
     title: input.title.trim(),
     type: input.type,
     placeName: input.placeName?.trim() || null,
-    latitude: null,
-    longitude: null,
+    latitude: input.latitude ?? null,
+    longitude: input.longitude ?? null,
     note: input.note?.trim() || null,
     createdAt: stamp,
     updatedAt: stamp,
@@ -168,10 +179,19 @@ type TripContextValue = {
     type: TravelIntentionType;
     placeName?: string;
     note?: string;
+    latitude?: number | null;
+    longitude?: number | null;
   }) => Promise<void>;
   updateIntention: (
     id: string,
-    patch: { title?: string; type?: TravelIntentionType; placeName?: string; note?: string },
+    patch: {
+      title?: string;
+      type?: TravelIntentionType;
+      placeName?: string;
+      note?: string;
+      latitude?: number | null;
+      longitude?: number | null;
+    },
   ) => Promise<void>;
   deleteIntention: (id: string) => Promise<void>;
 };
@@ -399,9 +419,17 @@ export function TripProvider({ children }: { children: ReactNode }) {
       const destination = draft.destination.trim();
       const current = tripsRef.current.find((trip) => trip.id === id);
       const geo =
-        destination && destination !== current?.destination
-          ? await geocodingService.searchDestination(destination)
-          : null;
+        draft.latitude != null && draft.longitude != null
+          ? {
+              latitude: draft.latitude,
+              longitude: draft.longitude,
+              timezone: draft.timezone ?? null,
+              country: draft.country ?? null,
+              region: draft.region ?? null,
+            }
+          : destination && destination !== current?.destination
+            ? await geocodingService.searchDestination(destination)
+            : null;
       const next = tripsRef.current.map((trip) =>
         trip.id === id
           ? {
@@ -637,17 +665,28 @@ export function TripProvider({ children }: { children: ReactNode }) {
       type: TravelIntentionType;
       placeName?: string;
       note?: string;
+      latitude?: number | null;
+      longitude?: number | null;
     }) => {
       const trimmed = input.title.trim();
       if (!trimmed) return;
+      const place = input.placeName?.trim();
+      const geo =
+        input.latitude != null && input.longitude != null
+          ? { latitude: input.latitude, longitude: input.longitude }
+          : place
+            ? await geocodingService.searchDestination(place)
+            : null;
       await persistIntentions([
         ...intentionsRef.current,
         buildIntention({
           tripId: input.tripId,
           title: trimmed,
           type: input.type,
-          placeName: input.placeName,
+          placeName: place,
           note: input.note,
+          latitude: geo?.latitude ?? null,
+          longitude: geo?.longitude ?? null,
         }),
       ]);
     },
@@ -657,16 +696,33 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const updateIntention = useCallback(
     async (
       id: string,
-      patch: { title?: string; type?: TravelIntentionType; placeName?: string; note?: string },
+      patch: {
+        title?: string;
+        type?: TravelIntentionType;
+        placeName?: string;
+        note?: string;
+        latitude?: number | null;
+        longitude?: number | null;
+      },
     ) => {
+      const current = intentionsRef.current.find((item) => item.id === id);
+      const place = patch.placeName !== undefined ? patch.placeName.trim() : current?.placeName ?? '';
+      const geo =
+        patch.latitude != null && patch.longitude != null
+          ? { latitude: patch.latitude, longitude: patch.longitude }
+          : patch.placeName !== undefined && place && place !== current?.placeName
+            ? await geocodingService.searchDestination(place)
+            : null;
       const next = intentionsRef.current.map((item) =>
         item.id === id
           ? {
               ...item,
               title: patch.title?.trim() || item.title,
               type: patch.type ?? item.type,
-              placeName: patch.placeName !== undefined ? patch.placeName.trim() || null : item.placeName,
+              placeName: patch.placeName !== undefined ? place || null : item.placeName,
               note: patch.note !== undefined ? patch.note.trim() || null : item.note,
+              latitude: geo?.latitude ?? item.latitude,
+              longitude: geo?.longitude ?? item.longitude,
               updatedAt: nowIso(),
             }
           : item,

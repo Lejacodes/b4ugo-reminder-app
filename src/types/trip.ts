@@ -54,6 +54,11 @@ export type TripDraft = {
   accommodation?: string | null;
   transportation?: string | null;
   notes?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  timezone?: string | null;
+  country?: string | null;
+  region?: string | null;
 };
 
 export type PackingItem = {

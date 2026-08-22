@@ -2,6 +2,14 @@
 
 All notable changes to B4UGO are documented here.
 
+## [Unreleased] — Context engine, location, notifications
+
+- Reminder evaluation is centralized and deterministic
+- Home can be set from Profile; location reminders are opt-in
+- Foreground GPS can mark leaving home / near a saved place
+- Local notifications fire once per reminder+context, with cooldown
+- Personal necessities stay trip-specific
+
 ## [Unreleased] — Supabase backend foundation
 
 Local stores remain the cache. Supabase is the source of truth when configured.

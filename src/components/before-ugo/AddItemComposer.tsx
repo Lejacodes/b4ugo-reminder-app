@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ButterButton, Handwriting, QuietLink } from '@/components/scrapbook';
+import { ButterButton, Handwriting, PaperField, QuietLink } from '@/components/scrapbook';
 import { readableType, TEXT_FONT } from '@/constants/scrapbook';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { minTouchTarget } from '@/constants/typography';
@@ -52,15 +52,12 @@ export function AddItemComposer({
       <Handwriting variant="aside" tone="soft">
         add something
       </Handwriting>
-      <TextInput
-        accessibilityLabel="Item to take"
+      <PaperField
         placeholder="Student ID, water bottle…"
-        placeholderTextColor={colors.inkSoft}
         value={title}
         onChangeText={setTitle}
-        autoCorrect={false}
         autoCapitalize="sentences"
-        style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
+        accessibilityLabel="Item to take"
       />
       <Text style={[styles.hint, { color: colors.inkSoft }]}>always, or this trip?</Text>
       <View style={styles.row}>
@@ -91,13 +88,6 @@ const styles = StyleSheet.create({
   wrap: {
     gap: 4,
     paddingTop: 8,
-  },
-  input: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.input.fontSize,
-    minHeight: minTouchTarget,
-    borderBottomWidth: 1,
-    paddingVertical: 8,
   },
   hint: {
     fontFamily: TEXT_FONT,

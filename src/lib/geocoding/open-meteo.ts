@@ -12,6 +12,7 @@ export type GeocodedDestination = {
 
 export interface GeocodingService {
   searchDestination(query: string): Promise<GeocodedDestination | null>;
+  searchPlaces(query: string): Promise<GeocodedDestination[]>;
 }
 
 type OpenMeteoGeoResponse = {
@@ -25,27 +26,52 @@ type OpenMeteoGeoResponse = {
   }>;
 };
 
+function mapHit(
+  hit: NonNullable<OpenMeteoGeoResponse['results']>[number],
+  fallback: string,
+): GeocodedDestination {
+  return {
+    placeName: hit.name || fallback,
+    latitude: hit.latitude,
+    longitude: hit.longitude,
+    country: hit.country ?? null,
+    region: hit.admin1 ?? null,
+    timezone: hit.timezone ?? null,
+  };
+}
+
+export function formatPlaceLabel(place: GeocodedDestination): string {
+  if (place.country && place.country !== place.placeName) {
+    return `${place.placeName}, ${place.country}`;
+  }
+  return place.placeName;
+}
+
+export function isTripPlaceSuggestion(place: GeocodedDestination): boolean {
+  const country = place.country?.trim().toLowerCase();
+  const name = place.placeName.trim().toLowerCase();
+  return country !== 'israel' && name !== 'israel';
+}
+
 export class OpenMeteoGeocodingService implements GeocodingService {
-  async searchDestination(query: string): Promise<GeocodedDestination | null> {
+  async searchPlaces(query: string): Promise<GeocodedDestination[]> {
     const name = query.trim();
-    if (!name) return null;
+    if (!name) return [];
 
     const url =
       'https://geocoding-api.open-meteo.com/v1/search?name=' +
       encodeURIComponent(name) +
-      '&count=1&language=en&format=json';
+      '&count=8&language=en&format=json';
     const data = await fetchJson<OpenMeteoGeoResponse>(url);
-    const hit = data?.results?.[0];
-    if (!hit) return null;
+    return (data?.results ?? [])
+      .map((hit) => mapHit(hit, name))
+      .filter(isTripPlaceSuggestion)
+      .slice(0, 6);
+  }
 
-    return {
-      placeName: hit.name || name,
-      latitude: hit.latitude,
-      longitude: hit.longitude,
-      country: hit.country ?? null,
-      region: hit.admin1 ?? null,
-      timezone: hit.timezone ?? null,
-    };
+  async searchDestination(query: string): Promise<GeocodedDestination | null> {
+    const results = await this.searchPlaces(query);
+    return results[0] ?? null;
   }
 }
 

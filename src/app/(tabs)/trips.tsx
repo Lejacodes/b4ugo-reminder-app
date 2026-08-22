@@ -67,7 +67,7 @@ export default function TripsScreen() {
           {templates.length === 0 ? (
             <Text style={[styles.meta, { color: colors.inkSoft }]}>none yet</Text>
           ) : (
-            templates.slice(0, 5).map((template) => (
+            templates.slice(0, 3).map((template) => (
               <Text key={template.id} style={[styles.templateLine, { color: colors.ink }]}>
                 {template.name}
                 <Text style={[styles.meta, { color: colors.inkSoft }]}> · {template.items.length} items</Text>
@@ -98,8 +98,8 @@ export default function TripsScreen() {
 
         <View style={styles.action}>
           <ButterButton
-            label="+ plan something"
-            accessibilityLabel="Plan a trip or occasion"
+            label="+ plan a trip"
+            accessibilityLabel="Plan a trip"
             onPress={() => router.push(tripHref('/trip/new'))}
           />
         </View>

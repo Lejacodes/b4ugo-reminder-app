@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
 import { ChecklistItem } from '@/components/before-ugo/ChecklistItem';
-import { ButterButton, Handwriting, PaperPanel, QuietLink } from '@/components/scrapbook';
+import { ButterButton, Handwriting, PaperField, PaperPanel, PlaceAutocomplete, QuietLink } from '@/components/scrapbook';
 import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { maxContentWidth, spacing } from '@/constants/spacing';
-import { minTouchTarget } from '@/constants/typography';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useReminders } from '@/store/ReminderProvider';
 
@@ -91,24 +90,18 @@ export default function OnTheWayBackScreen() {
         {composing ? (
           <PaperPanel tilt={tiltAt(3)} tape="top-left">
             <Handwriting variant="title">add</Handwriting>
-            <TextInput
+            <PaperField
               accessibilityLabel="What to remember on the way back"
               placeholder="Buy cat food"
-              placeholderTextColor={colors.inkSoft}
               value={title}
               onChangeText={setTitle}
-              autoCorrect={false}
-              style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
+              autoCapitalize="sentences"
             />
-            <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>add a place</Text>
-            <TextInput
-              accessibilityLabel="Place name"
+            <PlaceAutocomplete
+              label="add a place"
               placeholder="PetZone, the post office…"
-              placeholderTextColor={colors.inkSoft}
               value={place}
               onChangeText={setPlace}
-              autoCorrect={false}
-              style={[styles.input, { color: colors.ink, borderBottomColor: colors.line }]}
             />
             <View style={styles.actions}>
               <ButterButton
@@ -141,14 +134,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     gap: spacing.lg,
     width: '100%',
-  },
-  input: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.input.fontSize,
-    minHeight: minTouchTarget,
-    borderBottomWidth: 1,
-    paddingVertical: 8,
-    marginTop: 8,
   },
   fieldLabel: {
     fontFamily: TEXT_FONT,

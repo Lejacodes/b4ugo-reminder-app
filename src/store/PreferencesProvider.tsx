@@ -192,6 +192,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.packingItems, userId)),
         preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.packingTemplates, userId)),
         preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.travelIntentions, userId)),
+        preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.savedPlaces, userId)),
+        preferencesStorage.removeItem(scopedKey(STORAGE_KEYS.notificationLog, userId)),
       ]);
     }
     setProfile(defaultUserProfile(userId));

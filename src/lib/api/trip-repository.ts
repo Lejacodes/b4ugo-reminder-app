@@ -321,9 +321,31 @@ export const tripRepository = {
 
   async replaceIntentions(intentions: TravelIntention[]): Promise<void> {
     if (!isSupabaseConfigured()) return;
+    const supabase = getSupabase();
+    if (!supabase) return;
     const userId = await requireSessionUserId();
-    await replaceUserRows(
-      'saved_places_or_intentions',
+    const { data: existing, error } = await supabase
+      .from('saved_places_or_intentions')
+      .select('id')
+      .eq('user_id', userId)
+      .not('trip_id', 'is', null);
+    if (error) {
+      console.warn('[blugo] intentions replace read failed', error.message);
+      return;
+    }
+    const keep = new Set(intentions.map((item) => item.id));
+    const remove = (existing ?? []).map((row) => row.id as string).filter((id) => !keep.has(id));
+    if (remove.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('saved_places_or_intentions')
+        .delete()
+        .eq('user_id', userId)
+        .not('trip_id', 'is', null)
+        .in('id', remove);
+      if (deleteError) console.warn('[blugo] intentions delete failed', deleteError.message);
+    }
+    if (intentions.length === 0) return;
+    const { error: upsertError } = await supabase.from('saved_places_or_intentions').upsert(
       intentions.map((item) => ({
         id: item.id,
         user_id: userId,
@@ -338,5 +360,6 @@ export const tripRepository = {
         updated_at: item.updatedAt,
       })),
     );
+    if (upsertError) console.warn('[blugo] intentions save failed', upsertError.message);
   },
 };
