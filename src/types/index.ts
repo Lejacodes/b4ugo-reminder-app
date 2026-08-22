@@ -4,6 +4,8 @@ export { defaultUserProfile } from './user';
 export type { InterestOption, OnboardingInterest } from './onboarding';
 export { interestOptions } from './onboarding';
 
+export type { BeforeUgoItem, HomeJourneyData, OnTheWayBackItem, TodaySummary } from './home';
+
 export type {
   NotificationPreferences,
   ReminderPreferences,

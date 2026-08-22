@@ -79,4 +79,10 @@ export const readableType = {
   helper: { fontSize: 13, lineHeight: 18 },
   /** Privacy and security notes under a form. */
   fine: { fontSize: 13, lineHeight: 19 },
+  /** Count lines like "3 things waiting". */
+  count: { fontSize: 15, lineHeight: 21 },
+  /** Journey list item titles. */
+  item: { fontSize: 16, lineHeight: 22 },
+  /** Place names and other secondary scan lines. */
+  meta: { fontSize: 14, lineHeight: 19 },
 } as const;

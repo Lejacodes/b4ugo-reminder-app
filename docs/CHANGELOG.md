@@ -2,6 +2,30 @@
 
 All notable changes to B4UGO are documented here.
 
+## [Unreleased] — Home screen (journey concept)
+
+Home now communicates B4UGO's core idea: remembering things **before leaving**
+and **on the way back**, not a generic reminder list.
+
+### Implemented
+
+- Scrapbook Home with BLUGO wordmark, personalised greeting, and desk texture
+- **Before U Go** section — paper panel with slip-note rows (mock data)
+- **On the way back** section — place-anchored items ("Near Carrefour")
+- **Today** — small sticky summary slip
+- "+ leave something" action → Add tab
+- Section taps → Reminders tab (placeholder for full lists)
+- Mock data in `src/lib/home/mock-data.ts` with types in `src/types/home.ts`
+- Restrained staggered fade-in; respects Reduce Motion
+- Little Guy removed from Home
+
+### Documentation
+
+- New `docs/HOME.md`
+- Updated `docs/DESIGN_SYSTEM.md` — Home typography tokens
+
+---
+
 ## [Unreleased] — Authentication + first-run onboarding
 
 Users now authenticate before being asked for anything personal.

@@ -108,6 +108,20 @@ size.
 `PaperField` defaults to the readable face for typed values, with
 `variant="handwritten"` available for short expressive answers like a name.
 
+### Home screen typography
+
+Home follows the same scrapbook split. Additional readable sizes live in
+`readableType`:
+
+| Token | Size | Use on Home |
+|-------|------|-------------|
+| `count` | 15 | "3 things waiting", today summary lines |
+| `item` | 16 | Journey item titles |
+| `meta` | 14 | Place names ("Near Carrefour"), overflow hints |
+
+Section titles and microcopy use Starry Night via `Handwriting`. See
+[HOME.md](./HOME.md) for layout and mock-data notes.
+
 ---
 
 ## Spacing
