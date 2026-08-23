@@ -31,7 +31,6 @@ import {
   MOUTHS,
   SPARKLES,
   SPARKLE_PATH,
-  WAND_ORIGIN,
   WAND_RIBBON,
   WAND_STAR,
   WAND_STICK,
@@ -436,8 +435,9 @@ const styles = StyleSheet.create({
   antennaPivot: {
     transformOrigin: '50% 27%',
   },
+  // RN's transformOrigin parser only handles whole-number percentages (24.5% breaks).
   wandPivot: {
-    transformOrigin: `${WAND_ORIGIN.x}% ${(WAND_ORIGIN.y / ARTBOARD.height) * 100}%`,
+    transformOrigin: '25% 60%',
   },
   eye: {
     position: 'absolute',
