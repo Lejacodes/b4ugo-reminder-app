@@ -1,9 +1,10 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
+import { LiveMap, type LiveMapPin } from '@/components/map';
 import { IntentionComposer } from '@/components/trips';
 import { Handwriting, PaperPanel, QuietLink } from '@/components/scrapbook';
 import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
@@ -12,6 +13,7 @@ import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { formatDateRange, formatDuration } from '@/lib/trips/dates';
 import { formatPackedProgress } from '@/lib/trips/copy';
+import { isValidCoordinates } from '@/lib/location/coordinates';
 import { TRAVEL_INTENTION_LABELS, type TravelIntention } from '@/types/trip';
 import { useTrips } from '@/store/TripProvider';
 
@@ -37,6 +39,33 @@ export default function TravelModeScreen() {
   const trip = getTrip(id);
   const progress = packingProgress(id);
   const intentions = intentionsFor(id);
+
+  const mapPins = useMemo(() => {
+    const pins: LiveMapPin[] = [];
+    if (
+      trip &&
+      isValidCoordinates({ latitude: trip.latitude, longitude: trip.longitude })
+    ) {
+      pins.push({
+        id: `trip-${trip.id}`,
+        latitude: trip.latitude!,
+        longitude: trip.longitude!,
+        title: trip.destination,
+        subtitle: 'trip',
+      });
+    }
+    for (const item of intentions) {
+      if (!isValidCoordinates({ latitude: item.latitude, longitude: item.longitude })) continue;
+      pins.push({
+        id: item.id,
+        latitude: item.latitude!,
+        longitude: item.longitude!,
+        title: item.title,
+        subtitle: item.placeName ?? TRAVEL_INTENTION_LABELS[item.type],
+      });
+    }
+    return pins;
+  }, [intentions, trip]);
 
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<TravelIntention | null>(null);
@@ -77,6 +106,11 @@ export default function TravelModeScreen() {
         <Text style={[styles.meta, { color: colors.inkSoft }]}>
           {formatPackedProgress(progress.packed, progress.total)}
         </Text>
+
+        <PaperPanel tilt="0.4deg" tape="top-left">
+          <Handwriting variant="title">where you are</Handwriting>
+          <LiveMap pins={mapPins} height={300} />
+        </PaperPanel>
 
         {INTENTION_TYPES.map((group, index) => {
           const rows = intentions.filter((item) => item.type === group);

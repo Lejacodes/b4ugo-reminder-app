@@ -39,7 +39,7 @@ export function Logo({ visible, reduceMotion = false }: LogoProps) {
           },
         visible && reduceMotion && styles.shown,
       ]}>
-      BLUGO
+      B4UGO
     </Animated.Text>
   );
 }

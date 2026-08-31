@@ -25,6 +25,10 @@ type PlaceContextValue = {
     longitude?: number | null;
     label?: string | null;
   }) => Promise<Place | null>;
+  updatePlace: (
+    id: string,
+    patch: { name?: string; label?: string | null; latitude?: number | null; longitude?: number | null },
+  ) => Promise<Place | null>;
   deletePlace: (id: string) => Promise<void>;
 };
 
@@ -143,6 +147,28 @@ export function PlaceProvider({ children }: { children: ReactNode }) {
     [persist, places],
   );
 
+  const updatePlace = useCallback(
+    async (
+      id: string,
+      patch: { name?: string; label?: string | null; latitude?: number | null; longitude?: number | null },
+    ) => {
+      const existing = places.find((place) => place.id === id && place.type !== 'home');
+      if (!existing) return null;
+      const stamp = new Date().toISOString();
+      const nextPlace: Place = {
+        ...existing,
+        name: patch.name?.trim() || existing.name,
+        label: patch.label !== undefined ? patch.label : existing.label,
+        latitude: patch.latitude !== undefined ? patch.latitude : existing.latitude,
+        longitude: patch.longitude !== undefined ? patch.longitude : existing.longitude,
+        updatedAt: stamp,
+      };
+      await persist(places.map((place) => (place.id === id ? nextPlace : place)));
+      return nextPlace;
+    },
+    [persist, places],
+  );
+
   const deletePlace = useCallback(
     async (id: string) => {
       if (!places.some((place) => place.id === id && place.type !== 'home')) return;
@@ -154,8 +180,8 @@ export function PlaceProvider({ children }: { children: ReactNode }) {
   const home = useMemo(() => places.find((place) => place.type === 'home') ?? null, [places]);
 
   const value = useMemo<PlaceContextValue>(
-    () => ({ places, home, isLoading, setHome, upsertPlace, deletePlace }),
-    [places, home, isLoading, setHome, upsertPlace, deletePlace],
+    () => ({ places, home, isLoading, setHome, upsertPlace, updatePlace, deletePlace }),
+    [places, home, isLoading, setHome, upsertPlace, updatePlace, deletePlace],
   );
 
   return <PlaceContext.Provider value={value}>{children}</PlaceContext.Provider>;

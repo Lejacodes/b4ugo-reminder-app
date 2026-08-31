@@ -46,7 +46,7 @@ async function configureHandler(): Promise<void> {
       handleNotification: async () => ({
         shouldShowBanner: true,
         shouldShowList: true,
-        shouldPlaySound: false,
+        shouldPlaySound: true,
         shouldSetBadge: false,
       }),
     });
@@ -83,7 +83,7 @@ export function copyForReminder(item: RankedReminder, contextLabel?: string): { 
   if (item.href.startsWith('/trip/')) {
     return { title: 'This trip', body: item.title };
   }
-  return { title: contextLabel ? `Near ${contextLabel}` : 'BLUGO', body: item.title };
+  return { title: contextLabel ? `Near ${contextLabel}` : 'B4UGO', body: item.title };
 }
 
 export class ExpoNotificationService implements AppNotificationService {
@@ -136,6 +136,7 @@ export class ExpoNotificationService implements AppNotificationService {
           title: input.title,
           body: input.body,
           data: { href: input.href },
+          sound: 'default',
         },
         trigger: null,
       });
@@ -163,6 +164,7 @@ export class ExpoNotificationService implements AppNotificationService {
           title: input.title,
           body: input.body,
           data: { href: input.href },
+          sound: 'default',
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: input.at },
       });

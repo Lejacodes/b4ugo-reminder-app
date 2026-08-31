@@ -26,12 +26,9 @@ export function canDeliverNotification(status: NotificationPermissionStatus): bo
 export function shouldWatchLocation(input: {
   signedIn: boolean;
   locationRemindersEnabled: boolean;
-  preferContextual: boolean;
   platform: string;
 }): boolean {
   if (input.platform === 'web') return false;
   if (!input.signedIn) return false;
-  if (!input.locationRemindersEnabled) return false;
-  if (!input.preferContextual) return false;
-  return true;
+  return input.locationRemindersEnabled;
 }

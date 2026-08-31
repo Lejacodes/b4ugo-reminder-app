@@ -2,6 +2,7 @@ import { getSupabase } from '@/lib/supabase/client';
 
 import { AI_UNAVAILABLE_MESSAGE, LITTLE_GUY_SYSTEM_PROMPT } from './ai-prompts';
 import type { AIProvider } from './ai-provider';
+import { formatContextForModel } from './rag-context';
 import { AI_TOOL_SCHEMAS } from './tool-schemas';
 import type { AIRequest, AIResponse, AIToolCall, AIToolName } from './types';
 
@@ -39,6 +40,12 @@ function asToolCalls(value: unknown): AIToolCall[] {
         id: typeof record.id === 'string' ? record.id : undefined,
         name: name as AIToolName,
         args,
+        thoughtSignature:
+          typeof record.thoughtSignature === 'string'
+            ? record.thoughtSignature
+            : typeof record.thought_signature === 'string'
+              ? record.thought_signature
+              : undefined,
       },
     ];
   });
@@ -68,6 +75,7 @@ async function postHttp(url: string, request: AIRequest): Promise<AIResponse> {
         system: LITTLE_GUY_SYSTEM_PROMPT,
         messages: request.messages,
         context: request.context,
+        rag: formatContextForModel(request.context),
         tools: request.tools ?? AI_TOOL_SCHEMAS,
       }),
       signal: controller.signal,
@@ -93,6 +101,7 @@ async function invokeFunction(name: string, request: AIRequest): Promise<AIRespo
       system: LITTLE_GUY_SYSTEM_PROMPT,
       messages: request.messages,
       context: request.context,
+      rag: formatContextForModel(request.context),
       tools: request.tools ?? AI_TOOL_SCHEMAS,
     },
   });

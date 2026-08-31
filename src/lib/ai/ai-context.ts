@@ -9,6 +9,7 @@ const MAX_REMINDERS = 20;
 const MAX_TRIPS = 6;
 const MAX_PLACES = 12;
 const MAX_INTENTIONS = 16;
+const MAX_PACKING = 40;
 
 export function buildAIContext(input: {
   reminders: Reminder[];
@@ -58,6 +59,15 @@ export function buildAIContext(input: {
       type: item.type,
       placeName: item.placeName,
     })),
+    packing: input.packingItems
+      .filter((item) => !item.dismissed)
+      .slice(0, MAX_PACKING)
+      .map((item) => ({
+        id: item.id,
+        tripId: item.tripId,
+        title: item.title,
+        checked: item.checked,
+      })),
     weather: input.weather ?? null,
     activeDestination: input.context?.destination ?? null,
   };

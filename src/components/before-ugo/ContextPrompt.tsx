@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Handwriting, PlaceAutocomplete } from '@/components/scrapbook';
+import type { GeocodedDestination } from '@/lib/geocoding';
 import { palette as brand } from '@/constants/colors';
 import { readableType, TEXT_FONT } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
@@ -11,6 +12,7 @@ const PURPOSES = ['Classes', 'Gym', 'Flight', 'Beach', 'Work'] as const;
 type ContextPromptProps = {
   destination: string;
   onDestination: (value: string) => void;
+  onDestinationSelect?: (place: GeocodedDestination | null) => void;
   purpose: string;
   onPurpose: (value: string) => void;
 };
@@ -21,6 +23,7 @@ type ContextPromptProps = {
 export function ContextPrompt({
   destination,
   onDestination,
+  onDestinationSelect,
   purpose,
   onPurpose,
 }: ContextPromptProps) {
@@ -35,6 +38,7 @@ export function ContextPrompt({
         placeholder="University, the gym, the airport…"
         value={destination}
         onChangeText={onDestination}
+        onSelect={onDestinationSelect}
       />
 
       <Text style={[styles.fieldLabel, { color: colors.inkSoft }]}>what are you going for?</Text>

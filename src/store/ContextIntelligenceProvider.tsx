@@ -1,10 +1,17 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
 
 import { evaluateReminders } from '@/lib/context/evaluate-reminders';
 import type { DeviceLocation } from '@/lib/engines/contracts';
+import { syncGeofenceRegions } from '@/lib/location/geofence-sync';
 import { isValidCoordinates } from '@/lib/location/coordinates';
+import {
+  buildPlaceAnchors,
+  formatPlaceNotificationCopy,
+  SHOP_GEOFENCE_RADIUS_M,
+  type PlaceAnchor,
+} from '@/lib/location/place-anchors';
 import { deviceLocationService } from '@/lib/location/device-location';
 import { proximityTracker, type ProximityPlace } from '@/lib/location/proximity';
 import {
@@ -16,6 +23,7 @@ import {
   forgetKeys,
   notificationKey,
   rememberNotification,
+  shouldNotify,
   type NotificationRecord,
 } from '@/lib/notifications/dedupe';
 import { planDueReminderActions } from '@/lib/notifications/due-reminders';
@@ -57,9 +65,17 @@ function openNotificationHref(
   }
 }
 
+function anchorsToProximityPlaces(anchors: PlaceAnchor[]): ProximityPlace[] {
+  return anchors.map((anchor) => ({
+    id: anchor.id,
+    name: anchor.placeName,
+    latitude: anchor.latitude,
+    longitude: anchor.longitude,
+  }));
+}
+
 /**
- * Foreground location → context engine → local notifications.
- * This is not OS background geofencing and does nothing on web.
+ * Location intelligence: foreground proximity + OS geofences for shops/markets.
  */
 export function ContextIntelligenceProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -72,6 +88,16 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
   const logRef = useRef<NotificationRecord[]>([]);
   const watchStop = useRef<(() => void) | null>(null);
   const handledResponse = useRef<string | null>(null);
+  const anchorIndex = useRef<Map<string, PlaceAnchor>>(new Map());
+
+  const shopAnchors = useMemo(
+    () => buildPlaceAnchors(reminders, places),
+    [places, reminders],
+  );
+
+  useEffect(() => {
+    anchorIndex.current = new Map(shopAnchors.map((anchor) => [anchor.id, anchor]));
+  }, [shopAnchors]);
 
   useEffect(() => {
     if (!userId) {
@@ -164,6 +190,21 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
   }, [preferences.notifications.pushEnabled, reminders, status, userId]);
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
+    if (status !== 'signed-in') return;
+
+    const enabled =
+      preferences.notifications.pushEnabled && preferences.reminders.locationRemindersEnabled;
+
+    void syncGeofenceRegions({ anchors: shopAnchors, enabled });
+  }, [
+    preferences.notifications.pushEnabled,
+    preferences.reminders.locationRemindersEnabled,
+    shopAnchors,
+    status,
+  ]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function start() {
@@ -173,7 +214,6 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
         !shouldWatchLocation({
           signedIn: status === 'signed-in' && Boolean(userId),
           locationRemindersEnabled: preferences.reminders.locationRemindersEnabled,
-          preferContextual: preferences.reminders.preferContextual,
           platform: Platform.OS,
         })
       ) {
@@ -185,12 +225,35 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
 
       const stop = await deviceLocationService.watchPosition((location) => {
         void handleLocation(location);
-      });
+      }, { highAccuracy: true });
       if (cancelled) {
         stop();
         return;
       }
       watchStop.current = stop;
+    }
+
+    async function notifyShopAnchor(anchor: PlaceAnchor) {
+      if (!userId || !preferences.notifications.pushEnabled) return;
+      if (!(await appNotificationService.isAvailable())) return;
+
+      const contextKey = contextNotificationKey({
+        kind: 'specificPlace',
+        placeName: anchor.placeName,
+      });
+      const copy = formatPlaceNotificationCopy(anchor);
+      const notifyId = `shop:${anchor.id}`;
+
+      if (!shouldNotify(logRef.current, notificationKey(notifyId, contextKey))) return;
+
+      await appNotificationService.notifyNow({
+        id: `${notifyId}-${contextKey}`,
+        title: copy.title,
+        body: copy.body,
+        href: copy.href,
+      });
+      logRef.current = rememberNotification(logRef.current, notificationKey(notifyId, contextKey));
+      await saveLog(userId, logRef.current);
     }
 
     async function notifyContext(appContext: AppContext, label?: string) {
@@ -222,6 +285,7 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
 
     async function handleLocation(location: DeviceLocation) {
       if (!isValidCoordinates(location)) return;
+
       const tripPlaces: ProximityPlace[] = upcomingTrips
         .filter((trip) => isValidCoordinates({ latitude: trip.latitude, longitude: trip.longitude }))
         .map((trip) => ({
@@ -230,23 +294,8 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
           latitude: trip.latitude ?? null,
           longitude: trip.longitude ?? null,
         }));
-      const saved: ProximityPlace[] = places
-        .filter((place) => place.type !== 'home' && place.isActive)
-        .filter((place) => isValidCoordinates(place))
-        .map((place) => ({
-          id: place.id,
-          name: place.name,
-          latitude: place.latitude,
-          longitude: place.longitude,
-        }));
-      const wayBack: ProximityPlace[] = onTheWayBackItems
-        .filter((item) => isValidCoordinates(item.location))
-        .map((item) => ({
-          id: `rem:${item.id}`,
-          name: item.location?.placeName ?? item.title,
-          latitude: item.location?.latitude ?? null,
-          longitude: item.location?.longitude ?? null,
-        }));
+
+      const shopPlaces = anchorsToProximityPlaces(shopAnchors);
 
       let events;
       try {
@@ -255,7 +304,8 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
           home: home && isValidCoordinates(home)
             ? { id: home.id, name: home.name, latitude: home.latitude, longitude: home.longitude }
             : null,
-          places: [...saved, ...wayBack, ...tripPlaces],
+          places: [...shopPlaces, ...tripPlaces],
+          placeRadius: SHOP_GEOFENCE_RADIUS_M,
         });
       } catch (error) {
         console.warn('[blugo] proximity failed', error);
@@ -267,19 +317,14 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
           await notifyContext({ kind: 'leavingHome', departureId: context?.id ?? null }, 'home');
         }
         if (event.type === 'enteredPlace') {
+          const anchor = anchorIndex.current.get(event.place.id);
+          if (anchor) {
+            await notifyShopAnchor(anchor);
+            continue;
+          }
           if (event.place.id.startsWith('trip:')) {
             const tripId = event.place.id.slice('trip:'.length);
             await notifyContext({ kind: 'trip', tripId }, event.place.name);
-          } else if (event.place.id.startsWith('rem:')) {
-            await notifyContext(
-              { kind: 'onTheWayBack', placeName: event.place.name },
-              event.place.name,
-            );
-          } else {
-            await notifyContext(
-              { kind: 'specificPlace', placeId: event.place.id, placeName: event.place.name },
-              event.place.name,
-            );
           }
         }
         if (event.type === 'leftPlace') {
@@ -316,6 +361,7 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
     preferences.reminders.preferContextual,
     preferences.reminders.routineRemindersEnabled,
     reminders,
+    shopAnchors,
     status,
     upcomingTrips,
     userId,

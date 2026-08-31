@@ -5,20 +5,26 @@ export type AIToolName =
   | 'updateReminder'
   | 'deleteReminder'
   | 'completeReminder'
+  | 'completeAllReminders'
   | 'createSavedPlace'
   | 'updateSavedPlace'
   | 'deleteSavedPlace'
   | 'createTrip'
   | 'updateTrip'
+  | 'deleteTrip'
   | 'getTrip'
   | 'getUpcomingTrips'
   | 'getPackingList'
   | 'addPackingItem'
   | 'removePackingItem'
+  | 'togglePackingItem'
+  | 'toggleAllPackingItems'
   | 'suggestPacking'
   | 'getPersonalNecessities'
   | 'addPersonalNecessity'
   | 'addIntention'
+  | 'updateIntention'
+  | 'deleteIntention'
   | 'getTodayContext'
   | 'getUpcomingContext'
   | 'getWeather';
@@ -27,6 +33,8 @@ export type AIToolCall = {
   id?: string;
   name: AIToolName;
   args: Record<string, unknown>;
+  /** Required by Gemini 3 when replaying function calls in multi-turn tool loops. */
+  thoughtSignature?: string;
 };
 
 export type AIMessageRole = 'user' | 'assistant' | 'tool';
@@ -92,6 +100,13 @@ export type CompactIntention = {
   placeName: string | null;
 };
 
+export type CompactPackingItem = {
+  id: string;
+  tripId: string;
+  title: string;
+  checked: boolean;
+};
+
 export type CompactWeather = {
   summary: string;
   rainLikely: boolean;
@@ -105,6 +120,7 @@ export type AIContextSnapshot = {
   trips: CompactTrip[];
   places: CompactPlace[];
   intentions: CompactIntention[];
+  packing: CompactPackingItem[];
   weather: CompactWeather | null;
   activeDestination: string | null;
 };

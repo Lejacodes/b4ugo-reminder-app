@@ -1,4 +1,5 @@
-import type { AIMessage, AIResponse, AIToolCall, AIToolName, AIToolSchema } from './types';
+import { formatContextForModel } from './rag-context';
+import type { AIMessage, AIContextSnapshot, AIResponse, AIToolCall, AIToolName, AIToolSchema } from './types';
 
 export const GEMINI_MODEL = 'gemini-2.5-flash-lite';
 export const GEMINI_GENERATE_URL =
@@ -7,9 +8,21 @@ export const GEMINI_GENERATE_URL =
 type GeminiPart = {
   text?: string;
   thought?: boolean;
+  thoughtSignature?: string;
+  thought_signature?: string;
   functionCall?: { name?: string; args?: Record<string, unknown> };
   functionResponse?: { name?: string; response?: Record<string, unknown> };
 };
+
+function partThoughtSignature(part: GeminiPart): string | undefined {
+  if (typeof part.thoughtSignature === 'string' && part.thoughtSignature.length > 0) {
+    return part.thoughtSignature;
+  }
+  if (typeof part.thought_signature === 'string' && part.thought_signature.length > 0) {
+    return part.thought_signature;
+  }
+  return undefined;
+}
 
 type GeminiContent = {
   role: 'user' | 'model';
@@ -20,10 +33,12 @@ export type GeminiRequest = {
   system_instruction: { parts: Array<{ text: string }> };
   contents: GeminiContent[];
   tools?: Array<{ functionDeclarations: unknown[] }>;
+  tool_config?: {
+    function_calling_config: { mode: 'AUTO' | 'ANY' | 'NONE' };
+  };
   generationConfig: {
     temperature: number;
     maxOutputTokens: number;
-    thinkingConfig: { thinkingBudget: number };
   };
 };
 
@@ -92,7 +107,9 @@ export function toGeminiContents(messages: AIMessage[]): GeminiContent[] {
       const parts: GeminiPart[] = [];
       if (item.content.trim()) parts.push({ text: item.content });
       for (const call of item.toolCalls ?? []) {
-        parts.push({ functionCall: { name: call.name, args: call.args ?? {} } });
+        const part: GeminiPart = { functionCall: { name: call.name, args: call.args ?? {} } };
+        if (call.thoughtSignature) part.thoughtSignature = call.thoughtSignature;
+        parts.push(part);
       }
       if (parts.length) contents.push({ role: 'model', parts });
       continue;
@@ -108,22 +125,21 @@ export function toGeminiContents(messages: AIMessage[]): GeminiContent[] {
 
 export function buildGeminiRequest(input: {
   system: string;
-  context: unknown;
+  context: AIContextSnapshot;
   messages: AIMessage[];
   tools: AIToolSchema[];
 }): GeminiRequest {
-  const contextNote =
-    input.context == null
-      ? ''
-      : `\n\nCurrent BLUGO snapshot. Do not invent beyond this:\n${JSON.stringify(input.context)}`;
+  const contextNote = `\n\n${formatContextForModel(input.context)}`;
   return {
     system_instruction: { parts: [{ text: `${input.system}${contextNote}` }] },
     contents: toGeminiContents(input.messages),
     tools: input.tools.length ? toGeminiTools(input.tools) : undefined,
+    tool_config: {
+      function_calling_config: { mode: 'AUTO' },
+    },
     generationConfig: {
       temperature: 0.8,
       maxOutputTokens: 512,
-      thinkingConfig: { thinkingBudget: 0 },
     },
   };
 }
@@ -155,6 +171,7 @@ export function parseGeminiResponse(data: unknown): AIResponse {
       toolCalls.push({
         name: name as AIToolName,
         args: part.functionCall?.args && typeof part.functionCall.args === 'object' ? part.functionCall.args : {},
+        thoughtSignature: partThoughtSignature(part),
       });
     }
   }

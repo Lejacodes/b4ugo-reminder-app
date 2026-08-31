@@ -14,7 +14,8 @@ export {
   AI_GENTLE_HERE_MESSAGE,
 } from './ai-prompts';
 export { validateToolCall, protectNecessitiesFromPacking, isGenericPlaceName } from './ai-tools';
-export { buildConstellation, PIXEL_COLORS } from './constellation';
+export { formatContextForModel } from './rag-context';
+export { parseRelativeDueAt } from './parse-when';
 export { chatReply, isCasualTalk, looksLikeAction } from './conversation';
 export { interpretLocally, formatToolResult } from './fallback-provider';
 export { moodFromSituation, littleGuyWhisper } from './little-guy-mood';

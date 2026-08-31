@@ -2,7 +2,7 @@ import { chatReply, isCasualTalk, looksLikeAction } from './conversation';
 import { AI_AMBIGUOUS_MESSAGE, AI_GENTLE_HERE_MESSAGE } from './ai-prompts';
 import type { AIProvider } from './ai-provider';
 import { isGenericPlaceName } from './ai-tools';
-import { parseDateRange, parseRelativeDay } from './parse-when';
+import { parseDateRange, parseRelativeDay, parseRelativeDueAt } from './parse-when';
 import type { AIContextSnapshot, AIRequest, AIResponse, AIToolName, CompactPlace } from './types';
 
 function findTrip(context: AIContextSnapshot, hint?: string | null) {
@@ -73,11 +73,50 @@ export function interpretLocally(text: string, context: AIContextSnapshot): AIRe
     };
   }
 
-  const remind = /(?:remind me to|don't forget to|dont forget to|can you remind me to) (.+)$/i.exec(raw);
+  if (/check\s*off\s+all\s+(?:my\s+)?(?:reminders?\s+and\s+pack(?:ing|ings)?|pack(?:ing|ings)?\s+and\s+reminders?)|(?:check\s*off|complete|mark)\s+all\s+(?:my\s+)?(?:reminders?\s+and\s+pack)/.test(lower)) {
+    const trip = findTrip(context, null);
+    return {
+      message: 'all cleared ♡',
+      toolCalls: [
+        { name: 'completeAllReminders', args: {} },
+        { name: 'toggleAllPackingItems', args: { tripId: trip?.id } },
+      ],
+    };
+  }
+
+  if (/check\s*off\s+all\s+(?:my\s+)?reminders?|complete\s+all\s+(?:my\s+)?reminders?|mark\s+all\s+(?:my\s+)?reminders?/.test(lower)) {
+    return {
+      message: 'all done ♡',
+      toolCalls: [{ name: 'completeAllReminders', args: {} }],
+    };
+  }
+
+  if (
+    /check\s*off\s+all\s+(?:my\s+)?pack(?:ing|ings)?|(?:i\s+)?packed\s+everything|mark\s+all\s+(?:my\s+)?pack(?:ing|ings)?/.test(
+      lower,
+    )
+  ) {
+    const trip = findTrip(context, null);
+    return {
+      message: 'marked everything packed ♡',
+      toolCalls: [{ name: 'toggleAllPackingItems', args: { tripId: trip?.id } }],
+    };
+  }
+
+  const remind = /(?:remind me to|don't forget to|dont forget to|can you remind me to|make a reminder to|make a reminder for|add a reminder to) (.+)$/i.exec(raw);
   if (remind) {
-    const title = remind[1].replace(/\s+(tomorrow|today)\s*$/i, '').trim();
-    const due = parseRelativeDay(raw);
-    const when = /\btomorrow\b/i.test(raw) ? 'tomorrow' : due ? 'today' : '';
+    const title = remind[1]
+      .replace(/\s+(?:in|after)\s+\d+\s+(?:minutes?|hours?)\s*$/i, '')
+      .replace(/\s+(tomorrow|today)\s*$/i, '')
+      .trim();
+    const due = parseRelativeDueAt(raw) ?? parseRelativeDay(raw);
+    const when = /\bin \d+ (?:minutes?|hours?)\b/i.test(raw)
+      ? 'soon'
+      : /\btomorrow\b/i.test(raw)
+        ? 'tomorrow'
+        : due
+          ? 'today'
+          : '';
     return {
       message: when ? `sure ♡ i'll remind you ${when}.` : `sure ♡ i'll remember that.`,
       toolCalls: [{ name: 'createReminder', args: { title, category: 'specific', dueAt: due } }],
@@ -187,6 +226,31 @@ export function interpretLocally(text: string, context: AIContextSnapshot): AIRe
     return { message: 'here is what i have nearby...', toolCalls: [{ name: 'getUpcomingContext', args: {} }] };
   }
 
+  const done = /^(?:i )?(?:done|finished|completed|did) (.+)$/i.exec(raw);
+  if (done) {
+    return {
+      message: 'nice ♡',
+      toolCalls: [{ name: 'completeReminder', args: { title: done[1].trim() } }],
+    };
+  }
+
+  const deleteReminder = /(?:delete|remove) (?:the )?reminder (?:for )?(.+)$/i.exec(raw);
+  if (deleteReminder) {
+    return {
+      message: 'okay, i will remove it.',
+      toolCalls: [{ name: 'deleteReminder', args: { title: deleteReminder[1].trim(), confirm: 'yes' } }],
+    };
+  }
+
+  const packed = /(?:i )?(?:packed|brought) (.+)$/i.exec(raw);
+  if (packed) {
+    const trip = findTrip(context, null);
+    return {
+      message: 'marked ♡',
+      toolCalls: [{ name: 'togglePackingItem', args: { title: packed[1].trim(), tripId: trip?.id } }],
+    };
+  }
+
   const chat = chatReply(raw, context);
   if (chat) return chat;
 
@@ -274,6 +338,29 @@ export function formatToolResult(name: string, payload: unknown): string {
     return `${trip.title} — ${trip.destination}${trip.startDate ? `, ${trip.startDate}` : ''}. ${pack}.`;
   }
   if (name === 'completeReminder') return 'one less thing to remember ✨';
+  if (name === 'completeAllReminders') {
+    const count =
+      payload && typeof payload === 'object' && 'completed' in payload
+        ? Number((payload as { completed: unknown }).completed)
+        : 0;
+    if (!count) return 'no open reminders left.';
+    return count === 1 ? 'checked off your reminder ✨' : `checked off ${count} reminders ✨`;
+  }
+  if (name === 'updateReminder' || name === 'updateTrip' || name === 'updateSavedPlace' || name === 'updateIntention') {
+    return 'updated ♡';
+  }
+  if (name === 'deleteReminder' || name === 'deleteSavedPlace' || name === 'deleteTrip' || name === 'removePackingItem' || name === 'deleteIntention') {
+    return 'removed ♡';
+  }
+  if (name === 'togglePackingItem') return 'marked on your packing list ♡';
+  if (name === 'toggleAllPackingItems') {
+    const count =
+      payload && typeof payload === 'object' && 'toggled' in payload
+        ? Number((payload as { toggled: unknown }).toggled)
+        : 0;
+    if (!count) return 'everything on your packing list was already packed.';
+    return count === 1 ? 'marked 1 packing item packed ♡' : `marked ${count} packing items packed ♡`;
+  }
   if (name === 'getUpcomingContext' && payload && typeof payload === 'object') {
     const data = payload as {
       trips?: Array<{ title: string }>;

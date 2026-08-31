@@ -7,6 +7,7 @@ import { Screen } from '@/components/ui/Screen';
 import { AppText } from '@/components/ui/Text';
 import { spacing } from '@/constants/spacing';
 import { useTheme } from '@/hooks/use-theme';
+import { appNotificationService } from '@/lib/notifications/notification-service';
 import { usePreferences } from '@/store/PreferencesProvider';
 
 function PreferenceToggle({
@@ -39,7 +40,7 @@ export default function OnboardingPreferencesScreen() {
   const router = useRouter();
   const theme = useTheme();
   const { preferences, updatePreferences } = usePreferences();
-  const { reminders, privacy } = preferences;
+  const { reminders, privacy, notifications } = preferences;
 
   const handleContinue = () => {
     router.push('/onboarding/complete');
@@ -51,6 +52,18 @@ export default function OnboardingPreferencesScreen() {
         <AppText variant="heading">How should I help?</AppText>
 
         <Card variant="muted" style={styles.card}>
+          <PreferenceToggle
+            label="Push notifications"
+            value={notifications.pushEnabled}
+            onToggle={async () => {
+              const next = !notifications.pushEnabled;
+              if (next) await appNotificationService.requestPermission();
+              await updatePreferences({
+                notifications: { ...notifications, pushEnabled: next },
+              });
+            }}
+          />
+          <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
           <PreferenceToggle
             label="Context-aware reminders"
             value={reminders.preferContextual}

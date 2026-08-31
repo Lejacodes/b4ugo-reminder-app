@@ -65,6 +65,7 @@ export function TripFormFields({ state, onChange, onPlaceSelect, templates }: Tr
         value={state.destination}
         onChangeText={(destination) => onChange({ destination })}
         onSelect={onPlaceSelect}
+        preferNearby={false}
       />
       <DateField
         label="start date"

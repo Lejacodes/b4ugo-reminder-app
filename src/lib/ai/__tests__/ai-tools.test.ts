@@ -22,6 +22,7 @@ const empty: AIContextSnapshot = {
   ],
   places: [],
   intentions: [],
+  packing: [],
   weather: null,
   activeDestination: null,
 };
@@ -140,6 +141,28 @@ describe('local interpreter', () => {
     const reply = interpretLocally('remember the stuff', empty);
     expect(reply.toolCalls).toEqual([]);
     expect(reply.message).toBe(AI_AMBIGUOUS_MESSAGE);
+  });
+
+  it('checks off all reminders locally', () => {
+    const reply = interpretLocally('check off all reminders', empty);
+    expect(reply.toolCalls[0]?.name).toBe('completeAllReminders');
+  });
+
+  it('checks off all my reminders locally', () => {
+    const reply = interpretLocally('Check off all my reminders', empty);
+    expect(reply.toolCalls[0]?.name).toBe('completeAllReminders');
+  });
+
+  it('checks off all my packings locally', () => {
+    const reply = interpretLocally('Check off all my packings i packed everything', empty);
+    expect(reply.toolCalls[0]?.name).toBe('toggleAllPackingItems');
+  });
+
+  it('creates a reminder in N minutes', () => {
+    const reply = interpretLocally('make a reminder to make an app in 5 minutes', empty);
+    expect(reply.toolCalls[0]?.name).toBe('createReminder');
+    expect(reply.toolCalls[0]?.args.title).toBe('make an app');
+    expect(reply.toolCalls[0]?.args.dueAt).toBeTruthy();
   });
 
   it('talks back to greetings instead of offering to save a reminder', () => {

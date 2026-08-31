@@ -16,14 +16,19 @@ const CORS: Record<string, string> = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const DEFAULT_MODEL = 'gemini-2.5-flash-lite';
+const DEFAULT_MODEL = 'gemini-3.5-flash-lite';
 
 type IncomingMessage = {
   role?: string;
   content?: string;
   name?: string;
   toolCallId?: string;
-  toolCalls?: Array<{ id?: string; name?: string; args?: Record<string, unknown> }>;
+  toolCalls?: Array<{
+    id?: string;
+    name?: string;
+    args?: Record<string, unknown>;
+    thoughtSignature?: string;
+  }>;
 };
 
 type IncomingTool = {
@@ -36,15 +41,28 @@ type IncomingBody = {
   system?: string;
   messages?: IncomingMessage[];
   context?: unknown;
+  rag?: string;
   tools?: IncomingTool[];
 };
 
 type GeminiPart = {
   text?: string;
   thought?: boolean;
+  thoughtSignature?: string;
+  thought_signature?: string;
   functionCall?: { name?: string; args?: Record<string, unknown> };
   functionResponse?: { name?: string; response?: Record<string, unknown> };
 };
+
+function partThoughtSignature(part: GeminiPart): string | undefined {
+  if (typeof part.thoughtSignature === 'string' && part.thoughtSignature.length > 0) {
+    return part.thoughtSignature;
+  }
+  if (typeof part.thought_signature === 'string' && part.thought_signature.length > 0) {
+    return part.thought_signature;
+  }
+  return undefined;
+}
 
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -105,7 +123,10 @@ function toGeminiContents(messages: IncomingMessage[]) {
       const parts: GeminiPart[] = [];
       if (item.content?.trim()) parts.push({ text: item.content });
       for (const call of item.toolCalls ?? []) {
-        if (call.name) parts.push({ functionCall: { name: call.name, args: call.args ?? {} } });
+        if (!call.name) continue;
+        const part: GeminiPart = { functionCall: { name: call.name, args: call.args ?? {} } };
+        if (call.thoughtSignature) part.thoughtSignature = call.thoughtSignature;
+        parts.push(part);
       }
       if (parts.length) contents.push({ role: 'model', parts });
       continue;
@@ -128,7 +149,11 @@ function parseGemini(data: {
   }
   const parts = data.candidates?.[0]?.content?.parts ?? [];
   let message = '';
-  const toolCalls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  const toolCalls: Array<{
+    name: string;
+    args: Record<string, unknown>;
+    thoughtSignature?: string;
+  }> = [];
   for (const part of parts) {
     if (part.thought) continue;
     if (typeof part.text === 'string' && part.text.trim()) message += part.text;
@@ -139,6 +164,7 @@ function parseGemini(data: {
           part.functionCall.args && typeof part.functionCall.args === 'object'
             ? part.functionCall.args
             : {},
+        thoughtSignature: partThoughtSignature(part),
       });
     }
   }
@@ -175,9 +201,11 @@ Deno.serve(async (request) => {
   }
 
   const contextNote =
-    body.context == null
-      ? ''
-      : `\n\nCurrent BLUGO snapshot. Do not invent beyond this:\n${JSON.stringify(body.context)}`;
+    typeof body.rag === 'string' && body.rag.trim()
+      ? `\n\n${body.rag.trim()}`
+      : body.context == null
+        ? ''
+        : `\n\nCurrent B4UGO snapshot. Do not invent beyond this:\n${JSON.stringify(body.context)}`;
 
   const payload = {
     system_instruction: {
@@ -197,10 +225,12 @@ Deno.serve(async (request) => {
           },
         ]
       : undefined,
+    tool_config: {
+      function_calling_config: { mode: 'AUTO' },
+    },
     generationConfig: {
       temperature: 0.8,
       maxOutputTokens: 512,
-      thinkingConfig: { thinkingBudget: 0 },
     },
   };
 
@@ -217,6 +247,8 @@ Deno.serve(async (request) => {
       },
     );
     if (!response.ok) {
+      const detail = await response.text();
+      console.error('Gemini error', response.status, detail.slice(0, 400));
       return json(503, {
         message: "hmm, i can't reach my little brain right now ♡",
         toolCalls: [],

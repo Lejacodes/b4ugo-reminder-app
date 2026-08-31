@@ -46,7 +46,6 @@ describe('location-driven notification policy', () => {
       shouldWatchLocation({
         signedIn: true,
         locationRemindersEnabled: false,
-        preferContextual: true,
         platform: 'ios',
       }),
     ).toBe(false);
@@ -57,7 +56,6 @@ describe('location-driven notification policy', () => {
       shouldWatchLocation({
         signedIn: true,
         locationRemindersEnabled: true,
-        preferContextual: true,
         platform: 'web',
       }),
     ).toBe(false);

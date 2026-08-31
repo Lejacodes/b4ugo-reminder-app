@@ -6,6 +6,8 @@ import { ButterButton, PaperField, PlaceAutocomplete, QuietLink } from '@/compon
 import { readableType, TEXT_FONT } from '@/constants/scrapbook';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import type { GeocodedDestination } from '@/lib/geocoding';
+import { reverseGeocodeLocation } from '@/lib/geocoding/reverse-geocode';
+import { deviceLocationService } from '@/lib/location/device-location';
 import { TRAVEL_INTENTION_LABELS, type TravelIntentionType } from '@/types/trip';
 
 const INTENTION_TYPES: TravelIntentionType[] = ['food', 'place', 'activity', 'other'];
@@ -40,6 +42,38 @@ export function IntentionComposer({
   const [placeName, setPlaceName] = useState(initial?.placeName ?? '');
   const [note, setNote] = useState(initial?.note ?? '');
   const [place, setPlace] = useState<GeocodedDestination | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState<string | null>(null);
+
+  const useCurrentLocation = async () => {
+    setLocateError(null);
+    setLocating(true);
+    try {
+      const permission = await deviceLocationService.requestPermission();
+      if (permission !== 'granted') {
+        setLocateError('allow location to pin where you are right now.');
+        return;
+      }
+      const here = await deviceLocationService.getCurrentPosition({ highAccuracy: true });
+      if (!here) {
+        setLocateError('could not read your location.');
+        return;
+      }
+      const label = await reverseGeocodeLocation(here);
+      const placeName = label?.label ?? 'here';
+      setPlaceName(placeName);
+      setPlace({
+        placeName,
+        latitude: here.latitude,
+        longitude: here.longitude,
+        country: label?.country ?? null,
+        region: label?.region ?? null,
+        timezone: null,
+      });
+    } finally {
+      setLocating(false);
+    }
+  };
 
   return (
     <View>
@@ -62,12 +96,19 @@ export function IntentionComposer({
       />
       <PlaceAutocomplete
         label="place"
-        hint="optional"
+        hint="optional — or use where you are now"
         placeholder="near Antalya old town"
         value={placeName}
         onChangeText={setPlaceName}
         onSelect={setPlace}
       />
+      <QuietLink
+        label={locating ? 'finding you…' : 'use where i am now'}
+        accessibilityLabel="Use my current GPS location"
+        disabled={locating || busy}
+        onPress={() => void useCurrentLocation()}
+      />
+      {locateError ? <Text style={[styles.locateError, { color: colors.inkSoft }]}>{locateError}</Text> : null}
       <PaperField
         label="note"
         hint="optional"
@@ -107,5 +148,11 @@ const styles = StyleSheet.create({
   actions: {
     marginTop: 12,
     gap: 4,
+  },
+  locateError: {
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.helper.fontSize,
+    lineHeight: readableType.helper.lineHeight,
+    marginTop: 4,
   },
 });

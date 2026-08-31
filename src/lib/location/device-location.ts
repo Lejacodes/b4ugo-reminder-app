@@ -8,9 +8,15 @@ export type LocationPermissionStatus = 'undetermined' | 'granted' | 'denied' | '
 export type DeviceLocationService = {
   getPermissionStatus(): Promise<LocationPermissionStatus>;
   requestPermission(): Promise<LocationPermissionStatus>;
+  getBackgroundPermissionStatus(): Promise<LocationPermissionStatus>;
+  requestBackgroundPermission(): Promise<LocationPermissionStatus>;
+  hasBackgroundPermission(): Promise<boolean>;
   isAvailable(): Promise<boolean>;
-  getCurrentPosition(): Promise<DeviceLocation | null>;
-  watchPosition(onChange: (location: DeviceLocation) => void): Promise<() => void>;
+  getCurrentPosition(options?: { highAccuracy?: boolean }): Promise<DeviceLocation | null>;
+  watchPosition(
+    onChange: (location: DeviceLocation) => void,
+    options?: { highAccuracy?: boolean },
+  ): Promise<() => void>;
 };
 
 function mapPermission(status: string | undefined): LocationPermissionStatus {
@@ -50,6 +56,37 @@ export class ExpoLocationService implements DeviceLocationService {
     }
   }
 
+  async getBackgroundPermissionStatus(): Promise<LocationPermissionStatus> {
+    if (Platform.OS === 'web') return 'restricted';
+    try {
+      const Location = await loadLocation();
+      const current = await Location.getBackgroundPermissionsAsync();
+      return mapPermission(current.status);
+    } catch {
+      return 'restricted';
+    }
+  }
+
+  async requestBackgroundPermission(): Promise<LocationPermissionStatus> {
+    if (Platform.OS === 'web') return 'restricted';
+    try {
+      const foreground = await this.requestPermission();
+      if (foreground !== 'granted') return foreground;
+      const Location = await loadLocation();
+      const current = await Location.getBackgroundPermissionsAsync();
+      if (current.status === 'granted') return 'granted';
+      if (current.status === 'denied' && !current.canAskAgain) return 'denied';
+      const next = await Location.requestBackgroundPermissionsAsync();
+      return mapPermission(next.status);
+    } catch {
+      return 'restricted';
+    }
+  }
+
+  async hasBackgroundPermission(): Promise<boolean> {
+    return (await this.getBackgroundPermissionStatus()) === 'granted';
+  }
+
   async isAvailable(): Promise<boolean> {
     if (Platform.OS === 'web') return false;
     try {
@@ -62,13 +99,13 @@ export class ExpoLocationService implements DeviceLocationService {
     }
   }
 
-  async getCurrentPosition(): Promise<DeviceLocation | null> {
+  async getCurrentPosition(options?: { highAccuracy?: boolean }): Promise<DeviceLocation | null> {
     if (Platform.OS === 'web') return null;
     try {
       if (!(await this.isAvailable())) return null;
       const Location = await loadLocation();
       const fix = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
+        accuracy: options?.highAccuracy ? Location.Accuracy.High : Location.Accuracy.Balanced,
       });
       const next = {
         latitude: fix.coords.latitude,
@@ -82,17 +119,26 @@ export class ExpoLocationService implements DeviceLocationService {
     }
   }
 
-  async watchPosition(onChange: (location: DeviceLocation) => void): Promise<() => void> {
+  async watchPosition(
+    onChange: (location: DeviceLocation) => void,
+    options?: { highAccuracy?: boolean },
+  ): Promise<() => void> {
     if (Platform.OS === 'web') return () => {};
     if (!(await this.isAvailable())) return () => {};
     try {
       const Location = await loadLocation();
       const subscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Balanced,
-          distanceInterval: 40,
-          timeInterval: 15_000,
-        },
+        options?.highAccuracy
+          ? {
+              accuracy: Location.Accuracy.High,
+              distanceInterval: 8,
+              timeInterval: 3_000,
+            }
+          : {
+              accuracy: Location.Accuracy.Balanced,
+              distanceInterval: 40,
+              timeInterval: 15_000,
+            },
         (fix) => {
           const next = {
             latitude: fix.coords.latitude,

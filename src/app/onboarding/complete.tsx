@@ -6,14 +6,18 @@ import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { AppText } from '@/components/ui/Text';
 import { spacing } from '@/constants/spacing';
+import { appNotificationService } from '@/lib/notifications/notification-service';
 import { usePreferences } from '@/store/PreferencesProvider';
 
 export default function OnboardingCompleteScreen() {
   const router = useRouter();
-  const { profile, completeOnboarding } = usePreferences();
+  const { profile, preferences, completeOnboarding } = usePreferences();
   const greeting = profile.displayName ? `You're all set, ${profile.displayName}!` : "You're all set!";
 
   const handleFinish = async () => {
+    if (preferences.notifications.pushEnabled) {
+      await appNotificationService.requestPermission();
+    }
     await completeOnboarding();
     router.replace('/(tabs)');
   };

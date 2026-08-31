@@ -63,6 +63,23 @@ export function parseRelativeDay(text: string): string | null {
   return null;
 }
 
+/** ISO datetime for "in 5 minutes", "in 2 hours", etc. */
+export function parseRelativeDueAt(text: string, now = new Date()): string | null {
+  const lower = text.toLowerCase();
+  const minutes = /(?:in|after)\s+(\d+)\s+minutes?/.exec(lower);
+  if (minutes) {
+    const d = new Date(now.getTime() + Number(minutes[1]) * 60_000);
+    return d.toISOString();
+  }
+  const hours = /(?:in|after)\s+(\d+)\s+hours?/.exec(lower);
+  if (hours) {
+    const d = new Date(now.getTime() + Number(hours[1]) * 3_600_000);
+    return d.toISOString();
+  }
+  const dayDue = parseRelativeDay(text);
+  return dayDue;
+}
+
 export function parseDateRange(text: string): { startDate: string; endDate: string } | null {
   const match =
     /([A-Za-z]+\s+\d{1,2}|\d{1,2}\s+[A-Za-z]+|\d{4}-\d{2}-\d{2})\s*(?:to|-|–|—)\s*([A-Za-z]+\s+\d{1,2}|\d{1,2}\s+[A-Za-z]+|\d{4}-\d{2}-\d{2})(?:\s+(\d{4}))?/i.exec(

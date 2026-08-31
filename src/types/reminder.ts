@@ -76,6 +76,10 @@ export type ContextInput = {
   purpose?: string | null;
   person?: string | null;
   dateTime?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  country?: string | null;
+  region?: string | null;
 };
 
 export function createId(prefix: string): string {

@@ -20,6 +20,7 @@ import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { useTabBarInset } from '@/hooks/use-tab-bar-inset';
 import { deviceLocationService } from '@/lib/location/device-location';
+import { reverseGeocodeLocation } from '@/lib/geocoding/reverse-geocode';
 import { appNotificationService } from '@/lib/notifications/notification-service';
 import { useAppearance } from '@/store/AppearanceProvider';
 import { useAuth } from '@/store/AuthProvider';
@@ -98,7 +99,7 @@ export default function ProfileScreen() {
 
         <PaperPanel tilt={tiltAt(0)} tape="top-left">
           <Handwriting variant="title" accessibilityRole="header">
-            your blugo
+            your b4ugo
           </Handwriting>
 
           {editingName ? (
@@ -155,6 +156,18 @@ export default function ProfileScreen() {
           </Handwriting>
 
           <PreferenceRow
+            title="Push notifications"
+            value={preferences.notifications.pushEnabled}
+            onValueChange={async (next) => {
+              if (next) {
+                await appNotificationService.requestPermission();
+              }
+              await updatePreferences({
+                notifications: { ...preferences.notifications, pushEnabled: next },
+              });
+            }}
+          />
+          <PreferenceRow
             title="Context-aware"
             value={preferences.reminders.preferContextual}
             onValueChange={(next) =>
@@ -179,12 +192,16 @@ export default function ProfileScreen() {
               if (next) {
                 await deviceLocationService.requestPermission();
                 await appNotificationService.requestPermission();
+                await deviceLocationService.requestBackgroundPermission();
               }
               await updatePreferences({
                 reminders: { ...preferences.reminders, locationRemindersEnabled: next },
               });
             }}
           />
+          <Text style={[styles.locationHint, { color: colors.inkSoft }]}>
+            When you pass a shop you saved (Migros, PetZone…), B4UGO nudges you to buy what you listed there.
+          </Text>
           <View style={[styles.row, { borderBottomColor: colors.line }]}>
             <View style={styles.rowCopy}>
               <Text style={[styles.rowTitle, { color: colors.ink }]}>Home</Text>
@@ -198,10 +215,11 @@ export default function ProfileScreen() {
               onPress={async () => {
                 const permission = await deviceLocationService.requestPermission();
                 if (permission !== 'granted') return;
-                const here = await deviceLocationService.getCurrentPosition();
+                const here = await deviceLocationService.getCurrentPosition({ highAccuracy: true });
                 if (!here) return;
+                const label = await reverseGeocodeLocation(here);
                 await setHome({
-                  name: 'Home',
+                  name: label?.label ?? 'Home',
                   latitude: here.latitude,
                   longitude: here.longitude,
                 });
@@ -391,6 +409,13 @@ const styles = StyleSheet.create({
     fontFamily: TEXT_FONT,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
+  },
+  locationHint: {
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.fine.fontSize,
+    lineHeight: readableType.fine.lineHeight,
+    marginTop: -4,
+    marginBottom: 6,
   },
   accountActions: {
     marginTop: 8,

@@ -10,6 +10,7 @@ import { maxContentWidth, spacing } from '@/constants/spacing';
 import { minTouchTarget } from '@/constants/typography';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTabBarInset } from '@/hooks/use-tab-bar-inset';
+import type { GeocodedDestination } from '@/lib/geocoding';
 import { useReminders } from '@/store/ReminderProvider';
 import type { ReminderCategory } from '@/types/reminder';
 
@@ -34,6 +35,7 @@ export default function AddScreen() {
   const [category, setCategory] = useState<ReminderCategory>('beforeUgo');
   const [layer, setLayer] = useState<Layer>(context ? 'thisTrip' : 'always');
   const [place, setPlace] = useState('');
+  const [selectedPlace, setSelectedPlace] = useState<GeocodedDestination | null>(null);
   const [person, setPerson] = useState('');
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -50,15 +52,22 @@ export default function AddScreen() {
         if (layer === 'thisTrip' && context) await addThisTrip(trimmed);
         else await addAlways(trimmed);
       } else if (category === 'onTheWayBack') {
-        await addOnTheWayBack(trimmed, place.trim() || undefined);
+        await addOnTheWayBack(trimmed, {
+          placeName: selectedPlace?.placeName ?? place.trim(),
+          latitude: selectedPlace?.latitude ?? null,
+          longitude: selectedPlace?.longitude ?? null,
+        });
       } else {
         await addSpecific(trimmed, {
           person: person.trim() || undefined,
-          placeName: place.trim() || undefined,
+          placeName: (selectedPlace?.placeName ?? place.trim()) || undefined,
+          latitude: selectedPlace?.latitude ?? null,
+          longitude: selectedPlace?.longitude ?? null,
         });
       }
       setTitle('');
       setPlace('');
+      setSelectedPlace(null);
       setPerson('');
       setSaved(true);
     } finally {
@@ -172,6 +181,7 @@ export default function AddScreen() {
                 placeholder="PetZone, Migros…"
                 value={place}
                 onChangeText={setPlace}
+                onSelect={setSelectedPlace}
               />
             </View>
           )}
@@ -190,6 +200,7 @@ export default function AddScreen() {
                 placeholder="dentist, campus…"
                 value={place}
                 onChangeText={setPlace}
+                onSelect={setSelectedPlace}
               />
             </View>
           )}

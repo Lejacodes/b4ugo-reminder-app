@@ -1,6 +1,6 @@
 import { AI_GENTLE_HERE_MESSAGE, AI_UNAVAILABLE_MESSAGE } from './ai-prompts';
 import type { AIProvider } from './ai-provider';
-import { formatToolResult } from './fallback-provider';
+import { interpretLocally, formatToolResult } from './fallback-provider';
 import { protectNecessitiesFromPacking, validateToolCall } from './ai-tools';
 import { AI_TOOL_SCHEMAS } from './tool-schemas';
 import type { AIContextSnapshot, AIMessage, AIResponse, AIToolCall, AIToolName } from './types';
@@ -58,7 +58,7 @@ export async function runChatTurn(input: {
 }): Promise<ChatTurnResult> {
   const userMessage: AIMessage = { role: 'user', content: input.userText.trim() };
   let messages: AIMessage[] = [...input.history, userMessage];
-  const maxRounds = input.maxRounds ?? 2;
+  const maxRounds = input.maxRounds ?? 4;
 
   let first: AIResponse | null = null;
   let lastResults: Array<{ name: AIToolName; payload: unknown }> = [];
@@ -81,6 +81,22 @@ export async function runChatTurn(input: {
     if (!first) first = reply;
 
     if (!reply.toolCalls.length) {
+      if (round === 0) {
+        const local = interpretLocally(input.userText.trim(), input.context);
+        if (local.toolCalls.length) {
+          const results: Array<{ name: AIToolName; payload: unknown }> = [];
+          for (const call of local.toolCalls) {
+            const payload = await runValidatedTool(call, input.execute);
+            results.push({ name: call.name, payload });
+          }
+          const assistantMessage = composeReplyFromTools(local, results);
+          return {
+            messages: [...messages, { role: 'assistant', content: assistantMessage }],
+            assistantMessage,
+            unavailable: false,
+          };
+        }
+      }
       const content = reply.message.trim() || first.message.trim() || AI_GENTLE_HERE_MESSAGE;
       return {
         messages: [...messages, { role: 'assistant', content }],

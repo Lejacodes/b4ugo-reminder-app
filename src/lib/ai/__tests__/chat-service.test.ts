@@ -26,6 +26,7 @@ const empty: AIContextSnapshot = {
   ],
   places: [],
   intentions: [{ id: 'i1', tripId: 'trip-1', title: 'try a café', type: 'food', placeName: 'Antalya' }],
+  packing: [{ id: 'p1', tripId: 'trip-1', title: 'sunscreen', checked: false }],
   weather: null,
   activeDestination: null,
 };
@@ -155,6 +156,21 @@ describe('chat tool loop', () => {
       }),
     );
     expect(plan.assistantMessage.length).toBeGreaterThan(0);
+  });
+
+  it('runs local actions when the remote model refuses with text only', async () => {
+    const execute = jest.fn().mockResolvedValue({ completed: 2 });
+    const turn = await runChatTurn({
+      provider: new ScriptedProvider([
+        { message: "i still can't check off reminders for you", toolCalls: [] },
+      ]),
+      history: [],
+      userText: 'Check off all my reminders',
+      context: empty,
+      execute,
+    });
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ name: 'completeAllReminders' }));
+    expect(turn.assistantMessage).toMatch(/checked off|done/i);
   });
 
   it('rejects malformed tool arguments without executing', async () => {

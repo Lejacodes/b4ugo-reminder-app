@@ -1,24 +1,31 @@
 import type { AIToolCall, AIToolName, ValidatedTool } from './types';
+import { isExplicitConfirm } from './resolve-entity';
 
 export const AI_TOOL_NAMES: AIToolName[] = [
   'createReminder',
   'updateReminder',
   'deleteReminder',
   'completeReminder',
+  'completeAllReminders',
   'createSavedPlace',
   'updateSavedPlace',
   'deleteSavedPlace',
   'createTrip',
   'updateTrip',
+  'deleteTrip',
   'getTrip',
   'getUpcomingTrips',
   'getPackingList',
   'addPackingItem',
   'removePackingItem',
+  'togglePackingItem',
+  'toggleAllPackingItems',
   'suggestPacking',
   'getPersonalNecessities',
   'addPersonalNecessity',
   'addIntention',
+  'updateIntention',
+  'deleteIntention',
   'getTodayContext',
   'getUpcomingContext',
   'getWeather',
@@ -40,7 +47,13 @@ const GENERIC_PLACES = new Set([
   'grocery store',
 ]);
 
-const DESTRUCTIVE = new Set<AIToolName>(['deleteReminder', 'deleteSavedPlace', 'removePackingItem']);
+const DESTRUCTIVE = new Set<AIToolName>([
+  'deleteReminder',
+  'deleteSavedPlace',
+  'deleteTrip',
+  'removePackingItem',
+  'deleteIntention',
+]);
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -77,16 +90,25 @@ export function validateToolCall(call: AIToolCall): ValidatedTool {
     };
   }
 
+  if (call.name === 'completeAllReminders') {
+    return { ok: true, name: call.name, args: {} };
+  }
+
+  if (call.name === 'toggleAllPackingItems') {
+    return { ok: true, name: call.name, args: { ...args } };
+  }
+
   if (call.name === 'updateReminder' || call.name === 'completeReminder' || call.name === 'deleteReminder') {
     const id = text(args.id);
-    if (!id) {
+    const hint = text(args.title) || text(args.hint);
+    if (!id && !hint) {
       return {
         ok: false,
         reason: 'destructive',
         message: 'i need to know which reminder you mean.',
       };
     }
-    if (call.name === 'deleteReminder' && !text(args.confirm)) {
+    if (call.name === 'deleteReminder' && !isExplicitConfirm(args.confirm)) {
       return { ok: false, reason: 'destructive', message: 'say so clearly if you want me to delete that.' };
     }
     return { ok: true, name: call.name, args: { ...args, id } };
@@ -104,8 +126,9 @@ export function validateToolCall(call: AIToolCall): ValidatedTool {
 
   if (call.name === 'updateSavedPlace' || call.name === 'deleteSavedPlace') {
     const id = text(args.id);
-    if (!id) return { ok: false, reason: 'destructive', message: 'which saved place?' };
-    if (call.name === 'deleteSavedPlace' && !text(args.confirm)) {
+    const hint = text(args.name) || text(args.hint);
+    if (!id && !hint) return { ok: false, reason: 'destructive', message: 'which saved place?' };
+    if (call.name === 'deleteSavedPlace' && !isExplicitConfirm(args.confirm)) {
       return { ok: false, reason: 'destructive', message: 'say so clearly if you want me to delete that place.' };
     }
     return { ok: true, name: call.name, args: { ...args, id } };
@@ -129,10 +152,13 @@ export function validateToolCall(call: AIToolCall): ValidatedTool {
     };
   }
 
-  if (call.name === 'updateTrip' || call.name === 'getTrip' || call.name === 'getPackingList' || call.name === 'suggestPacking') {
+  if (call.name === 'updateTrip' || call.name === 'deleteTrip' || call.name === 'getTrip' || call.name === 'getPackingList' || call.name === 'suggestPacking') {
     const id = text(args.id) || text(args.tripId);
-    if ((call.name === 'updateTrip' || call.name === 'getTrip') && !id && !text(args.destination)) {
+    if ((call.name === 'updateTrip' || call.name === 'deleteTrip' || call.name === 'getTrip') && !id && !text(args.destination) && !text(args.title)) {
       return { ok: false, reason: 'invalid', message: 'which trip?' };
+    }
+    if (call.name === 'deleteTrip' && !isExplicitConfirm(args.confirm)) {
+      return { ok: false, reason: 'destructive', message: 'say so clearly if you want me to delete that trip.' };
     }
     return { ok: true, name: call.name, args: { ...args, id: id || null } };
   }
@@ -146,10 +172,25 @@ export function validateToolCall(call: AIToolCall): ValidatedTool {
 
   if (call.name === 'removePackingItem') {
     const id = text(args.id);
-    if (!id || !text(args.confirm)) {
+    if (!id && !text(args.title)) {
+      return { ok: false, reason: 'destructive', message: 'which packing item should i remove?' };
+    }
+    if (!isExplicitConfirm(args.confirm)) {
       return { ok: false, reason: 'destructive', message: 'i will not remove packing items unless you are clear.' };
     }
-    return { ok: true, name: call.name, args: { id } };
+    return { ok: true, name: call.name, args: { id, title: text(args.title) || null, tripId: text(args.tripId) || null } };
+  }
+
+  if (call.name === 'togglePackingItem') {
+    const id = text(args.id);
+    if (!id && !text(args.title)) {
+      return { ok: false, reason: 'invalid', message: 'which packing item?' };
+    }
+    return {
+      ok: true,
+      name: call.name,
+      args: { id: id || null, title: text(args.title) || null, tripId: text(args.tripId) || null },
+    };
   }
 
   if (call.name === 'addPersonalNecessity') {
@@ -176,6 +217,17 @@ export function validateToolCall(call: AIToolCall): ValidatedTool {
         note: text(args.note) || null,
       },
     };
+  }
+
+  if (call.name === 'updateIntention' || call.name === 'deleteIntention') {
+    const id = text(args.id);
+    if (!id && !text(args.title)) {
+      return { ok: false, reason: 'invalid', message: 'which plan or intention?' };
+    }
+    if (call.name === 'deleteIntention' && !isExplicitConfirm(args.confirm)) {
+      return { ok: false, reason: 'destructive', message: 'say so clearly if you want me to delete that.' };
+    }
+    return { ok: true, name: call.name, args: { ...args, id: id || null } };
   }
 
   if (DESTRUCTIVE.has(call.name)) {

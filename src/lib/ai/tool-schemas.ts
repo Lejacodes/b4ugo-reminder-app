@@ -18,7 +18,7 @@ export const AI_TOOL_SCHEMAS: AIToolSchema[] = [
           enum: ['specific', 'beforeUgo', 'onTheWayBack'],
           description: 'specific for dated/general, beforeUgo before leaving, onTheWayBack near a place',
         },
-        dueAt: { type: 'string', description: 'ISO date YYYY-MM-DD when known. Never invent a date.' },
+        dueAt: { type: 'string', description: 'ISO datetime or YYYY-MM-DD from user words. Never invent.' },
         placeName: {
           type: 'string',
           description: 'Exact saved place name. Never a generic word like supermarket.',
@@ -41,12 +41,19 @@ export const AI_TOOL_SCHEMAS: AIToolSchema[] = [
     },
   },
   {
+    name: 'completeAllReminders',
+    description: 'Mark every open reminder done when the user says they finished everything or wants all reminders checked off.',
+    parameters: { type: 'object', properties: {} },
+  },
+  {
     name: 'completeReminder',
-    description: 'Mark a reminder done only when the user says they finished it. Requires a real id.',
+    description: 'Mark one reminder done. Use id or title from B4UGO MEMORY.',
     parameters: {
       type: 'object',
-      properties: { id: { type: 'string' } },
-      required: ['id'],
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string' },
+      },
     },
   },
   {
@@ -118,17 +125,29 @@ export const AI_TOOL_SCHEMAS: AIToolSchema[] = [
   },
   {
     name: 'updateTrip',
-    description: 'Update an existing trip. Requires a real trip id from context.',
+    description: 'Update an existing trip dates, destination, or title. Use id from context, or destination/title hint.',
     parameters: {
       type: 'object',
       properties: {
         id: { type: 'string' },
-        title: { type: 'string' },
         destination: { type: 'string' },
+        title: { type: 'string' },
         startDate: { type: 'string' },
         endDate: { type: 'string' },
       },
-      required: ['id'],
+    },
+  },
+  {
+    name: 'deleteTrip',
+    description: 'Delete a trip only when the user is explicit. Requires id or destination and confirm="yes".',
+    parameters: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        destination: { type: 'string' },
+        confirm: { type: 'string', description: 'Must be yes' },
+      },
+      required: ['confirm'],
     },
   },
   {
@@ -170,14 +189,40 @@ export const AI_TOOL_SCHEMAS: AIToolSchema[] = [
   },
   {
     name: 'removePackingItem',
-    description: 'Remove a packing item only when explicit. Requires id and confirm="yes". Never change necessities.',
+    description: 'Remove a packing item only when explicit. Use id or title from context. Requires confirm="yes".',
     parameters: {
       type: 'object',
       properties: {
         id: { type: 'string' },
+        title: { type: 'string' },
+        tripId: { type: 'string' },
         confirm: { type: 'string' },
       },
-      required: ['id', 'confirm'],
+      required: ['confirm'],
+    },
+  },
+  {
+    name: 'togglePackingItem',
+    description: 'Mark one packing item packed or unpacked. Use id or title from B4UGO MEMORY.',
+    parameters: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string' },
+        tripId: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'toggleAllPackingItems',
+    description:
+      'Mark all open packing items packed when the user says they packed everything or wants all packing checked off. Optional tripId.',
+    parameters: {
+      type: 'object',
+      properties: {
+        tripId: { type: 'string' },
+        destination: { type: 'string' },
+      },
     },
   },
   {
@@ -220,6 +265,33 @@ export const AI_TOOL_SCHEMAS: AIToolSchema[] = [
         note: { type: 'string' },
       },
       required: ['title'],
+    },
+  },
+  {
+    name: 'updateIntention',
+    description: 'Update a saved trip intention/plan. Use id or title from context.',
+    parameters: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string' },
+        type: { type: 'string', enum: ['food', 'place', 'activity', 'other'] },
+        placeName: { type: 'string' },
+        note: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'deleteIntention',
+    description: 'Delete a trip intention only when explicit. Requires confirm="yes".',
+    parameters: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string' },
+        confirm: { type: 'string' },
+      },
+      required: ['confirm'],
     },
   },
   {

@@ -5,6 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
 import { ChecklistItem } from '@/components/before-ugo/ChecklistItem';
 import { ButterButton, Handwriting, PaperField, PaperPanel, PlaceAutocomplete, QuietLink } from '@/components/scrapbook';
+import type { GeocodedDestination } from '@/lib/geocoding';
 import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { maxContentWidth, spacing } from '@/constants/spacing';
@@ -22,6 +23,7 @@ export default function OnTheWayBackScreen() {
   const [composing, setComposing] = useState(false);
   const [title, setTitle] = useState('');
   const [place, setPlace] = useState('');
+  const [selectedPlace, setSelectedPlace] = useState<GeocodedDestination | null>(null);
   const [busy, setBusy] = useState(false);
 
   const open = onTheWayBackItems.filter((item) => item.status === 'open');
@@ -32,9 +34,14 @@ export default function OnTheWayBackScreen() {
     if (!trimmed || busy) return;
     setBusy(true);
     try {
-      await addOnTheWayBack(trimmed, place.trim() || undefined);
+      await addOnTheWayBack(trimmed, {
+        placeName: selectedPlace?.placeName ?? place.trim(),
+        latitude: selectedPlace?.latitude ?? null,
+        longitude: selectedPlace?.longitude ?? null,
+      });
       setTitle('');
       setPlace('');
+      setSelectedPlace(null);
       setComposing(false);
     } finally {
       setBusy(false);
@@ -99,10 +106,14 @@ export default function OnTheWayBackScreen() {
             />
             <PlaceAutocomplete
               label="add a place"
-              placeholder="PetZone, the post office…"
+              placeholder="PetZone, Migros…"
               value={place}
               onChangeText={setPlace}
+              onSelect={setSelectedPlace}
             />
+            <Text style={[styles.hint, { color: colors.inkSoft }]}>
+              Pick the shop from the list so B4UGO knows where to nudge you when you pass by.
+            </Text>
             <View style={styles.actions}>
               <ButterButton
                 label="leave it"
@@ -143,5 +154,11 @@ const styles = StyleSheet.create({
   actions: {
     marginTop: 16,
     gap: 4,
+  },
+  hint: {
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.fine.fontSize,
+    lineHeight: readableType.fine.lineHeight,
+    marginTop: 8,
   },
 });

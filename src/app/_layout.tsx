@@ -1,3 +1,5 @@
+import '@/lib/location/geofence-task';
+
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -11,6 +13,7 @@ import { useSessionGuard } from '@/hooks/use-session-guard';
 import { AppearanceProvider } from '@/store/AppearanceProvider';
 import { AuthProvider } from '@/store/AuthProvider';
 import { ContextIntelligenceProvider } from '@/store/ContextIntelligenceProvider';
+import { PushNotificationProvider } from '@/store/PushNotificationProvider';
 import { LittleGuyProvider } from '@/store/LittleGuyProvider';
 import { PlaceProvider } from '@/store/PlaceProvider';
 import { PreferencesProvider } from '@/store/PreferencesProvider';
@@ -72,7 +75,9 @@ export default function RootLayout() {
                 <PlaceProvider>
                   <LittleGuyProvider>
                     <ContextIntelligenceProvider>
-                      <RootNavigator />
+                      <PushNotificationProvider>
+                        <RootNavigator />
+                      </PushNotificationProvider>
                     </ContextIntelligenceProvider>
                   </LittleGuyProvider>
                 </PlaceProvider>

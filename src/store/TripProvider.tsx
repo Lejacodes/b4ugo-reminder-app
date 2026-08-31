@@ -10,7 +10,7 @@ import {
 } from 'react';
 
 import { packingAssistant, weatherService } from '@/lib/engines';
-import { geocodingService } from '@/lib/geocoding/open-meteo';
+import { geocodingService } from '@/lib/geocoding';
 import { isPastTrip, isUpcomingTrip, resolveTripDates } from '@/lib/trips/dates';
 import { STARTER_TEMPLATES } from '@/lib/trips/starter-templates';
 import {

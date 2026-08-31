@@ -12,6 +12,7 @@ import { readableType, TEXT_FONT } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
+import type { GeocodedDestination } from '@/lib/geocoding';
 import { useReminders } from '@/store/ReminderProvider';
 import { useTrips } from '@/store/TripProvider';
 
@@ -37,6 +38,7 @@ export default function BeforeUgoScreen() {
   const { upcomingTrips } = useTrips();
 
   const [destination, setDestination] = useState('');
+  const [destinationPlace, setDestinationPlace] = useState<GeocodedDestination | null>(null);
   const [purpose, setPurpose] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -44,8 +46,16 @@ export default function BeforeUgoScreen() {
     if (saving) return;
     setSaving(true);
     try {
-      await setGoingTo({ destination, purpose: purpose || null });
+      await setGoingTo({
+        destination,
+        purpose: purpose || null,
+        latitude: destinationPlace?.latitude ?? null,
+        longitude: destinationPlace?.longitude ?? null,
+        country: destinationPlace?.country ?? null,
+        region: destinationPlace?.region ?? null,
+      });
       setDestination('');
+      setDestinationPlace(null);
       setPurpose('');
     } finally {
       setSaving(false);
@@ -76,6 +86,7 @@ export default function BeforeUgoScreen() {
               <ContextPrompt
                 destination={destination}
                 onDestination={setDestination}
+                onDestinationSelect={setDestinationPlace}
                 purpose={purpose}
                 onPurpose={setPurpose}
               />
@@ -164,7 +175,7 @@ export default function BeforeUgoScreen() {
 
             {suggestionItems.length > 0 && (
               <BeforeUgoPaperSection
-                title="blugo suggests"
+                title="b4ugo suggests"
                 tape="top-left"
                 tiltIndex={4}>
                 {suggestionItems.map((item) => (

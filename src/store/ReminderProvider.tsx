@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { geocodingService } from '@/lib/geocoding/open-meteo';
+import { geocodingService } from '@/lib/geocoding';
 import {
   loadContext,
   loadNecessities,
@@ -124,8 +124,14 @@ type ReminderContextValue = {
   toggleReminder: (id: string) => Promise<void>;
   addAlways: (title: string) => Promise<void>;
   addThisTrip: (title: string) => Promise<void>;
-  addOnTheWayBack: (title: string, placeName?: string) => Promise<void>;
-  addSpecific: (title: string, extras?: { person?: string; placeName?: string }) => Promise<void>;
+  addOnTheWayBack: (
+    title: string,
+    place?: string | { placeName: string; latitude?: number | null; longitude?: number | null },
+  ) => Promise<void>;
+  addSpecific: (
+    title: string,
+    extras?: { person?: string; placeName?: string; latitude?: number | null; longitude?: number | null },
+  ) => Promise<void>;
   addReminder: (input: CreateReminderInput) => Promise<void>;
   updateReminder: (id: string, patch: { title?: string; dueAt?: string | null }) => Promise<void>;
   deleteReminder: (id: string) => Promise<void>;
@@ -379,7 +385,15 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       const destination = input.destination.trim();
       if (!destination) return;
 
-      const geo = await geocodingService.searchDestination(destination);
+      const hasCoords =
+        input.latitude != null &&
+        input.longitude != null &&
+        Number.isFinite(input.latitude) &&
+        Number.isFinite(input.longitude);
+
+      const geo = hasCoords
+        ? null
+        : await geocodingService.searchDestination(destination);
 
       const nextContext: BeforeUgoContext = {
         id: createId('ctx'),
@@ -388,11 +402,11 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
         person: input.person?.trim() || null,
         dateTime: input.dateTime ?? null,
         createdAt: nowIso(),
-        latitude: geo?.latitude ?? null,
-        longitude: geo?.longitude ?? null,
+        latitude: hasCoords ? input.latitude! : (geo?.latitude ?? null),
+        longitude: hasCoords ? input.longitude! : (geo?.longitude ?? null),
         timezone: geo?.timezone ?? null,
-        country: geo?.country ?? null,
-        region: geo?.region ?? null,
+        country: input.country ?? geo?.country ?? null,
+        region: input.region ?? geo?.region ?? null,
       };
 
       const generated = await buildTripChecklist(nextContext);
@@ -447,9 +461,25 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   );
 
   const addOnTheWayBack = useCallback(
-    async (title: string, placeName?: string) => {
-      const place = placeName?.trim();
-      const location = place ? await placeService.resolve(place) : null;
+    async (
+      title: string,
+      placeInput?: string | { placeName: string; latitude?: number | null; longitude?: number | null },
+    ) => {
+      let location = null as { placeName: string; latitude: number | null; longitude: number | null } | null;
+
+      if (typeof placeInput === 'object' && placeInput?.placeName?.trim()) {
+        location = {
+          placeName: placeInput.placeName.trim(),
+          latitude: placeInput.latitude ?? null,
+          longitude: placeInput.longitude ?? null,
+        };
+        if (location.latitude == null || location.longitude == null) {
+          location = await placeService.resolve(location.placeName);
+        }
+      } else if (typeof placeInput === 'string' && placeInput.trim()) {
+        location = await placeService.resolve(placeInput.trim());
+      }
+
       await addReminder({
         title,
         category: 'onTheWayBack',
@@ -468,9 +498,27 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   );
 
   const addSpecific = useCallback(
-    async (title: string, extras?: { person?: string; placeName?: string }) => {
+    async (
+      title: string,
+      extras?: {
+        person?: string;
+        placeName?: string;
+        latitude?: number | null;
+        longitude?: number | null;
+      },
+    ) => {
       const place = extras?.placeName?.trim();
-      const location = place ? await placeService.resolve(place) : null;
+      let location = null as { placeName: string; latitude: number | null; longitude: number | null } | null;
+      if (place) {
+        location = {
+          placeName: place,
+          latitude: extras?.latitude ?? null,
+          longitude: extras?.longitude ?? null,
+        };
+        if (location.latitude == null || location.longitude == null) {
+          location = await placeService.resolve(place);
+        }
+      }
       await addReminder({
         title,
         category: 'specific',

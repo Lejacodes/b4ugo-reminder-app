@@ -10,11 +10,21 @@ function mapSupabaseAuthError(error: { message?: string; code?: string; status?:
   const message = (error.message ?? '').toLowerCase();
   const status = error.status;
 
-  if (status === 429 || code.includes('over_request') || message.includes('rate')) {
+  if (status === 429 || code.includes('over_request') || code.includes('over_email') || message.includes('rate')) {
     return new AuthError('rate-limited');
+  }
+  if (code.includes('email_address_invalid') || message.includes('email address') && message.includes('invalid')) {
+    return new AuthError('invalid-email');
   }
   if (code.includes('email_exists') || message.includes('already registered')) {
     return new AuthError('email-taken');
+  }
+  if (
+    code.includes('email_not_confirmed') ||
+    message.includes('email not confirmed') ||
+    message.includes('confirm your email')
+  ) {
+    return new AuthError('email-confirmation-required');
   }
   if (
     code.includes('invalid_credentials') ||
@@ -77,6 +87,10 @@ export function createSupabaseAuthClient(): AuthClient {
       });
       if (error) throw mapSupabaseAuthError(error);
       if (data.session) return toAuthSession(data.session);
+
+      if (data.user && !data.user.email_confirmed_at) {
+        throw new AuthError('email-confirmation-required');
+      }
 
       const signedIn = await supabase.auth.signInWithPassword({
         email: credentials.email,

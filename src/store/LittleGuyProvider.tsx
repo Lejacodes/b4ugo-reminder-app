@@ -15,6 +15,13 @@ import { ChatSession } from '@/lib/ai/chat-session';
 import { protectNecessitiesFromPacking, validateToolCall } from '@/lib/ai/ai-tools';
 import { buildConstellation } from '@/lib/ai/constellation';
 import { littleGuyWhisper, moodFromSituation } from '@/lib/ai/little-guy-mood';
+import {
+  resolveIntentionId,
+  resolvePackingItemId,
+  resolvePlaceId,
+  resolveReminderId,
+  resolveTripId,
+} from '@/lib/ai/resolve-entity';
 import type { AIMessage, AIToolCall, CompactWeather, ConstellationPixel, LittleGuyMood } from '@/lib/ai/types';
 import { weatherService } from '@/lib/engines';
 import { usePlaces } from '@/store/PlaceProvider';
@@ -126,6 +133,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
       if (!validated.ok) return { error: validated.message };
 
       const args = validated.args;
+      const ctx = snapshot();
       const tripByHint = (hint?: unknown) => {
         const text = typeof hint === 'string' ? hint.toLowerCase() : '';
         return (
@@ -158,27 +166,56 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
             });
           }
           setJustSaved(true);
-          return { saved: true };
+          return { saved: true, title };
         }
-        case 'updateReminder':
-          await reminders.updateReminder(String(args.id), {
+        case 'updateReminder': {
+          const id = resolveReminderId(ctx, args);
+          if (!id) return { error: 'i need to know which reminder you mean.' };
+          await reminders.updateReminder(id, {
             title: typeof args.title === 'string' ? args.title : undefined,
             dueAt: typeof args.dueAt === 'string' ? args.dueAt : undefined,
           });
           return { updated: true };
-        case 'completeReminder':
-          await reminders.toggleReminder(String(args.id));
+        }
+        case 'completeReminder': {
+          const id = resolveReminderId(ctx, args);
+          if (!id) return { error: 'i need to know which reminder you mean.' };
+          await reminders.toggleReminder(id);
           return { completed: true };
-        case 'deleteReminder':
-          await reminders.deleteReminder(String(args.id));
+        }
+        case 'completeAllReminders': {
+          let count = 0;
+          for (const item of ctx.reminders) {
+            await reminders.toggleReminder(item.id);
+            count += 1;
+          }
+          return { completed: count };
+        }
+        case 'deleteReminder': {
+          const id = resolveReminderId(ctx, args);
+          if (!id) return { error: 'i need to know which reminder you mean.' };
+          await reminders.deleteReminder(id);
           return { deleted: true };
+        }
         case 'createSavedPlace':
           await places.upsertPlace({ name: String(args.name), label: typeof args.label === 'string' ? args.label : null });
           setJustSaved(true);
           return { saved: true };
-        case 'deleteSavedPlace':
-          await places.deletePlace(String(args.id));
+        case 'updateSavedPlace': {
+          const id = resolvePlaceId(ctx, args);
+          if (!id) return { error: 'which saved place?' };
+          await places.updatePlace(id, {
+            name: typeof args.name === 'string' ? args.name : undefined,
+            label: typeof args.label === 'string' ? args.label : undefined,
+          });
+          return { updated: true };
+        }
+        case 'deleteSavedPlace': {
+          const id = resolvePlaceId(ctx, args);
+          if (!id) return { error: 'which saved place?' };
+          await places.deletePlace(id);
           return { deleted: true };
+        }
         case 'createTrip': {
           const trip = await trips.createTrip({
             title: String(args.title),
@@ -192,12 +229,40 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
           setJustCreatedTrip(true);
           return trip;
         }
+        case 'updateTrip': {
+          const id = resolveTripId(ctx, args);
+          if (!id) return { error: 'which trip?' };
+          const current = trips.upcomingTrips.find((trip) => trip.id === id);
+          if (!current) return { error: 'which trip?' };
+          await trips.updateTrip(id, {
+            title: typeof args.title === 'string' ? args.title : current.title,
+            destination: typeof args.destination === 'string' ? args.destination : current.destination,
+            startDate: typeof args.startDate === 'string' ? args.startDate : current.startDate,
+            endDate: typeof args.endDate === 'string' ? args.endDate : current.endDate,
+            durationDays: current.durationDays,
+            activity: current.activity,
+            accommodation: current.accommodation,
+            transportation: current.transportation,
+            latitude: current.latitude,
+            longitude: current.longitude,
+            timezone: current.timezone,
+            country: current.country,
+            region: current.region,
+          });
+          return { updated: true };
+        }
+        case 'deleteTrip': {
+          const id = resolveTripId(ctx, args);
+          if (!id) return { error: 'which trip?' };
+          await trips.deleteTrip(id);
+          return { deleted: true };
+        }
         case 'getTrip':
           return tripByHint(args.id ?? args.destination) ?? null;
         case 'getUpcomingTrips':
           return snapshot().trips;
         case 'getPackingList': {
-          const trip = tripByHint(args.tripId ?? args.id);
+          const trip = tripByHint(args.tripId ?? args.id ?? args.destination);
           if (!trip) return { missing: [], packed: 0, total: 0 };
           const progress = trips.packingProgress(trip.id);
           return {
@@ -207,15 +272,34 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
           };
         }
         case 'addPackingItem': {
-          const trip = tripByHint(args.tripId);
+          const trip = tripByHint(args.tripId ?? args.destination);
           if (!trip) return { error: 'which trip?' };
           await trips.addPackingItem(trip.id, String(args.title), asCategory(args.category));
           setJustSaved(true);
           return { saved: true };
         }
-        case 'removePackingItem':
-          await trips.deletePackingItem(String(args.id));
+        case 'removePackingItem': {
+          const id = resolvePackingItemId(ctx, args);
+          if (!id) return { error: 'which packing item should i remove?' };
+          await trips.deletePackingItem(id);
           return { deleted: true };
+        }
+        case 'togglePackingItem': {
+          const id = resolvePackingItemId(ctx, args);
+          if (!id) return { error: 'which packing item?' };
+          await trips.togglePackingItem(id);
+          return { toggled: true };
+        }
+        case 'toggleAllPackingItems': {
+          const tripId = resolveTripId(ctx, args);
+          const targets = ctx.packing.filter(
+            (item) => !item.checked && (!tripId || item.tripId === tripId),
+          );
+          for (const item of targets) {
+            await trips.togglePackingItem(item.id);
+          }
+          return { toggled: targets.length };
+        }
         case 'suggestPacking': {
           const trip = tripByHint(args.tripId ?? args.id ?? args.destination);
           if (!trip) return [];
@@ -246,7 +330,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
           setJustSaved(true);
           return { saved: true };
         case 'addIntention': {
-          const trip = tripByHint(args.tripId);
+          const trip = tripByHint(args.tripId ?? args.destination);
           if (!trip) return { error: 'which trip should hold this?' };
           await trips.addIntention({
             tripId: trip.id,
@@ -259,6 +343,25 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
           });
           setJustSaved(true);
           return { saved: true };
+        }
+        case 'updateIntention': {
+          const id = resolveIntentionId(ctx, args);
+          if (!id) return { error: 'which plan or intention?' };
+          await trips.updateIntention(id, {
+            title: typeof args.title === 'string' ? args.title : undefined,
+            type: (['food', 'place', 'activity', 'other'].includes(String(args.type))
+              ? args.type
+              : undefined) as TravelIntentionType | undefined,
+            placeName: typeof args.placeName === 'string' ? args.placeName : undefined,
+            note: typeof args.note === 'string' ? args.note : undefined,
+          });
+          return { updated: true };
+        }
+        case 'deleteIntention': {
+          const id = resolveIntentionId(ctx, args);
+          if (!id) return { error: 'which plan or intention?' };
+          await trips.deleteIntention(id);
+          return { deleted: true };
         }
         case 'getTodayContext':
           return snapshot().reminders;

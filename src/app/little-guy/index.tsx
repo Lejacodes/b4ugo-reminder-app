@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
+import { ChatBubble } from '@/components/little-guy/ChatBubble';
 import { LittleGuy } from '@/components/little-guy/LittleGuy';
 import { ButterButton, Handwriting, PaperField, PaperPanel, QuietLink } from '@/components/scrapbook';
 import { readableType, TEXT_FONT } from '@/constants/scrapbook';
@@ -57,22 +58,27 @@ export default function LittleGuyScreen() {
         {whisper ? <Text style={[styles.whisper, { color: colors.inkSoft }]}>{whisper}</Text> : null}
 
         <PaperPanel tilt="-0.6deg" tape="top-left">
-          {messages.length === 0 ? (
-            <Text style={[styles.line, { color: colors.ink }]}>hey ♡{'\n'}what's on your mind?</Text>
-          ) : (
-            messages.filter(isVisibleChatMessage).map((item, index) => (
-              <Text
-                key={`${item.role}-${index}`}
-                style={[
-                  styles.line,
-                  { color: item.role === 'user' ? colors.inkSoft : colors.ink },
-                  item.role === 'user' && styles.user,
-                ]}>
-                {item.role === 'user' ? `you · ${item.content}` : item.content}
-              </Text>
-            ))
-          )}
-          {busy ? <Text style={[styles.line, { color: colors.inkSoft }]}>thinking...</Text> : null}
+          <View style={styles.chat}>
+            {messages.length === 0 ? (
+              <ChatBubble role="assistant" content={"hey ♡\nwhat's on your mind?"} colors={colors} />
+            ) : (
+              messages.filter(isVisibleChatMessage).map((item, index) => (
+                <ChatBubble
+                  key={`${item.role}-${index}`}
+                  role={item.role === 'user' ? 'user' : 'assistant'}
+                  content={item.content}
+                  colors={colors}
+                />
+              ))
+            )}
+            {busy ? (
+              <View style={styles.thinkingRow}>
+                <View style={[styles.thinkingBubble, { backgroundColor: colors.paper, borderColor: colors.line }]}>
+                  <Text style={[styles.thinkingText, { color: colors.inkSoft }]}>thinking...</Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
         </PaperPanel>
 
         {suggestions.length > 0 ? (
@@ -125,13 +131,24 @@ const styles = StyleSheet.create({
     fontSize: readableType.meta.fontSize,
     textAlign: 'center',
   },
-  line: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.item.fontSize,
-    lineHeight: readableType.item.lineHeight,
-    marginTop: 10,
+  chat: {
+    width: '100%',
+    paddingVertical: 4,
   },
-  user: {
-    marginTop: 16,
+  thinkingRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    marginTop: 8,
+  },
+  thinkingBubble: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 18,
+    borderWidth: 1,
+  },
+  thinkingText: {
+    fontFamily: TEXT_FONT,
+    fontSize: readableType.meta.fontSize,
   },
 });

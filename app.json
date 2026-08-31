@@ -40,7 +40,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "BLUGO uses your location to remind you when you leave home or get near a saved place."
+          "locationWhenInUsePermission": "B4UGO uses your location to show where you are on the map and remind you when you leave home or get near a saved place."
         }
       ],
       [

@@ -12,6 +12,7 @@ export type AuthErrorCode =
   | 'password-mismatch'
   | 'invalid-credentials'
   | 'email-taken'
+  | 'email-confirmation-required'
   | 'session-expired'
   | 'rate-limited'
   | 'network'
@@ -28,6 +29,7 @@ const MESSAGES: Record<AuthErrorCode, string> = {
   'password-mismatch': "those two passwords don't match.",
   'invalid-credentials': "that email and password don't match anything here.",
   'email-taken': "we couldn't create that account. try logging in instead.",
+  'email-confirmation-required': 'check your email for a confirmation link, then log in.',
   'session-expired': 'you were signed out. please log in again.',
   'rate-limited': 'too many tries. give it a minute and come back.',
   network: "couldn't reach the server. check your connection.",
@@ -59,11 +61,17 @@ export function toAuthError(error: unknown): AuthError {
   const record = error as { message?: string; code?: string; status?: number } | null;
   const code = (record?.code ?? '').toLowerCase();
   const message = (record?.message ?? '').toLowerCase();
-  if (record?.status === 429 || code.includes('over_request') || message.includes('rate limit')) {
+  if (record?.status === 429 || code.includes('over_request') || code.includes('over_email') || message.includes('rate limit')) {
     return new AuthError('rate-limited');
+  }
+  if (code.includes('email_address_invalid')) {
+    return new AuthError('invalid-email');
   }
   if (code.includes('email_exists') || message.includes('already registered')) {
     return new AuthError('email-taken');
+  }
+  if (code.includes('email_not_confirmed') || message.includes('email not confirmed')) {
+    return new AuthError('email-confirmation-required');
   }
   if (code.includes('invalid_credentials') || message.includes('invalid login')) {
     return new AuthError('invalid-credentials');

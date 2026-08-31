@@ -23,7 +23,7 @@ export function HomeHeader({ compact = false }: HomeHeaderProps) {
     <View style={[styles.wrap, compact && styles.wrapCompact]}>
       <View style={styles.wordmarkRow}>
         <Text accessibilityRole="header" style={[styles.wordmark, { color: colors.ink }]}>
-          BLUGO
+          B4UGO
         </Text>
         <Ionicons
           name="star"

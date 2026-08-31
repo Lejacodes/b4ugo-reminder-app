@@ -8,6 +8,7 @@ const empty: AIContextSnapshot = {
   trips: [],
   places: [],
   intentions: [],
+  packing: [],
   weather: null,
   activeDestination: null,
 };
