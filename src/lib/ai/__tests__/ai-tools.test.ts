@@ -153,6 +153,11 @@ describe('local interpreter', () => {
     expect(reply.toolCalls[0]?.name).toBe('completeAllReminders');
   });
 
+  it('clears checked items through the same verified complete path', () => {
+    const reply = interpretLocally('clear checked items', empty);
+    expect(reply.toolCalls[0]?.name).toBe('completeAllReminders');
+  });
+
   it('checks off all my packings locally', () => {
     const reply = interpretLocally('Check off all my packings i packed everything', empty);
     expect(reply.toolCalls[0]?.name).toBe('toggleAllPackingItems');

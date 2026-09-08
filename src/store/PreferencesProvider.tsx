@@ -81,13 +81,17 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
           : defaultUserPreferences();
 
         if (isSupabaseConfigured()) {
-          await ensureMigrated(userId, user?.email);
-          const [remoteProfile, remotePreferences] = await Promise.all([
-            profileRepository.getProfile(),
-            profileRepository.getPreferences(),
-          ]);
-          if (remoteProfile) nextProfile = { ...nextProfile, ...remoteProfile, userId };
-          if (remotePreferences) nextPreferences = { ...nextPreferences, ...remotePreferences };
+          try {
+            await ensureMigrated(userId, user?.email);
+            const [remoteProfile, remotePreferences] = await Promise.all([
+              profileRepository.getProfile(),
+              profileRepository.getPreferences(),
+            ]);
+            if (remoteProfile) nextProfile = { ...nextProfile, ...remoteProfile, userId };
+            if (remotePreferences) nextPreferences = { ...nextPreferences, ...remotePreferences };
+          } catch {
+            // Keep the local cache if the remote read fails.
+          }
         }
 
         if (cancelled) return;

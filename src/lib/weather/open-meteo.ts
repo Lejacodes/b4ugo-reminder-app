@@ -11,6 +11,7 @@ type OpenMeteoForecast = {
     precipitation_probability_max?: number[];
     temperature_2m_min?: number[];
     temperature_2m_max?: number[];
+    uv_index_max?: number[];
   };
 };
 
@@ -29,12 +30,12 @@ function rainLikely(data: OpenMeteoForecast): boolean {
   const code = data.current?.weather_code;
   if (code != null && RAIN_CODES.has(code)) return true;
   if ((data.current?.precipitation ?? 0) >= 0.2) return true;
-  return (data.daily?.precipitation_probability_max?.[0] ?? 0) >= 50;
+  return (data.daily?.precipitation_probability_max?.[0] ?? 0) > 40;
 }
 
 function summary(data: OpenMeteoForecast, raining: boolean): string {
   const temp = data.current?.temperature_2m;
-  const parts = [temp != null ? `${Math.round(temp)}°` : null, raining ? 'rain likely' : null].filter(
+  const parts = [temp != null ? `${Math.round(temp)}°` : null, raining ? 'Rain Expected' : null].filter(
     Boolean,
   );
   return parts.join(' · ') || 'forecast in';
@@ -54,7 +55,7 @@ export class OpenMeteoWeatherService implements WeatherService {
       '&longitude=' +
       encodeURIComponent(String(query.longitude)) +
       '&current=temperature_2m,weather_code,precipitation' +
-      '&daily=precipitation_probability_max,temperature_2m_min,temperature_2m_max' +
+      '&daily=precipitation_probability_max,temperature_2m_min,temperature_2m_max,uv_index_max' +
       '&forecast_days=1&timezone=auto';
 
     const data = await fetchJson<OpenMeteoForecast>(url);
@@ -66,6 +67,8 @@ export class OpenMeteoWeatherService implements WeatherService {
       rainLikely: raining,
       temperatureC: data.current?.temperature_2m ?? null,
       summary: summary(data, raining),
+      precipitationProbability: data.daily?.precipitation_probability_max?.[0] ?? null,
+      uvIndex: data.daily?.uv_index_max?.[0] ?? null,
     };
     cache.set(key, { at: Date.now(), value: snapshot });
     return snapshot;

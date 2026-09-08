@@ -6,7 +6,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
 import { computedDurationDays, TripFormFields, type TripFormState } from '@/components/trips';
 import { ButterButton, PaperPanel } from '@/components/scrapbook';
-import { readableType, scrapbookPalette, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, scrapbookPalette, readableFont } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   error: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.message.fontSize,
     color: scrapbookPalette.slipInk,
     marginTop: 12,

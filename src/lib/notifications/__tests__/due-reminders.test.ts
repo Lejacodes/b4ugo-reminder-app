@@ -29,7 +29,7 @@ describe('dueAt scheduling', () => {
       expect.objectContaining({
         type: 'schedule',
         id: dueNotificationId('rem-1', item.dueAt),
-        href: '/reminders',
+        href: '/(tabs)',
       }),
     ]);
 

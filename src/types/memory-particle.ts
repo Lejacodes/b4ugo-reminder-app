@@ -21,6 +21,7 @@ export type MemoryParticleProps = {
  * 100 x 118 artboard from constants/little-guy-art, so they scale with him.
  */
 export type MemoryParticlePosition = {
+  id?: string;
   x: number;
   y: number;
   type: MemoryParticleColor;

@@ -1,54 +1,67 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Handwriting } from '@/components/scrapbook';
-import { DISPLAY_FONT } from '@/constants/scrapbook';
+import { LittleGuyPresence } from '@/components/little-guy/LittleGuyPresence';
+import { DISPLAY_FONT, readableFont } from '@/constants/scrapbook';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { usePreferences } from '@/store/PreferencesProvider';
 
 type HomeHeaderProps = {
   compact?: boolean;
+  statusLine?: string | null;
 };
 
 /**
- * BLUGO wordmark and a warm greeting. No mascot — Home stands on its own.
+ * Wordmark, greeting, status, and a compact Little Guy that opens chat.
  */
-export function HomeHeader({ compact = false }: HomeHeaderProps) {
+export function HomeHeader({ compact = false, statusLine }: HomeHeaderProps) {
   const { profile } = usePreferences();
   const colors = useScrapbookPalette();
   const name = profile.displayName?.trim();
-  const greeting = name ? `hey, ${name}` : 'hey there';
+  const greeting = name ? `hey, ${name} ♡` : 'hey there ♡';
 
   return (
     <View style={[styles.wrap, compact && styles.wrapCompact]}>
-      <View style={styles.wordmarkRow}>
-        <Text accessibilityRole="header" style={[styles.wordmark, { color: colors.ink }]}>
-          B4UGO
-        </Text>
-        <Ionicons
-          name="star"
-          size={15}
-          color={colors.doodle}
-          style={styles.wordmarkStar}
-        />
+      <View style={styles.row}>
+        <View style={styles.copy}>
+          <View style={styles.wordmarkRow}>
+            <Text accessibilityRole="header" style={[styles.wordmark, { color: colors.ink }]}>
+              B4UGO
+            </Text>
+            <Ionicons name="star" size={15} color={colors.doodle} style={styles.wordmarkStar} />
+          </View>
+          <Text style={[styles.greeting, { color: colors.inkSoft }]}>{greeting}</Text>
+          {statusLine ? (
+            <Text accessibilityRole="text" style={[styles.status, { color: colors.inkSoft }]}>
+              {statusLine}
+            </Text>
+          ) : null}
+        </View>
+        <LittleGuyPresence compact />
       </View>
-      <Handwriting variant={compact ? 'title' : 'heading'} tone="soft" style={styles.greeting}>
-        {greeting}
-      </Handwriting>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    alignItems: 'center',
     paddingTop: 4,
-    paddingBottom: 8,
-    gap: 4,
+    paddingBottom: 4,
   },
   wrapCompact: {
     paddingTop: 0,
-    paddingBottom: 4,
+    paddingBottom: 0,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  copy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
   },
   wordmarkRow: {
     flexDirection: 'row',
@@ -57,16 +70,23 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     fontFamily: DISPLAY_FONT,
-    fontSize: 36,
-    lineHeight: 44,
+    fontSize: 32,
+    lineHeight: 38,
     letterSpacing: 1,
-    textAlign: 'center',
   },
   wordmarkStar: {
     marginTop: 2,
     transform: [{ rotate: '-12deg' }],
   },
   greeting: {
-    textAlign: 'center',
+    ...readableFont,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  status: {
+    ...readableFont,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 4,
   },
 });

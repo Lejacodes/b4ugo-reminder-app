@@ -2,7 +2,7 @@ const appJson = require('./app.json');
 
 const plugins = (appJson.expo.plugins ?? []).filter((plugin) => {
   const name = Array.isArray(plugin) ? plugin[0] : plugin;
-  return name !== 'expo-notifications' && name !== 'expo-location';
+  return name !== 'expo-notifications' && name !== 'expo-location' && name !== 'expo-speech-recognition';
 });
 plugins.push([
   'expo-location',
@@ -21,6 +21,13 @@ plugins.push([
     enableBackgroundRemoteNotifications: true,
     icon: './assets/images/icon.png',
     color: '#4A5D3A',
+  },
+]);
+plugins.push([
+  'expo-speech-recognition',
+  {
+    microphonePermission: 'B4UGO uses the microphone so you can hold to speak a reminder.',
+    speechRecognitionPermission: 'B4UGO uses speech recognition to turn what you say into a reminder.',
   },
 ]);
 

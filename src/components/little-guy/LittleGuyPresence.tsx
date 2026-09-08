@@ -1,31 +1,35 @@
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { LittleGuy } from '@/components/little-guy/LittleGuy';
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { Handwriting } from '@/components/scrapbook';
 import { useResponsive } from '@/hooks/use-responsive';
-import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { pixelsToParticles } from '@/lib/ai/pixels-to-particles';
 import { useLittleGuy } from '@/store/LittleGuyProvider';
 
-export function LittleGuyPresence() {
+type LittleGuyPresenceProps = {
+  /** Compact header avatar. No whisper line. */
+  compact?: boolean;
+};
+
+export function LittleGuyPresence({ compact = false }: LittleGuyPresenceProps) {
   const router = useRouter();
-  const colors = useScrapbookPalette();
   const { isCompact, isTablet } = useResponsive();
   const { mood, whisper, pixels } = useLittleGuy();
-  const size = isTablet ? 96 : isCompact ? 68 : 80;
+  const size = compact ? (isTablet ? 56 : 46) : isTablet ? 96 : isCompact ? 68 : 80;
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={whisper ? `Little Guy. ${whisper}. Open chat.` : 'Little Guy. Open chat.'}
       onPress={() => router.push('/little-guy')}
-      style={({ pressed }) => [styles.wrap, pressed && styles.pressed]}>
+      hitSlop={compact ? 8 : 0}
+      style={({ pressed }) => [compact ? styles.compact : styles.wrap, pressed && styles.pressed]}>
       <LittleGuy mood={mood} size={size} floating particles={pixelsToParticles(pixels)} />
-      {whisper ? (
-        <Text style={[styles.whisper, { color: colors.inkSoft }]}>{whisper}</Text>
-      ) : (
-        <Text style={[styles.whisper, { color: colors.inkSoft }]}>i'm here if you need me ♡</Text>
+      {compact ? null : (
+        <Handwriting variant="aside" tone="soft" style={styles.whisper}>
+          {whisper || "i'm here if you need me ♡"}
+        </Handwriting>
       )}
     </Pressable>
   );
@@ -36,10 +40,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 4,
   },
+  compact: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 64,
+    height: 72,
+  },
   whisper: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.meta.fontSize,
-    lineHeight: readableType.meta.lineHeight,
     textAlign: 'center',
     maxWidth: 260,
     marginTop: 2,

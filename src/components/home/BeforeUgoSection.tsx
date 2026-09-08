@@ -1,158 +1,215 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Handwriting, PaperPanel } from '@/components/scrapbook';
-import { palette } from '@/constants/colors';
-import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { WeatherBadgeMark } from '@/components/home/WeatherBadgeMark';
+import { SwipeDeleteRow } from '@/components/lists/SwipeDeleteRow';
+import { PaperPanel } from '@/components/scrapbook';
+import { readableFont, readableType, tiltAt } from '@/constants/scrapbook';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
-import { formatThingsWaiting } from '@/lib/home/copy';
 import type { BeforeUgoItem } from '@/types/home';
 
 type BeforeUgoSectionProps = {
   items: BeforeUgoItem[];
-  waitingLabel?: string;
   emptyHint?: string;
   completeHint?: string;
   onPress: () => void;
+  onToggle?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onClearChecked?: () => void;
+  onDismissWeather?: (id: string) => void;
 };
 
 /**
- * The primary Home section — things to take or do before leaving.
- *
- * Uses small paper-slip rows rather than a flat checklist so the list still
- * reads as part of the notebook, not a productivity widget.
+ * Immediate Before U Go board — persistent necessities plus today's context.
+ * Toggles here never complete the personal-necessity base record.
  */
 export function BeforeUgoSection({
   items,
-  waitingLabel,
   emptyHint,
   completeHint = 'all set',
   onPress,
+  onToggle,
+  onDelete,
+  onClearChecked,
+  onDismissWeather,
 }: BeforeUgoSectionProps) {
   const colors = useScrapbookPalette();
-  const countColor = palette.softMatcha;
-  const preview = items.slice(0, 4);
-  const count = items.length;
-  const label = waitingLabel ?? formatThingsWaiting(count);
-  const emptyMessage = emptyHint ?? (count === 0 ? completeHint : undefined);
+  const preview = items.slice(0, 8);
+  const emptyMessage = emptyHint ?? (items.length === 0 ? completeHint : undefined);
+  const canClear = items.some((item) => item.checked);
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Before U Go. ${label}. Open.`}
-      onPress={onPress}
-      style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}>
-      <PaperPanel tilt={tiltAt(0)} tape="top-left" contentStyle={styles.panel}>
-        <View style={styles.titleRow}>
-          <Handwriting variant="title" accessibilityRole="header">
+    <PaperPanel tilt={tiltAt(0)} tape="top-left" contentStyle={styles.panel}>
+      <View style={styles.header}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Before U Go. Open."
+          onPress={onPress}
+          style={({ pressed }) => [styles.headerPress, pressed && styles.pressed]}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.sectionTitle, { color: colors.ink }]}
+            numberOfLines={1}>
             before u go
-          </Handwriting>
-          <Ionicons
-            name="airplane-outline"
-            size={17}
-            color={colors.doodle}
-            style={styles.titleIcon}
-          />
-        </View>
-
-        <Text style={[styles.count, { color: countColor }]}>{label}</Text>
-
-        <Text style={[styles.aside, { color: colors.inkSoft }]}>take with you</Text>
-
-        <View style={styles.list}>
-          {preview.length === 0 && emptyMessage ? (
-            <Text style={[styles.more, { color: colors.inkSoft }]}>{emptyMessage}</Text>
-          ) : (
-            preview.map((item, index) => (
-              <View
-                key={item.id}
-                style={[styles.slip, { borderBottomColor: colors.line }, index > 0 && styles.slipGap]}>
-                <View
-                  style={[
-                    styles.box,
-                    { borderColor: colors.inkSoft, backgroundColor: colors.paperWarm },
-                  ]}
-                  accessibilityElementsHidden
-                />
-                <Text style={[styles.itemLabel, { color: colors.ink }]} numberOfLines={2}>
-                  {item.label}
-                </Text>
-              </View>
-            ))
-          )}
-        </View>
-
-        {count > preview.length && (
-          <Text style={[styles.more, { color: colors.inkSoft }]}>
-            + {count - preview.length} more
           </Text>
+          <Ionicons name="airplane-outline" size={16} color={colors.doodle} style={styles.titleIcon} />
+        </Pressable>
+        {onClearChecked ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Clear checked"
+            accessibilityState={{ disabled: !canClear }}
+            disabled={!canClear}
+            onPress={onClearChecked}
+            hitSlop={8}
+            style={({ pressed }) => [styles.clearHit, pressed && styles.pressed, !canClear && styles.disabled]}>
+            <Text style={[styles.clear, { color: colors.inkSoft }]}>Clear checked</Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      <View style={styles.list}>
+        {preview.length === 0 && emptyMessage ? (
+          <Text style={[styles.more, { color: colors.inkSoft }]}>{emptyMessage}</Text>
+        ) : (
+          preview.map((item) => (
+            <SwipeDeleteRow key={item.id} onDelete={onDelete ? () => onDelete(item.id) : undefined}>
+              <View style={[styles.slip, { borderBottomColor: colors.line }]}>
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: Boolean(item.checked) }}
+                  accessibilityLabel={item.badge ? `${item.label}. ${item.badge}` : item.label}
+                  onPress={() => onToggle?.(item.id)}
+                  disabled={!onToggle}
+                  style={({ pressed }) => [styles.itemPress, pressed && styles.pressed]}>
+                  <View
+                    style={[
+                      styles.box,
+                      {
+                        borderColor: colors.inkSoft,
+                        backgroundColor: item.checked ? colors.stickyButter : colors.paperWarm,
+                      },
+                    ]}
+                  />
+                  <View style={styles.copy}>
+                    <Text
+                      style={[styles.itemLabel, { color: colors.ink }, item.checked && styles.checked]}
+                      numberOfLines={2}>
+                      {item.label}
+                    </Text>
+                    {item.badge ? (
+                      <WeatherBadgeMark
+                        label={item.badge}
+                        icon={item.badgeIcon}
+                        ink={colors.inkSoft}
+                        background={colors.paperWarm}
+                        border={colors.stickyEdge}
+                        onPress={
+                          item.kind === 'weather' && onDismissWeather ? () => onDismissWeather(item.id) : undefined
+                        }
+                        disabled={item.kind !== 'weather'}
+                      />
+                    ) : null}
+                  </View>
+                </Pressable>
+              </View>
+            </SwipeDeleteRow>
+          ))
         )}
-      </PaperPanel>
-    </Pressable>
+      </View>
+
+      {items.length > preview.length && (
+        <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel="Show more Before U Go items">
+          <Text style={[styles.more, { color: colors.inkSoft }]}>
+            + {items.length - preview.length} more
+          </Text>
+        </Pressable>
+      )}
+    </PaperPanel>
   );
 }
 
 const styles = StyleSheet.create({
-  pressable: {
-    alignSelf: 'stretch',
-  },
-  pressed: {
-    opacity: 0.92,
-  },
   panel: {
     paddingTop: 20,
     paddingBottom: 20,
   },
-  titleRow: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 12,
+  },
+  headerPress: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  titleIcon: {
-    marginTop: 2,
-    transform: [{ rotate: '-8deg' }],
+  pressed: {
+    opacity: 0.85,
   },
-  count: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.count.fontSize,
-    lineHeight: readableType.count.lineHeight,
-    marginTop: 6,
-    fontWeight: '500',
+  disabled: {
+    opacity: 0.35,
   },
-  aside: {
-    fontFamily: TEXT_FONT,
+  clearHit: {
+    flexShrink: 0,
+    paddingLeft: 8,
+  },
+  clear: {
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
-    marginTop: 2,
-    marginBottom: 16,
+    textDecorationLine: 'underline',
+  },
+  sectionTitle: {
+    ...readableFont,
+    flexShrink: 1,
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '600',
+  },
+  titleIcon: {
+    transform: [{ rotate: '-2deg' }],
   },
   list: {
     gap: 0,
   },
   slip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 7,
-    paddingHorizontal: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  slipGap: {},
+  itemPress: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
   box: {
     width: 16,
     height: 16,
     borderWidth: 1.5,
     borderRadius: 2,
+    marginTop: 3,
     transform: [{ rotate: '-1deg' }],
   },
-  itemLabel: {
+  copy: {
     flex: 1,
-    fontFamily: TEXT_FONT,
+    gap: 4,
+  },
+  itemLabel: {
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
   },
+  checked: {
+    textDecorationLine: 'line-through',
+    opacity: 0.55,
+  },
   more: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     marginTop: 10,

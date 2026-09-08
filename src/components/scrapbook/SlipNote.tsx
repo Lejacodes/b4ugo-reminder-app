@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, readableFont } from '@/constants/scrapbook';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
 type SlipNoteProps = {
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-0.8deg' }],
   },
   text: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.message.fontSize,
     lineHeight: readableType.message.lineHeight,
   },

@@ -1,6 +1,5 @@
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -8,25 +7,19 @@ import {
   FadeInSection,
   HomeHeader,
   OnTheWayBackSection,
-  TodayNote,
+  TodayItemsSection,
 } from '@/components/home';
-import { LittleGuyPresence } from '@/components/little-guy';
-import { ButterButton } from '@/components/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useDeskStyle } from '@/hooks/use-scrapbook-palette';
+import { useHomeBoard } from '@/hooks/use-home-board';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useTabBarInset } from '@/hooks/use-tab-bar-inset';
-import { formatThingsWaiting } from '@/lib/home/copy';
-import { useReminders } from '@/store/ReminderProvider';
-import { useTrips } from '@/store/TripProvider';
 
 import '@/components/opening-login/opening-login.css';
 
 /**
- * Home answers one question: "What do I need to remember around my journey
- * today?" The two journey sections teach B4UGO's core idea; everything else
- * stays out of the way.
+ * Home is the Context Control Center: status, Before U Go, errands, Little Guy.
  */
 export default function HomeScreen() {
   const desk = useDeskStyle();
@@ -34,26 +27,28 @@ export default function HomeScreen() {
   const reduceMotion = useReducedMotion();
   const tabBarInset = useTabBarInset();
   const { horizontalPadding, isCompact, isTablet } = useResponsive();
-  const { beforeUgoOpen, onTheWayBackOpen, context } = useReminders();
-  const { upcomingTrips } = useTrips();
-  // Native stack keeps Home mounted under /before-ugo. Re-render on focus
-  // so the open-only lists from ReminderProvider are what the preview shows.
-  const [, setHomeEpoch] = useState(0);
-  useFocusEffect(
-    useCallback(() => {
-      setHomeEpoch((n) => n + 1);
-    }, []),
-  );
-  const beforeItems = beforeUgoOpen.map((item) => ({ id: item.id, label: item.title }));
-  const wayBackItems = onTheWayBackOpen.map((item) => ({
+  const {
+    board,
+    errandGroups,
+    statusLine,
+    toggleBoardItem,
+    dismissWeatherItem,
+    deleteBoardItem,
+    clearCheckedBoard,
+    toggleReminder,
+    deleteReminder,
+    deleteReminders,
+    specificItems,
+  } = useHomeBoard();
+
+  const beforeItems = board.map((item) => ({
     id: item.id,
     label: item.title,
-    placeName: item.location?.placeName ?? null,
+    checked: item.checked,
+    badge: item.badge,
+    badgeIcon: item.badgeIcon,
+    kind: item.kind,
   }));
-  const today = {
-    thingsWaiting: beforeUgoOpen.length,
-    alongTheWay: onTheWayBackOpen.length,
-  };
 
   return (
     <SafeAreaView className="opening-desk" style={desk} edges={['top']}>
@@ -71,50 +66,51 @@ export default function HomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}>
         <FadeInSection reduceMotion={reduceMotion} delayMs={0}>
-          <HomeHeader compact={isCompact} />
+          <HomeHeader compact={isCompact} statusLine={statusLine} />
         </FadeInSection>
 
         <FadeInSection reduceMotion={reduceMotion} delayMs={40}>
-          <LittleGuyPresence />
+          <BeforeUgoSection
+            items={beforeItems}
+            emptyHint={beforeItems.length === 0 ? 'all set' : undefined}
+            onPress={() => router.push('/before-ugo')}
+            onToggle={toggleBoardItem}
+            onDelete={deleteBoardItem}
+            onClearChecked={clearCheckedBoard}
+            onDismissWeather={(id) => {
+              const item = board.find((row) => row.id === id);
+              if (item) void dismissWeatherItem(item);
+            }}
+          />
         </FadeInSection>
 
         <FadeInSection reduceMotion={reduceMotion} delayMs={80}>
-          <BeforeUgoSection
-            items={beforeItems}
-            waitingLabel={formatThingsWaiting(beforeItems.length)}
-            emptyHint={
-              beforeItems.length === 0 && !context
-                ? 'where are you going?'
-                : beforeItems.length === 0
-                  ? 'all set'
-                  : undefined
-            }
-            onPress={() => router.push('/before-ugo')}
-          />
-        </FadeInSection>
-
-        <FadeInSection reduceMotion={reduceMotion} delayMs={160}>
           <OnTheWayBackSection
-            items={wayBackItems}
-            onPress={() => router.push('/on-the-way-back')}
+            groups={errandGroups.map((group) => ({
+              placeName: group.placeName,
+              items: group.items.map((item) => ({ id: item.id, label: item.title })),
+            }))}
+            onPress={() => router.push('/(tabs)/on-the-way-back')}
           />
         </FadeInSection>
 
-        <FadeInSection reduceMotion={reduceMotion} delayMs={240}>
-          <View style={styles.todaySlot}>
-            <TodayNote summary={today} tripSoon={upcomingTrips.length > 0} />
-          </View>
-        </FadeInSection>
-
-        <FadeInSection reduceMotion={reduceMotion} delayMs={320}>
-          <View style={styles.action}>
-            <ButterButton
-              label="+ leave something"
-              accessibilityLabel="Leave something to remember later"
-              onPress={() => router.push('/(tabs)/add')}
+        {specificItems.length > 0 ? (
+          <FadeInSection reduceMotion={reduceMotion} delayMs={120}>
+            <TodayItemsSection
+              items={specificItems.map((item) => ({
+                id: item.id,
+                title: item.title,
+                detail: [item.person, item.location?.placeName].filter(Boolean).join(' · ') || undefined,
+                checked: item.status === 'done',
+              }))}
+              onToggle={toggleReminder}
+              onDelete={deleteReminder}
+              onClearChecked={() =>
+                deleteReminders(specificItems.filter((item) => item.status === 'done').map((item) => item.id))
+              }
             />
-          </View>
-        </FadeInSection>
+          </FadeInSection>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -127,15 +123,7 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     paddingTop: spacing.sm,
-    gap: spacing.lg,
+    gap: spacing.md,
     width: '100%',
-  },
-  todaySlot: {
-    alignItems: 'center',
-    paddingTop: spacing.xs,
-  },
-  action: {
-    alignItems: 'center',
-    paddingTop: spacing.xs,
   },
 });

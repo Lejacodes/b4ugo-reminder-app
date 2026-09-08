@@ -24,6 +24,9 @@ const STORAGE_KEYS = {
   travelIntentions: 'blugo.travelIntentions',
   savedPlaces: 'blugo.savedPlaces',
   notificationLog: 'blugo.notificationLog',
+  departureSession: 'blugo.departureSession',
+  departureTriggerCooldown: 'blugo.departureTriggerCooldown',
+  widgetBoard: 'blugo.widgetBoard',
 } as const;
 
 export type StorageKeyBase = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

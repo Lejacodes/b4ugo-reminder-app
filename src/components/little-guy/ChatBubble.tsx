@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableFont, readableType } from '@/constants/scrapbook';
 import type { ScrapbookPalette } from '@/constants/scrapbook';
 
 type ChatBubbleProps = {
@@ -22,7 +22,14 @@ export function ChatBubble({ role, content, colors }: ChatBubbleProps) {
             ? { backgroundColor: colors.butter, borderColor: colors.butterDeep }
             : { backgroundColor: colors.paper, borderColor: colors.line },
         ]}>
-        <Text style={[styles.text, { color: colors.ink }]}>{content}</Text>
+        <Text
+          style={[
+            styles.chatText,
+            readableFont,
+            { color: colors.ink, fontFamily: readableFont.fontFamily },
+          ]}>
+          {content}
+        </Text>
       </View>
     </View>
   );
@@ -53,9 +60,10 @@ const styles = StyleSheet.create({
   bubbleAssistant: {
     borderBottomLeftRadius: 6,
   },
-  text: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.item.fontSize,
-    lineHeight: readableType.item.lineHeight,
+  chatText: {
+    ...readableFont,
+    fontSize: 17,
+    lineHeight: 24,
+    fontWeight: '400',
   },
 });

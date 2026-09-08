@@ -18,7 +18,14 @@ export { formatContextForModel } from './rag-context';
 export { parseRelativeDueAt } from './parse-when';
 export { chatReply, isCasualTalk, looksLikeAction } from './conversation';
 export { interpretLocally, formatToolResult } from './fallback-provider';
+export {
+  NO_CHECKED_ITEMS_MESSAGE,
+  deletionResult,
+  formatVerifiedMutation,
+  composeVerifiedReply,
+} from './tool-result';
 export { moodFromSituation, littleGuyWhisper } from './little-guy-mood';
+export { buildConstellation, CONSTELLATION_MAX, PIXEL_COLORS } from './constellation';
 export type {
   AIContextSnapshot,
   AIMessage,

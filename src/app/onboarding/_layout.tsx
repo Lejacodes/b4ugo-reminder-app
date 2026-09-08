@@ -5,6 +5,7 @@ export default function OnboardingLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
+        headerRight: () => null,
         animation: 'slide_from_right',
         gestureEnabled: true,
       }}

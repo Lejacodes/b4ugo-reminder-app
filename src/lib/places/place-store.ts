@@ -28,14 +28,18 @@ export async function loadPlaces(userId: string): Promise<Place[]> {
 export async function savePlaces(userId: string, places: Place[]): Promise<void> {
   await preferencesStorage.setItem(scopedKey(STORAGE_KEYS.savedPlaces, userId), JSON.stringify(places));
   if (!isSupabaseConfigured()) return;
-  const remote = (await placeRepository.listPlaces()) ?? [];
-  const keep = new Set(places.map((place) => place.id));
-  for (const existing of remote) {
-    if (!keep.has(existing.id)) {
-      await placeRepository.deletePlace(existing.id);
+  try {
+    const remote = (await placeRepository.listPlaces()) ?? [];
+    const keep = new Set(places.map((place) => place.id));
+    for (const existing of remote) {
+      if (!keep.has(existing.id)) {
+        await placeRepository.deletePlace(existing.id);
+      }
     }
-  }
-  for (const place of places) {
-    await placeRepository.upsertPlace(place);
+    for (const place of places) {
+      await placeRepository.upsertPlace(place);
+    }
+  } catch {
+    // Keep the local cache if the remote write fails.
   }
 }

@@ -2,6 +2,55 @@
 
 All notable changes to B4UGO are documented here.
 
+## [Unreleased] — Dynamic constellation + swipe-delete packing
+
+- Little Guy’s sparks map 1:1 to unresolved items, colored by urgency, on Home and chat
+- Checked trip packing stays on the board and packing list so swipe-left can delete it
+- Details: `docs/REFACTOR_LOG.md`
+
+## [Unreleased] — Compact header, vector icons, hold-to-speak
+
+- Little Guy lives in the Home header (tap opens chat); the large mid-screen presence is gone
+- Weather and section marks use vector icons instead of emoji; extra sub-labels are off the cards
+- Expo’s floating blue tools gear is hidden in development
+- Little Guy chat has hold-to-speak next to the input
+- Details: `docs/REFACTOR_LOG.md`
+
+## [Unreleased] — Step 3: unified trips, verified tools, offline sync
+
+- Incomplete packing for trips leaving today (or already active) shows on Home Before U Go; checking an item updates the trip packing record
+- Before U Go no longer keeps a second “for this trip” reminder list when that packing list is present
+- Little Guy only claims a delete after the store returns `success: true` and `deletedCount > 0`; otherwise he says he couldn’t find checked items to remove
+- Place and preference writes stay on device if Supabase is down
+- Details: `docs/REFACTOR_LOG.md`
+
+## [Unreleased] — Step 2: no clones, one Add, swipe delete
+
+- Personal necessities are no longer copied into departure reminder rows; checks stay in the day-scoped session map
+- Clearing a destination deletes leftover `contextId` rows and resets session checks
+- Home, Before U Go, and On the Way Back no longer have inline composers — Add is the only capture surface
+- Swipe-to-delete and **Clear checked** work on those lists
+- Details: `docs/REFACTOR_LOG.md`
+
+## [Unreleased] — Phase 2: Home control center, Smart Add, weather
+
+- Home shows a live context line from destination, time of day, and weather
+- Before U Go merges necessities with weather suggestions; checking them off is for this departure only
+- On the Way Back preview groups errands by saved place
+- Add is a single capture field with Before I leave / On the way back / Trip chips, hold-to-speak, and local intent classification
+- Weather rules inject umbrella/raincoat, coat/layers, and sunglasses/water with why-badges
+- Details: `docs/REFACTOR_LOG.md`
+
+## [Unreleased] — Phase 1: type, polish, 5-tab navigation
+
+- Starry Night is only for the wordmark, screen titles, section headers, and Little Guy lines
+- Body, labels, buttons, dates, and place names use the system sans
+- Paper card tilt is capped between 1° and 2°
+- Tabs are Home, On the Way Back, Add, Trips, Profile
+- The Specific tab is gone; leftover items show on Home under “today”
+- Home no longer has a second create button; Add is the entry point
+- Details: `docs/REFACTOR_LOG.md`
+
 ## [Unreleased] — Context engine, location, notifications
 
 - Reminder evaluation is centralized and deterministic

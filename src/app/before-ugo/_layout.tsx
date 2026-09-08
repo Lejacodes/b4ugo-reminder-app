@@ -5,6 +5,7 @@ export default function BeforeUgoLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
+        headerRight: () => null,
         animation: 'slide_from_right',
       }}
     />

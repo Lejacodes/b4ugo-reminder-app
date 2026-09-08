@@ -2,7 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import { palette as brand } from '@/constants/colors';
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableFont, readableType } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
@@ -15,6 +15,8 @@ type ButterButtonProps = {
   disabled?: boolean;
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
+  /** Solid matcha fill with white type for a primary action. */
+  highContrast?: boolean;
 };
 
 /**
@@ -28,9 +30,12 @@ export function ButterButton({
   disabled = false,
   fullWidth = false,
   style,
+  highContrast = false,
 }: ButterButtonProps) {
   const palette = useScrapbookPalette();
   const inactive = disabled || busy;
+  const fill = highContrast ? brand.softMatcha : palette.butter;
+  const typeColor = highContrast ? '#FFFFFF' : brand.cream;
 
   return (
     <Pressable
@@ -50,17 +55,17 @@ export function ButterButton({
         style={[
           styles.backing,
           {
-            backgroundColor: palette.butter,
+            backgroundColor: fill,
             borderColor: palette.ink,
           },
         ]}
       />
       <View style={styles.face}>
-        <Text style={[styles.label, { color: brand.cream }, busy && styles.labelHidden]} numberOfLines={1}>
+        <Text style={[styles.label, { color: typeColor }, busy && styles.labelHidden]} numberOfLines={1}>
           {label}
         </Text>
         {busy && (
-          <ActivityIndicator color={brand.cream} style={StyleSheet.absoluteFill} />
+          <ActivityIndicator color={typeColor} style={StyleSheet.absoluteFill} />
         )}
       </View>
     </Pressable>
@@ -93,7 +98,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
     fontWeight: '600',

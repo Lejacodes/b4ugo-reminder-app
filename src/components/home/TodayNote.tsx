@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Handwriting } from '@/components/scrapbook';
 import { formatTodayThings, formatTodayWay } from '@/lib/home/copy';
-import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { readableType, tiltAt, readableFont } from '@/constants/scrapbook';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import type { TodaySummary } from '@/types/home';
 
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-10deg' }],
   },
   line: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.count.fontSize,
     lineHeight: readableType.count.lineHeight,
     marginTop: 2,

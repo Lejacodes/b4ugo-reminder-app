@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LittleGuy } from '@/components/little-guy/LittleGuy';
 import { TripCard } from '@/components/trips';
 import { ButterButton, Handwriting, PaperPanel, QuietLink } from '@/components/scrapbook';
-import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { readableType, tiltAt, readableFont } from '@/constants/scrapbook';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
@@ -139,12 +139,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   meta: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
   },
   templateLine: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
     paddingVertical: 4,

@@ -3,11 +3,21 @@ import { Platform } from 'react-native';
 /**
  * Platform system fonts — SF Pro on iOS, Roboto on Android, Inter fallback on web.
  * Distinction comes from hierarchy (size/weight/spacing), not decorative typefaces.
+ *
+ * iOS uses `ui-sans-serif` (SF Pro). Never omit fontFamily after Starry Night
+ * is loaded — an empty family inherits the display face.
  */
-export const fontFamily = Platform.select({
+type FontPair = {
+  sans: string;
+  mono: string;
+};
+
+export const fontFamily = Platform.select<FontPair>({
   ios: {
-    sans: 'System',
-    mono: 'Menlo',
+    // Must be an explicit family. After Starry Night loads, omitting fontFamily
+    // makes every Text inherit that display face.
+    sans: 'ui-sans-serif',
+    mono: 'ui-monospace',
   },
   android: {
     sans: 'sans-serif',
@@ -18,10 +28,10 @@ export const fontFamily = Platform.select({
     mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
   },
   default: {
-    sans: 'System',
+    sans: 'ui-sans-serif',
     mono: 'monospace',
   },
-});
+})!;
 
 export const fontSize = {
   xs: 12,

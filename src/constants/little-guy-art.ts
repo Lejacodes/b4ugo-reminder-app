@@ -106,4 +106,6 @@ export const CONSTELLATION_SLOTS = [
   { x: 18, y: 94 },
   { x: 5, y: 77 },
   { x: 74, y: 13 },
+  { x: 12, y: 36 },
+  { x: 50, y: 8 },
 ] as const;

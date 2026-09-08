@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, readableFont } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import {
@@ -289,24 +289,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   rowTitle: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
   },
   rowMeta: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.helper.fontSize,
     lineHeight: readableType.helper.lineHeight,
     marginTop: 1,
   },
   gpsConfirm: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.helper.fontSize,
     lineHeight: readableType.helper.lineHeight,
     marginTop: 4,
   },
   locateError: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.helper.fontSize,
     lineHeight: readableType.helper.lineHeight,
     marginTop: 4,

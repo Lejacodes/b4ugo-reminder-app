@@ -1,29 +1,43 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Handwriting, PaperPanel } from '@/components/scrapbook';
-import { palette } from '@/constants/colors';
-import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { PaperPanel } from '@/components/scrapbook';
+import { readableFont, readableType, tiltAt } from '@/constants/scrapbook';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { formatThingsWaiting } from '@/lib/home/copy';
-import type { OnTheWayBackItem } from '@/types/home';
+import type { OnTheWayBackGroup, OnTheWayBackItem } from '@/types/home';
 
 type OnTheWayBackSectionProps = {
-  items: OnTheWayBackItem[];
+  items?: OnTheWayBackItem[];
+  groups?: OnTheWayBackGroup[];
   onPress: () => void;
 };
 
+function groupsFromItems(items: OnTheWayBackItem[]): OnTheWayBackGroup[] {
+  const groups: OnTheWayBackGroup[] = [];
+  const index = new Map<string, OnTheWayBackGroup>();
+  for (const item of items) {
+    const placeName = item.placeName?.trim() || 'Along the way';
+    const key = placeName.toLowerCase();
+    let group = index.get(key);
+    if (!group) {
+      group = { placeName, items: [] };
+      index.set(key, group);
+      groups.push(group);
+    }
+    group.items.push({ id: item.id, label: item.label });
+  }
+  return groups;
+}
+
 /**
- * The second pillar of Home — things to remember while out, anchored to places.
- *
- * Place names sit below each item in the readable face so the contextual
- * "when you're near…" idea reads even before geofencing exists.
+ * Open errands grouped by saved place — PetZone: Buy cat food.
  */
-export function OnTheWayBackSection({ items, onPress }: OnTheWayBackSectionProps) {
+export function OnTheWayBackSection({ items, groups, onPress }: OnTheWayBackSectionProps) {
   const colors = useScrapbookPalette();
-  const countColor = palette.softMatcha;
-  const preview = items.slice(0, 4);
-  const count = items.length;
+  const resolved = groups ?? groupsFromItems(items ?? []);
+  const preview = resolved.slice(0, 4);
+  const count = resolved.reduce((sum, group) => sum + group.items.length, 0);
 
   return (
     <Pressable
@@ -33,49 +47,33 @@ export function OnTheWayBackSection({ items, onPress }: OnTheWayBackSectionProps
       style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}>
       <PaperPanel tilt={tiltAt(2)} tape="top-right" contentStyle={styles.panel}>
         <View style={styles.titleRow}>
-          <Handwriting variant="title" accessibilityRole="header">
+          <Text accessibilityRole="header" style={[styles.sectionTitle, { color: colors.ink }]} numberOfLines={1}>
             on the way back
-          </Handwriting>
-          <Ionicons
-            name="return-down-back-outline"
-            size={17}
-            color={colors.doodle}
-            style={styles.titleIcon}
-          />
+          </Text>
+          <Feather name="corner-down-left" size={16} color={colors.doodle} style={styles.titleIcon} />
         </View>
-
-        <Text style={[styles.count, { color: countColor }]}>{formatThingsWaiting(count)}</Text>
-
-        <Text style={[styles.aside, { color: colors.inkSoft }]}>along your way</Text>
 
         <View style={styles.list}>
           {preview.length === 0 ? (
             <Text style={[styles.more, { color: colors.inkSoft }]}>nothing yet</Text>
           ) : (
-            preview.map((item) => (
-              <View key={item.id} style={styles.row}>
-                <Text style={[styles.bullet, { color: colors.doodle }]} accessibilityElementsHidden>
-                  •
+            preview.map((group) => (
+              <View key={group.placeName} style={styles.group}>
+                <Text style={[styles.place, { color: colors.inkSoft }]} numberOfLines={1}>
+                  {group.placeName}
                 </Text>
-                <View style={styles.copy}>
-                  <Text style={[styles.itemLabel, { color: colors.ink }]} numberOfLines={2}>
-                    {item.label}
+                {group.items.slice(0, 3).map((item) => (
+                  <Text key={item.id} style={[styles.itemLabel, { color: colors.ink }]} numberOfLines={2}>
+                    {`${group.placeName}: ${item.label}`}
                   </Text>
-                  {item.placeName ? (
-                    <Text style={[styles.place, { color: colors.inkSoft }]} numberOfLines={1}>
-                      Near {item.placeName}
-                    </Text>
-                  ) : null}
-                </View>
+                ))}
               </View>
             ))
           )}
         </View>
 
-        {count > preview.length && (
-          <Text style={[styles.more, { color: colors.inkSoft }]}>
-            + {count - preview.length} more
-          </Text>
+        {count > preview.reduce((sum, group) => sum + group.items.length, 0) && (
+          <Text style={[styles.more, { color: colors.inkSoft }]}>+ more waiting</Text>
         )}
       </PaperPanel>
     </Pressable>
@@ -97,57 +95,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    ...readableFont,
+    flexShrink: 1,
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '600',
   },
   titleIcon: {
-    marginTop: 2,
-    transform: [{ rotate: '6deg' }],
-  },
-  count: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.count.fontSize,
-    lineHeight: readableType.count.lineHeight,
-    marginTop: 6,
-    fontWeight: '500',
-  },
-  aside: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.meta.fontSize,
-    lineHeight: readableType.meta.lineHeight,
-    marginTop: 2,
-    marginBottom: 16,
+    transform: [{ rotate: '2deg' }],
   },
   list: {
     gap: 12,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    paddingVertical: 2,
+  group: {
+    gap: 4,
   },
-  bullet: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.item.fontSize,
-    lineHeight: readableType.item.lineHeight,
-    marginTop: 1,
-  },
-  copy: {
-    flex: 1,
-    gap: 2,
+  place: {
+    ...readableFont,
+    fontSize: readableType.meta.fontSize,
+    lineHeight: readableType.meta.lineHeight,
+    fontWeight: '600',
   },
   itemLabel: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
     fontWeight: '500',
   },
-  place: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.meta.fontSize,
-    lineHeight: readableType.meta.lineHeight,
-  },
   more: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     marginTop: 12,

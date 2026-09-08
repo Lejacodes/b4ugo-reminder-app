@@ -1,13 +1,16 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
 import { ChatBubble } from '@/components/little-guy/ChatBubble';
 import { LittleGuy } from '@/components/little-guy/LittleGuy';
 import { ButterButton, Handwriting, PaperField, PaperPanel, QuietLink } from '@/components/scrapbook';
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, readableFont } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
+import { minTouchTarget } from '@/constants/typography';
+import { useHoldToSpeak } from '@/hooks/use-hold-to-speak';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { isVisibleChatMessage } from '@/lib/ai/chat-session';
@@ -24,6 +27,9 @@ export default function LittleGuyScreen() {
   const { messages, mood, whisper, pixels, suggestions, busy, send, addSuggestedItem } = useLittleGuy();
   const [draft, setDraft] = useState('');
   const guySize = isTablet ? 116 : isCompact ? 84 : 100;
+  const { listening, error: voiceError, onPressIn, onPressOut } = useHoldToSpeak({
+    onTranscript: (spoken) => setDraft(spoken),
+  });
 
   const submit = async () => {
     const text = draft;
@@ -55,7 +61,11 @@ export default function LittleGuyScreen() {
         <Handwriting variant="aside" tone="soft" style={styles.sign}>
           little guy ✦
         </Handwriting>
-        {whisper ? <Text style={[styles.whisper, { color: colors.inkSoft }]}>{whisper}</Text> : null}
+        {whisper ? (
+          <Handwriting variant="aside" tone="soft" style={styles.whisper}>
+            {whisper}
+          </Handwriting>
+        ) : null}
 
         <PaperPanel tilt="-0.6deg" tape="top-left">
           <View style={styles.chat}>
@@ -94,14 +104,38 @@ export default function LittleGuyScreen() {
           </PaperPanel>
         ) : null}
 
-        <PaperField
-          placeholder="type something..."
-          value={draft}
-          onChangeText={setDraft}
-          autoCapitalize="sentences"
-          onSubmitEditing={submit}
-          returnKeyType="send"
-        />
+        <View style={styles.captureRow}>
+          <View style={styles.field}>
+            <PaperField
+              placeholder="type something..."
+              value={draft}
+              onChangeText={setDraft}
+              autoCapitalize="sentences"
+              onSubmitEditing={submit}
+              returnKeyType="send"
+            />
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={listening ? 'Listening. Release to stop.' : 'Hold to speak'}
+            onPressIn={onPressIn}
+            onPressOut={onPressOut}
+            style={({ pressed }) => [
+              styles.mic,
+              {
+                backgroundColor: listening || pressed ? colors.stickyButter : colors.paperWarm,
+                borderColor: listening ? colors.ink : colors.line,
+              },
+            ]}>
+            <Ionicons name={listening ? 'mic' : 'mic-outline'} size={22} color={colors.ink} />
+          </Pressable>
+        </View>
+        {listening ? (
+          <Text style={[styles.listening, { color: colors.inkSoft }]}>listening…</Text>
+        ) : null}
+        {voiceError ? (
+          <Text style={[styles.listening, { color: colors.inkSoft }]}>{voiceError}</Text>
+        ) : null}
         <ButterButton label="tell him" busy={busy} disabled={draft.trim().length === 0} onPress={submit} />
       </ScrollView>
     </SafeAreaView>
@@ -127,9 +161,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   whisper: {
-    fontFamily: TEXT_FONT,
-    fontSize: readableType.meta.fontSize,
     textAlign: 'center',
+    maxWidth: 280,
+    alignSelf: 'center',
   },
   chat: {
     width: '100%',
@@ -148,7 +182,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   thinkingText: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
+  },
+  captureRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 10,
+  },
+  field: {
+    flex: 1,
+  },
+  mic: {
+    width: minTouchTarget,
+    height: minTouchTarget,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  listening: {
+    ...readableFont,
+    fontSize: readableType.meta.fontSize,
+    lineHeight: readableType.meta.lineHeight,
   },
 });

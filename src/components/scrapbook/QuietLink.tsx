@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, readableFont } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
@@ -52,9 +52,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   label: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
+    fontWeight: '500',
     textDecorationLine: 'underline',
   },
   pressed: {

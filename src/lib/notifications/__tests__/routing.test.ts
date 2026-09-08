@@ -23,6 +23,6 @@ describe('notification routing', () => {
     expect(hrefForDueReminder({ category: 'onTheWayBack' })).toBe('/on-the-way-back');
     expect(hrefForDueReminder({ category: 'beforeUgo' })).toBe('/before-ugo');
     expect(hrefForDueReminder({ category: 'specific', contextId: 'trip-abc' })).toBe('/trip/trip-abc');
-    expect(hrefForDueReminder({ category: 'specific' })).toBe('/reminders');
+    expect(hrefForDueReminder({ category: 'specific' })).toBe('/(tabs)');
   });
 });

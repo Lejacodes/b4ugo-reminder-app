@@ -3,6 +3,7 @@ import { AI_AMBIGUOUS_MESSAGE, AI_GENTLE_HERE_MESSAGE } from './ai-prompts';
 import type { AIProvider } from './ai-provider';
 import { isGenericPlaceName } from './ai-tools';
 import { parseDateRange, parseRelativeDay, parseRelativeDueAt } from './parse-when';
+import { composeVerifiedReply, formatVerifiedMutation } from './tool-result';
 import type { AIContextSnapshot, AIRequest, AIResponse, AIToolName, CompactPlace } from './types';
 
 function findTrip(context: AIContextSnapshot, hint?: string | null) {
@@ -76,7 +77,7 @@ export function interpretLocally(text: string, context: AIContextSnapshot): AIRe
   if (/check\s*off\s+all\s+(?:my\s+)?(?:reminders?\s+and\s+pack(?:ing|ings)?|pack(?:ing|ings)?\s+and\s+reminders?)|(?:check\s*off|complete|mark)\s+all\s+(?:my\s+)?(?:reminders?\s+and\s+pack)/.test(lower)) {
     const trip = findTrip(context, null);
     return {
-      message: 'all cleared ♡',
+      message: '',
       toolCalls: [
         { name: 'completeAllReminders', args: {} },
         { name: 'toggleAllPackingItems', args: { tripId: trip?.id } },
@@ -86,7 +87,14 @@ export function interpretLocally(text: string, context: AIContextSnapshot): AIRe
 
   if (/check\s*off\s+all\s+(?:my\s+)?reminders?|complete\s+all\s+(?:my\s+)?reminders?|mark\s+all\s+(?:my\s+)?reminders?/.test(lower)) {
     return {
-      message: 'all done ♡',
+      message: '',
+      toolCalls: [{ name: 'completeAllReminders', args: {} }],
+    };
+  }
+
+  if (/clear checked|remove (?:the )?checked|delete (?:the )?checked/.test(lower)) {
+    return {
+      message: '',
       toolCalls: [{ name: 'completeAllReminders', args: {} }],
     };
   }
@@ -272,24 +280,21 @@ function followUpFromTools(request: AIRequest): AIResponse | null {
     .find((item) => item.role === 'assistant' && (item.toolCalls?.length ?? 0) > 0);
   if (!tools.length || !lastAssistant) return null;
 
-  const extras = tools
-    .map((item, index) => {
-      let payload: unknown = item.content;
-      try {
-        payload = JSON.parse(item.content);
-      } catch {
-        payload = item.content;
-      }
-      if (payload && typeof payload === 'object' && 'error' in payload) {
-        return String((payload as { error: unknown }).error);
-      }
-      const name = (item.name ?? lastAssistant.toolCalls?.[index]?.name ?? '') as AIToolName;
-      return formatToolResult(name, payload);
-    })
-    .filter(Boolean);
+  const results = tools.map((item, index) => {
+    let payload: unknown = item.content;
+    try {
+      payload = JSON.parse(item.content);
+    } catch {
+      payload = item.content;
+    }
+    const name = (item.name ?? lastAssistant.toolCalls?.[index]?.name ?? '') as AIToolName;
+    return { name, payload };
+  });
 
-  const message = [lastAssistant.content, ...extras].filter(Boolean).join('\n');
-  return { message: message || 'okay.', toolCalls: [] };
+  return {
+    message: composeVerifiedReply(lastAssistant.content, results, formatToolResult, AI_GENTLE_HERE_MESSAGE),
+    toolCalls: [],
+  };
 }
 
 export class FallbackAIProvider implements AIProvider {
@@ -303,6 +308,8 @@ export class FallbackAIProvider implements AIProvider {
 }
 
 export function formatToolResult(name: string, payload: unknown): string {
+  const verified = formatVerifiedMutation(name, payload);
+  if (verified !== null) return verified;
   if (name === 'createReminder' || name === 'createTrip' || name === 'addIntention' || name === 'createSavedPlace') {
     return '';
   }
@@ -336,30 +343,6 @@ export function formatToolResult(name: string, payload: unknown): string {
     const trip = trips[0];
     const pack = trip.total ? `${trip.packed} / ${trip.total} packed` : 'no packing yet';
     return `${trip.title} — ${trip.destination}${trip.startDate ? `, ${trip.startDate}` : ''}. ${pack}.`;
-  }
-  if (name === 'completeReminder') return 'one less thing to remember ✨';
-  if (name === 'completeAllReminders') {
-    const count =
-      payload && typeof payload === 'object' && 'completed' in payload
-        ? Number((payload as { completed: unknown }).completed)
-        : 0;
-    if (!count) return 'no open reminders left.';
-    return count === 1 ? 'checked off your reminder ✨' : `checked off ${count} reminders ✨`;
-  }
-  if (name === 'updateReminder' || name === 'updateTrip' || name === 'updateSavedPlace' || name === 'updateIntention') {
-    return 'updated ♡';
-  }
-  if (name === 'deleteReminder' || name === 'deleteSavedPlace' || name === 'deleteTrip' || name === 'removePackingItem' || name === 'deleteIntention') {
-    return 'removed ♡';
-  }
-  if (name === 'togglePackingItem') return 'marked on your packing list ♡';
-  if (name === 'toggleAllPackingItems') {
-    const count =
-      payload && typeof payload === 'object' && 'toggled' in payload
-        ? Number((payload as { toggled: unknown }).toggled)
-        : 0;
-    if (!count) return 'everything on your packing list was already packed.';
-    return count === 1 ? 'marked 1 packing item packed ♡' : `marked ${count} packing items packed ♡`;
   }
   if (name === 'getUpcomingContext' && payload && typeof payload === 'object') {
     const data = payload as {

@@ -69,7 +69,7 @@ export const Colors = {
     textSecondary: palette.warmGraySecondary,
     textMuted: palette.warmGrayMuted,
     textDisabled: palette.warmGrayDisabled,
-    textOnPrimary: palette.oat,
+    textOnPrimary: palette.cream,
     textOnSurface: palette.espresso,
 
     accentWarm: palette.mutedCoral,
@@ -85,7 +85,7 @@ export const Colors = {
     tabBarInactive: palette.warmGraySecondary,
     tabBarAdd: palette.softMatcha,
 
-    pressedOverlay: 'rgba(96, 51, 20, 0.08)',
+    pressedOverlay: 'rgba(44, 34, 30, 0.08)',
     disabled: palette.warmGrayDisabled,
   },
   dark: {
@@ -96,32 +96,32 @@ export const Colors = {
     surfaceElevated: palette.darkSurfaceElevated,
     surfaceMuted: palette.darkBackgroundElevated,
 
-    primary: palette.softMatcha,
-    primaryMuted: palette.sage,
-    secondary: palette.softMatcha,
-    secondarySoft: palette.sage,
+    primary: palette.darkAccent,
+    primaryMuted: palette.darkAccent,
+    secondary: palette.darkAccent,
+    secondarySoft: palette.darkAccent,
 
-    text: palette.oat,
-    textSecondary: palette.cloud,
-    textMuted: palette.cloudDark,
+    text: palette.creamText,
+    textSecondary: palette.cloudDark,
+    textMuted: palette.warmGrayMutedDark,
     textDisabled: palette.warmGrayDisabledDark,
-    textOnPrimary: palette.oat,
-    textOnSurface: palette.oat,
+    textOnPrimary: palette.darkBackground,
+    textOnSurface: palette.creamText,
 
     accentWarm: palette.mutedCoral,
     accentRose: palette.dustyRose,
     accentAqua: palette.softAqua,
 
-    border: palette.cloudDark,
+    border: palette.darkBorder,
     borderSubtle: palette.darkBorder,
 
     tabBar: palette.darkBackground,
     tabBarBorder: palette.darkBorder,
-    tabBarActive: palette.softMatcha,
-    tabBarInactive: palette.cloud,
-    tabBarAdd: palette.softMatcha,
+    tabBarActive: palette.darkAccent,
+    tabBarInactive: palette.cloudDark,
+    tabBarAdd: palette.darkAccent,
 
-    pressedOverlay: 'rgba(216, 211, 179, 0.08)',
+    pressedOverlay: 'rgba(236, 234, 228, 0.08)',
     disabled: palette.warmGrayDisabledDark,
   },
 } as const satisfies Record<'light' | 'dark', ThemeColors>;

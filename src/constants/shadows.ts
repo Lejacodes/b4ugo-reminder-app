@@ -10,7 +10,7 @@ export const shadows = {
   none: {} as ShadowStyle,
   sm: Platform.select<ShadowStyle>({
     ios: {
-      shadowColor: '#603314',
+      shadowColor: '#2C221E',
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.04,
       shadowRadius: 2,

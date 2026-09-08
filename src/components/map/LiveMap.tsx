@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT, type Region } from 'react-native-maps';
 
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, readableFont } from '@/constants/scrapbook';
 import { useDeviceLocation } from '@/hooks/use-device-location';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import type { DeviceLocation } from '@/lib/engines/contracts';
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   fallbackText: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     textAlign: 'center',
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   actionText: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
   },
   recenter: {
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   },
   address: {
     marginTop: 8,
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
   },

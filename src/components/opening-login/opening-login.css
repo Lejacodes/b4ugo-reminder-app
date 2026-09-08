@@ -1,10 +1,10 @@
 .opening-desk {
-  background-color: #d8d3b3;
+  background-color: #f3efea;
   background-image:
-    radial-gradient(circle, rgba(118, 132, 91, 0.22) 1.1px, transparent 1.2px),
+    radial-gradient(circle, rgba(107, 142, 106, 0.22) 1.1px, transparent 1.2px),
     repeating-linear-gradient(
       90deg,
-      rgba(245, 241, 231, 0.28) 0 18px,
+      rgba(252, 250, 247, 0.28) 0 18px,
       transparent 18px 36px
     );
   background-size:
@@ -14,12 +14,12 @@
 
 /* Signed-in scrapbook desks. Window 1 keeps cream via its own inline styles. */
 html[data-theme='dark'] .opening-desk {
-  background-color: #2e261f;
+  background-color: #121614;
   background-image:
-    radial-gradient(circle, rgba(118, 132, 91, 0.2) 1.1px, transparent 1.2px),
+    radial-gradient(circle, rgba(142, 168, 140, 0.22) 1.1px, transparent 1.2px),
     repeating-linear-gradient(
       90deg,
-      rgba(74, 56, 40, 0.35) 0 18px,
+      rgba(27, 33, 30, 0.45) 0 18px,
       transparent 18px 36px
     );
 }

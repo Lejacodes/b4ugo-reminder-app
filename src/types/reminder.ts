@@ -41,6 +41,8 @@ export type PersonalNecessity = {
   title: string;
   source: ReminderSource;
   createdAt: string;
+  /** 0 = Sun … 6 = Sat. Omitted or empty means the item shows every day. */
+  activeDays?: number[];
 };
 
 export type Reminder = {

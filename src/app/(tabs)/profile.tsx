@@ -12,8 +12,9 @@ import {
   QuietLink,
   ScrapbookSwitch,
 } from '@/components/scrapbook';
+import { NecessityDayChips } from '@/components/profile/NecessityDayChips';
 import { palette as brand } from '@/constants/colors';
-import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { readableType, tiltAt, readableFont } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useResponsive } from '@/hooks/use-responsive';
@@ -22,10 +23,12 @@ import { useTabBarInset } from '@/hooks/use-tab-bar-inset';
 import { deviceLocationService } from '@/lib/location/device-location';
 import { reverseGeocodeLocation } from '@/lib/geocoding/reverse-geocode';
 import { appNotificationService } from '@/lib/notifications/notification-service';
+import { isNecessityActiveToday } from '@/lib/reminders/necessity-days';
 import { useAppearance } from '@/store/AppearanceProvider';
 import { useAuth } from '@/store/AuthProvider';
 import { usePlaces } from '@/store/PlaceProvider';
 import { usePreferences } from '@/store/PreferencesProvider';
+import { useReminders } from '@/store/ReminderProvider';
 import { interestOptions, type OnboardingInterest } from '@/types/onboarding';
 
 import '@/components/opening-login/opening-login.css';
@@ -41,6 +44,7 @@ export default function ProfileScreen() {
   const { profile, preferences, updateProfile, updatePreferences, resetAll } = usePreferences();
   const { home, setHome } = usePlaces();
   const { user, signOut } = useAuth();
+  const { personalNecessities, updateNecessityActiveDays } = useReminders();
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(profile.displayName ?? '');
@@ -51,6 +55,7 @@ export default function ProfileScreen() {
 
   const displayName = profile.displayName?.trim() || 'you';
   const email = user?.email ?? null;
+  const homeUnset = home?.latitude == null || home?.longitude == null;
 
   const saveName = async () => {
     const next = nameDraft.trim();
@@ -150,6 +155,36 @@ export default function ProfileScreen() {
           </View>
         </PaperPanel>
 
+        <PaperPanel tilt={tiltAt(1)} tape="top-left">
+          <Handwriting variant="title" accessibilityRole="header">
+            always take
+          </Handwriting>
+          <Text style={[styles.sectionLabel, { color: colors.inkSoft, marginTop: 4 }]}>
+            Pick which days each item belongs on your doorway list.
+          </Text>
+          {personalNecessities.length === 0 ? (
+            <Text style={[styles.necessityEmpty, { color: colors.inkSoft }]}>
+              Nothing saved yet. Add from the + tab with Before I leave.
+            </Text>
+          ) : (
+            personalNecessities.map((item) => {
+              const activeToday = isNecessityActiveToday(item);
+              return (
+                <View key={item.id} style={[styles.necessityRow, { borderBottomColor: colors.line }]}>
+                  <Text style={[styles.necessityTitle, { color: colors.ink }]}>{item.title}</Text>
+                  <Text style={[styles.necessityMeta, { color: colors.inkSoft }]}>
+                    {activeToday ? 'On your list today' : 'Hidden today'}
+                  </Text>
+                  <NecessityDayChips
+                    activeDays={item.activeDays}
+                    onChange={(activeDays) => updateNecessityActiveDays(item.id, activeDays)}
+                  />
+                </View>
+              );
+            })
+          )}
+        </PaperPanel>
+
         <PaperPanel tilt={tiltAt(2)} tape="top-right">
           <Handwriting variant="title" accessibilityRole="header">
             preferences
@@ -202,16 +237,43 @@ export default function ProfileScreen() {
           <Text style={[styles.locationHint, { color: colors.inkSoft }]}>
             When you pass a shop you saved (Migros, PetZone…), B4UGO nudges you to buy what you listed there.
           </Text>
-          <View style={[styles.row, { borderBottomColor: colors.line }]}>
+          <View
+            style={[
+              styles.row,
+              { borderBottomColor: colors.line },
+              homeUnset && [
+                styles.homePrompt,
+                { borderColor: colors.tape, backgroundColor: colors.paperWarm },
+              ],
+            ]}>
             <View style={styles.rowCopy}>
-              <Text style={[styles.rowTitle, { color: colors.ink }]}>Home</Text>
-              <Text style={[styles.rowState, { color: colors.inkSoft }]}>
-                {home?.latitude != null ? home.name : 'not set'}
+              <View style={styles.homeTitleRow}>
+                <Text style={[styles.rowTitle, { color: colors.ink }]}>Home</Text>
+                {homeUnset ? (
+                  <View
+                    accessibilityRole="text"
+                    accessibilityLabel="Needed for GPS triggers"
+                    style={[styles.homeBadge, { backgroundColor: colors.tape }]}>
+                    <Text style={[styles.homeBadgeLabel, { color: brand.cream }]}>set for GPS</Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text style={[styles.rowState, { color: homeUnset ? colors.ink : colors.inkSoft }]}>
+                {homeUnset ? 'not set' : home?.name}
               </Text>
+              {homeUnset ? (
+                <Text style={[styles.homeHint, { color: colors.inkSoft }]}>
+                  Set your home so B4UGO can nudge you when you leave or pass a saved place.
+                </Text>
+              ) : null}
             </View>
             <QuietLink
               label="set from here"
-              accessibilityLabel="Set home from your current place"
+              accessibilityLabel={
+                homeUnset
+                  ? 'Set home from your current place. Needed for GPS triggers.'
+                  : 'Set home from your current place'
+              }
               onPress={async () => {
                 const permission = await deviceLocationService.requestPermission();
                 if (permission !== 'granted') return;
@@ -349,20 +411,20 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-10deg' }],
   },
   displayName: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
     fontWeight: '600',
     marginTop: 4,
   },
   email: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     marginTop: 2,
   },
   sectionLabel: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     marginTop: 16,
     marginBottom: 8,
@@ -379,14 +441,37 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-0.8deg' }],
   },
   chipLabel: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
+    fontWeight: '500',
   },
   pressed: {
     opacity: 0.75,
   },
   nameEdit: {
     marginTop: 8,
+  },
+  necessityEmpty: {
+    ...readableFont,
+    fontSize: readableType.item.fontSize,
+    lineHeight: readableType.item.lineHeight,
+    marginTop: 12,
+  },
+  necessityRow: {
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  necessityTitle: {
+    ...readableFont,
+    fontSize: readableType.item.fontSize,
+    lineHeight: readableType.item.lineHeight,
+    fontWeight: '600',
+  },
+  necessityMeta: {
+    ...readableFont,
+    fontSize: readableType.fine.fontSize,
+    lineHeight: readableType.fine.lineHeight,
+    marginTop: 2,
   },
   row: {
     flexDirection: 'row',
@@ -400,22 +485,52 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   rowTitle: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
     fontWeight: '500',
   },
   rowState: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
   },
   locationHint: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.fine.fontSize,
     lineHeight: readableType.fine.lineHeight,
     marginTop: -4,
     marginBottom: 6,
+  },
+  homePrompt: {
+    marginTop: 4,
+    marginBottom: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderBottomWidth: 1.5,
+  },
+  homeTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  homeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  homeBadgeLabel: {
+    ...readableFont,
+    fontSize: readableType.fine.fontSize,
+    lineHeight: readableType.fine.lineHeight,
+    fontWeight: '600',
+  },
+  homeHint: {
+    ...readableFont,
+    fontSize: readableType.fine.fontSize,
+    lineHeight: readableType.fine.lineHeight,
+    marginTop: 2,
   },
   accountActions: {
     marginTop: 8,
@@ -428,14 +543,14 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '0.5deg' }],
   },
   devLabel: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.fine.fontSize,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
     marginBottom: 6,
   },
   devCopy: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.fine.fontSize,
     lineHeight: readableType.fine.lineHeight,
     marginBottom: 4,

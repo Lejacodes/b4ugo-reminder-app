@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Handwriting, PaperPanel } from '@/components/scrapbook';
-import { readableType, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { readableType, tiltAt, readableFont } from '@/constants/scrapbook';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { formatDateRange, formatDuration } from '@/lib/trips/dates';
 import type { Trip } from '@/types/trip';
@@ -47,13 +47,13 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   destination: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
     marginTop: 4,
   },
   meta: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     marginTop: 2,
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   progressText: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.count.fontSize,
     lineHeight: readableType.count.lineHeight,
   },

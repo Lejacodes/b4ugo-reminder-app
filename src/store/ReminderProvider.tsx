@@ -21,6 +21,18 @@ import {
   suggestionEngine,
   weatherService,
 } from '@/lib/engines';
+import {
+  emptyDepartureSession,
+  loadDepartureSession,
+  saveDepartureSession,
+  sessionCheckKey,
+  type DepartureSession,
+} from '@/lib/home/departure-session';
+import { uniqueTripExtraDrafts } from '@/lib/home/trip-extras';
+import { packingItemsForHomeBoard } from '@/lib/home/departing-trips';
+import { dropDepartureRows, stripClonedNecessityRows } from '@/lib/reminders/context-rows';
+import { todayIso } from '@/lib/trips/dates';
+import { loadPackingItems, loadTrips } from '@/lib/trips/trip-store';
 import { useAuth } from '@/store/AuthProvider';
 import {
   createId,
@@ -107,7 +119,7 @@ type ReminderContextValue = {
   personalNecessities: PersonalNecessity[];
   context: BeforeUgoContext | null;
   isLoading: boolean;
-  /** Trip checklist rows copied from personal necessities for the active context. */
+  /** Legacy selector — cloned always-rows are no longer created. */
   alwaysChecklistItems: Reminder[];
   thisTripItems: Reminder[];
   suggestionItems: Reminder[];
@@ -117,8 +129,9 @@ type ReminderContextValue = {
   onTheWayBackItems: Reminder[];
   onTheWayBackOpen: Reminder[];
   specificItems: Reminder[];
-  /** Unpacked Before U Go checklist rows for the active trip only. */
+  /** Unpacked Before U Go extras for the active departure (not necessity clones). */
   beforeUgoOpen: Reminder[];
+  departureSession: DepartureSession;
   setGoingTo: (input: ContextInput) => Promise<void>;
   clearGoingTo: () => Promise<void>;
   toggleReminder: (id: string) => Promise<void>;
@@ -135,6 +148,10 @@ type ReminderContextValue = {
   addReminder: (input: CreateReminderInput) => Promise<void>;
   updateReminder: (id: string, patch: { title?: string; dueAt?: string | null }) => Promise<void>;
   deleteReminder: (id: string) => Promise<void>;
+  deleteReminders: (ids: string[]) => Promise<void>;
+  deleteNecessity: (id: string) => Promise<void>;
+  updateNecessityActiveDays: (id: string, activeDays: number[] | undefined) => Promise<void>;
+  persistDepartureSession: (next: DepartureSession) => Promise<void>;
 };
 
 const ReminderContext = createContext<ReminderContextValue | null>(null);
@@ -146,13 +163,16 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [personalNecessities, setPersonalNecessities] = useState<PersonalNecessity[]>([]);
   const [context, setContext] = useState<BeforeUgoContext | null>(null);
+  const [departureSession, setDepartureSession] = useState<DepartureSession>(() => emptyDepartureSession());
   const [isLoading, setIsLoading] = useState(true);
   const remindersRef = useRef<Reminder[]>([]);
   const necessitiesRef = useRef<PersonalNecessity[]>([]);
   const contextRef = useRef<BeforeUgoContext | null>(null);
+  const sessionRef = useRef<DepartureSession>(departureSession);
   remindersRef.current = reminders;
   necessitiesRef.current = personalNecessities;
   contextRef.current = context;
+  sessionRef.current = departureSession;
 
   useEffect(() => {
     let cancelled = false;
@@ -166,22 +186,24 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
         setReminders([]);
         setPersonalNecessities([]);
         setContext(null);
+        setDepartureSession(emptyDepartureSession());
         setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
       try {
-        const [storedReminders, storedNecessities, storedContext] = await Promise.all([
+        const [storedReminders, storedNecessities, storedContext, storedSession] = await Promise.all([
           loadReminders(userId),
           loadNecessities(userId),
           loadContext(userId),
+          loadDepartureSession(userId, todayIso()),
         ]);
         if (cancelled) return;
 
         const migrated = migrateLegacyNecessities(storedReminders, storedNecessities);
         let nextNecessities = migrated.necessities;
-        let nextReminders = migrated.reminders;
+        let nextReminders = stripClonedNecessityRows(migrated.reminders);
 
         if (nextNecessities.length === 0) {
           nextNecessities = STARTER_NECESSITIES.map((title) => buildNecessity(title, 'learned'));
@@ -189,8 +211,8 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
 
         await Promise.all([
           saveNecessities(userId, nextNecessities),
-          migrated.necessities.length !== storedNecessities.length ||
-          migrated.reminders.length !== storedReminders.length
+          nextReminders.length !== storedReminders.length ||
+          migrated.necessities.length !== storedNecessities.length
             ? saveReminders(userId, nextReminders)
             : Promise.resolve(),
         ]);
@@ -199,11 +221,13 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
         setPersonalNecessities(nextNecessities);
         setReminders(nextReminders);
         setContext(storedContext);
+        setDepartureSession(storedSession);
       } catch {
         if (!cancelled) {
           setReminders([]);
           setPersonalNecessities([]);
           setContext(null);
+          setDepartureSession(emptyDepartureSession());
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -249,6 +273,15 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       contextRef.current = next;
       setContext(next);
       if (userId) await saveContext(userId, next);
+    },
+    [userId],
+  );
+
+  const persistDepartureSession = useCallback(
+    async (next: DepartureSession) => {
+      sessionRef.current = next;
+      setDepartureSession(next);
+      if (userId) await saveDepartureSession(userId, next);
     },
     [userId],
   );
@@ -318,8 +351,53 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     [persistReminders],
   );
 
+  const deleteReminders = useCallback(
+    async (ids: string[]) => {
+      if (ids.length === 0) return;
+      const drop = new Set(ids);
+      const current = remindersRef.current;
+      const next = current.filter((item) => !drop.has(item.id));
+      if (next.length === current.length) return;
+      await persistReminders(next);
+    },
+    [persistReminders],
+  );
+
+  const deleteNecessity = useCallback(
+    async (id: string) => {
+      const current = necessitiesRef.current;
+      if (!current.some((item) => item.id === id)) return;
+      await persistNecessities(current.filter((item) => item.id !== id));
+      const session = sessionRef.current;
+      const key = sessionCheckKey('nec', id);
+      const { [key]: _removed, ...checks } = session.checks;
+      await persistDepartureSession({
+        ...session,
+        checks,
+        cleared: session.cleared.filter((value) => value !== key),
+      });
+    },
+    [persistDepartureSession, persistNecessities],
+  );
+
+  const updateNecessityActiveDays = useCallback(
+    async (id: string, activeDays: number[] | undefined) => {
+      const current = necessitiesRef.current;
+      if (!current.some((item) => item.id === id)) return;
+      const next = current.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              activeDays: activeDays && activeDays.length > 0 ? activeDays : undefined,
+            }
+          : item,
+      );
+      await persistNecessities(next);
+    },
+    [persistNecessities],
+  );
+
   const buildTripChecklist = useCallback(async (nextContext: BeforeUgoContext): Promise<Reminder[]> => {
-    const necessities = necessitiesRef.current;
     const weather =
       nextContext.latitude != null && nextContext.longitude != null
         ? await weatherService.getSnapshot({
@@ -328,57 +406,37 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
           })
         : await weatherService.getSnapshot();
     const pack = suggestionEngine.getTripPack(nextContext);
-    const taken = new Set<string>();
-    const generated: Reminder[] = [];
-
-    const push = (input: CreateReminderInput) => {
-      const key = input.title.trim().toLowerCase();
-      if (!key || taken.has(key)) return;
-      taken.add(key);
-      generated.push(
-        buildReminder({
-          ...input,
-          contextId: nextContext.id,
-        }),
-      );
-    };
-
-    for (const necessity of necessities) {
-      push({
-        title: necessity.title,
-        category: 'beforeUgo',
-        layer: 'always',
-        source: necessity.source,
-      });
+    let packingTitles: string[] = [];
+    if (userId) {
+      try {
+        const [trips, packing] = await Promise.all([loadTrips(userId), loadPackingItems(userId)]);
+        packingTitles = packingItemsForHomeBoard(trips, packing, todayIso()).map((item) => item.title);
+      } catch {
+        packingTitles = [];
+      }
     }
+    const drafts = uniqueTripExtraDrafts({
+      necessityTitles: necessitiesRef.current.map((item) => item.title),
+      packingTitles,
+      pack,
+      suggestions: suggestionEngine.getSuggestions(nextContext, weather, [
+        ...necessitiesRef.current.map((item) => item.title),
+        ...pack.map((item) => item.title),
+      ]),
+      destination: nextContext.destination,
+    });
 
-    for (const item of pack) {
-      push({
-        title: item.title,
+    return drafts.map((draft) =>
+      buildReminder({
+        title: draft.title,
         category: 'beforeUgo',
-        layer: 'thisTrip',
-        source: 'rule',
-        reason: item.reason ?? `for ${nextContext.destination}`,
-      });
-    }
-
-    const suggestions = suggestionEngine.getSuggestions(
-      nextContext,
-      weather,
-      generated.map((item) => item.title),
+        layer: draft.layer,
+        source: draft.source,
+        reason: draft.reason,
+        contextId: nextContext.id,
+      }),
     );
-    for (const item of suggestions) {
-      push({
-        title: item.title,
-        category: 'beforeUgo',
-        layer: 'suggestion',
-        source: item.source,
-        reason: item.reason,
-      });
-    }
-
-    return generated;
-  }, []);
+  }, [userId]);
 
   const setGoingTo = useCallback(
     async (input: ContextInput) => {
@@ -409,16 +467,21 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
         region: input.region ?? geo?.region ?? null,
       };
 
+      const previousId = contextRef.current?.id ?? null;
       const generated = await buildTripChecklist(nextContext);
+      const kept = dropDepartureRows(remindersRef.current, previousId);
       await persistContext(nextContext);
-      await persistReminders([...remindersRef.current, ...generated]);
+      await persistReminders([...kept, ...generated]);
     },
     [buildTripChecklist, persistContext, persistReminders],
   );
 
   const clearGoingTo = useCallback(async () => {
+    const previousId = contextRef.current?.id ?? null;
+    await persistReminders(dropDepartureRows(remindersRef.current, previousId));
     await persistContext(null);
-  }, [persistContext]);
+    await persistDepartureSession(emptyDepartureSession());
+  }, [persistContext, persistDepartureSession, persistReminders]);
 
   const addAlways = useCallback(
     async (title: string) => {
@@ -430,19 +493,8 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       if (!exists) {
         await persistNecessities([...currentNecessities, buildNecessity(trimmed, 'user')]);
       }
-
-      const activeContext = contextRef.current;
-      if (activeContext) {
-        await addReminder({
-          title: trimmed,
-          category: 'beforeUgo',
-          layer: 'always',
-          contextId: activeContext.id,
-          source: 'user',
-        });
-      }
     },
-    [addReminder, persistNecessities],
+    [persistNecessities],
   );
 
   const addThisTrip = useCallback(
@@ -614,6 +666,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       onTheWayBackOpen,
       specificItems,
       beforeUgoOpen,
+      departureSession,
       setGoingTo,
       clearGoingTo,
       toggleReminder,
@@ -624,6 +677,10 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       addReminder,
       updateReminder,
       deleteReminder,
+      deleteReminders,
+      deleteNecessity,
+      updateNecessityActiveDays,
+      persistDepartureSession,
     }),
     [
       reminders,
@@ -640,6 +697,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       onTheWayBackOpen,
       specificItems,
       beforeUgoOpen,
+      departureSession,
       setGoingTo,
       clearGoingTo,
       toggleReminder,
@@ -650,6 +708,10 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       addReminder,
       updateReminder,
       deleteReminder,
+      deleteReminders,
+      deleteNecessity,
+      updateNecessityActiveDays,
+      persistDepartureSession,
     ],
   );
 

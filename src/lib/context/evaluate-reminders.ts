@@ -125,7 +125,7 @@ export function evaluateReminders(input: EvaluateRemindersInput): RankedReminder
         `near ${place}`,
         1,
         'exact',
-        item.category === 'onTheWayBack' ? '/on-the-way-back' : '/reminders',
+        item.category === 'onTheWayBack' ? '/on-the-way-back' : '/(tabs)',
       );
     }
   }
@@ -150,11 +150,11 @@ export function evaluateReminders(input: EvaluateRemindersInput): RankedReminder
 
   if (context.kind === 'always') {
     for (const item of alwaysReminders(open)) {
-      add(item.id, item.title, 'keep in mind', 4, 'always', '/reminders');
+      add(item.id, item.title, 'keep in mind', 4, 'always', '/(tabs)');
     }
   } else if (preferContextual) {
     for (const item of alwaysReminders(open)) {
-      add(item.id, item.title, 'keep in mind', 4, 'always', '/reminders');
+      add(item.id, item.title, 'keep in mind', 4, 'always', '/(tabs)');
     }
   }
 

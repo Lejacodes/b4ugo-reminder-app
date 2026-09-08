@@ -15,6 +15,8 @@ import { ChatSession } from '@/lib/ai/chat-session';
 import { protectNecessitiesFromPacking, validateToolCall } from '@/lib/ai/ai-tools';
 import { buildConstellation } from '@/lib/ai/constellation';
 import { littleGuyWhisper, moodFromSituation } from '@/lib/ai/little-guy-mood';
+import { isDepartingTrip } from '@/lib/home/departing-trips';
+import { todayIso } from '@/lib/trips/dates';
 import {
   resolveIntentionId,
   resolvePackingItemId,
@@ -77,15 +79,28 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
     [trips],
   );
 
-  const pixels = useMemo(
-    () =>
-      buildConstellation({
-        reminders: reminders.reminders,
-        upcomingTrips: trips.upcomingTrips,
-        unfinishedPacking,
-      }),
-    [reminders.reminders, trips.upcomingTrips, unfinishedPacking],
-  );
+  const pixels = useMemo(() => {
+    const today = todayIso();
+    return buildConstellation({
+      reminders: reminders.reminders,
+      necessities: reminders.personalNecessities,
+      sessionChecks: reminders.departureSession.checks,
+      sessionCleared: reminders.departureSession.cleared,
+      packingItems: trips.packingItems,
+      trips: trips.trips,
+      today,
+      departureActive:
+        Boolean(reminders.context) || trips.trips.some((trip) => isDepartingTrip(trip, today)),
+    });
+  }, [
+    reminders.context,
+    reminders.departureSession.checks,
+    reminders.departureSession.cleared,
+    reminders.personalNecessities,
+    reminders.reminders,
+    trips.packingItems,
+    trips.trips,
+  ]);
 
   const whisper = useMemo(
     () =>
@@ -170,32 +185,40 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
         }
         case 'updateReminder': {
           const id = resolveReminderId(ctx, args);
-          if (!id) return { error: 'i need to know which reminder you mean.' };
+          if (!id) return { success: false, updatedCount: 0, error: 'i need to know which reminder you mean.' };
           await reminders.updateReminder(id, {
             title: typeof args.title === 'string' ? args.title : undefined,
             dueAt: typeof args.dueAt === 'string' ? args.dueAt : undefined,
           });
-          return { updated: true };
+          return { success: true, updatedCount: 1 };
         }
         case 'completeReminder': {
           const id = resolveReminderId(ctx, args);
-          if (!id) return { error: 'i need to know which reminder you mean.' };
+          if (!id) return { success: false, updatedCount: 0, error: 'i need to know which reminder you mean.' };
+          const existed = reminders.reminders.some((item) => item.id === id);
+          if (!existed) return { success: false, updatedCount: 0, error: 'i need to know which reminder you mean.' };
           await reminders.toggleReminder(id);
-          return { completed: true };
+          return { success: true, updatedCount: 1 };
         }
         case 'completeAllReminders': {
-          let count = 0;
-          for (const item of ctx.reminders) {
+          const open = reminders.reminders.filter((item) => item.status === 'open');
+          for (const item of open) {
             await reminders.toggleReminder(item.id);
-            count += 1;
           }
-          return { completed: count };
+          return {
+            success: open.length > 0,
+            completedCount: open.length,
+            deletedCount: open.length,
+            completed: open.length,
+          };
         }
         case 'deleteReminder': {
           const id = resolveReminderId(ctx, args);
-          if (!id) return { error: 'i need to know which reminder you mean.' };
+          if (!id) return { success: false, deletedCount: 0, error: 'i need to know which reminder you mean.' };
+          const existed = reminders.reminders.some((item) => item.id === id);
+          if (!existed) return { success: false, deletedCount: 0 };
           await reminders.deleteReminder(id);
-          return { deleted: true };
+          return { success: true, deletedCount: 1 };
         }
         case 'createSavedPlace':
           await places.upsertPlace({ name: String(args.name), label: typeof args.label === 'string' ? args.label : null });
@@ -203,18 +226,20 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
           return { saved: true };
         case 'updateSavedPlace': {
           const id = resolvePlaceId(ctx, args);
-          if (!id) return { error: 'which saved place?' };
+          if (!id) return { success: false, updatedCount: 0, error: 'which saved place?' };
           await places.updatePlace(id, {
             name: typeof args.name === 'string' ? args.name : undefined,
             label: typeof args.label === 'string' ? args.label : undefined,
           });
-          return { updated: true };
+          return { success: true, updatedCount: 1 };
         }
         case 'deleteSavedPlace': {
           const id = resolvePlaceId(ctx, args);
-          if (!id) return { error: 'which saved place?' };
+          if (!id) return { success: false, deletedCount: 0, error: 'which saved place?' };
+          const existed = places.places.some((place) => place.id === id);
+          if (!existed) return { success: false, deletedCount: 0 };
           await places.deletePlace(id);
-          return { deleted: true };
+          return { success: true, deletedCount: 1 };
         }
         case 'createTrip': {
           const trip = await trips.createTrip({
@@ -231,9 +256,9 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
         }
         case 'updateTrip': {
           const id = resolveTripId(ctx, args);
-          if (!id) return { error: 'which trip?' };
-          const current = trips.upcomingTrips.find((trip) => trip.id === id);
-          if (!current) return { error: 'which trip?' };
+          if (!id) return { success: false, updatedCount: 0, error: 'which trip?' };
+          const current = trips.upcomingTrips.find((trip) => trip.id === id) ?? trips.trips.find((trip) => trip.id === id);
+          if (!current) return { success: false, updatedCount: 0, error: 'which trip?' };
           await trips.updateTrip(id, {
             title: typeof args.title === 'string' ? args.title : current.title,
             destination: typeof args.destination === 'string' ? args.destination : current.destination,
@@ -249,13 +274,15 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
             country: current.country,
             region: current.region,
           });
-          return { updated: true };
+          return { success: true, updatedCount: 1 };
         }
         case 'deleteTrip': {
           const id = resolveTripId(ctx, args);
-          if (!id) return { error: 'which trip?' };
+          if (!id) return { success: false, deletedCount: 0, error: 'which trip?' };
+          const existed = trips.trips.some((trip) => trip.id === id);
+          if (!existed) return { success: false, deletedCount: 0 };
           await trips.deleteTrip(id);
-          return { deleted: true };
+          return { success: true, deletedCount: 1 };
         }
         case 'getTrip':
           return tripByHint(args.id ?? args.destination) ?? null;
@@ -280,15 +307,19 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
         }
         case 'removePackingItem': {
           const id = resolvePackingItemId(ctx, args);
-          if (!id) return { error: 'which packing item should i remove?' };
+          if (!id) return { success: false, deletedCount: 0, error: 'which packing item should i remove?' };
+          const existed = trips.packingItems.some((item) => item.id === id);
+          if (!existed) return { success: false, deletedCount: 0 };
           await trips.deletePackingItem(id);
-          return { deleted: true };
+          return { success: true, deletedCount: 1 };
         }
         case 'togglePackingItem': {
           const id = resolvePackingItemId(ctx, args);
-          if (!id) return { error: 'which packing item?' };
+          if (!id) return { success: false, updatedCount: 0, error: 'which packing item?' };
+          const existed = trips.packingItems.some((item) => item.id === id);
+          if (!existed) return { success: false, updatedCount: 0, error: 'which packing item?' };
           await trips.togglePackingItem(id);
-          return { toggled: true };
+          return { success: true, updatedCount: 1, toggled: true };
         }
         case 'toggleAllPackingItems': {
           const tripId = resolveTripId(ctx, args);
@@ -298,7 +329,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
           for (const item of targets) {
             await trips.togglePackingItem(item.id);
           }
-          return { toggled: targets.length };
+          return { success: targets.length > 0, updatedCount: targets.length, toggled: targets.length };
         }
         case 'suggestPacking': {
           const trip = tripByHint(args.tripId ?? args.id ?? args.destination);
@@ -346,7 +377,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
         }
         case 'updateIntention': {
           const id = resolveIntentionId(ctx, args);
-          if (!id) return { error: 'which plan or intention?' };
+          if (!id) return { success: false, updatedCount: 0, error: 'which plan or intention?' };
           await trips.updateIntention(id, {
             title: typeof args.title === 'string' ? args.title : undefined,
             type: (['food', 'place', 'activity', 'other'].includes(String(args.type))
@@ -355,13 +386,15 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
             placeName: typeof args.placeName === 'string' ? args.placeName : undefined,
             note: typeof args.note === 'string' ? args.note : undefined,
           });
-          return { updated: true };
+          return { success: true, updatedCount: 1 };
         }
         case 'deleteIntention': {
           const id = resolveIntentionId(ctx, args);
-          if (!id) return { error: 'which plan or intention?' };
+          if (!id) return { success: false, deletedCount: 0, error: 'which plan or intention?' };
+          const existed = trips.intentions.some((item) => item.id === id);
+          if (!existed) return { success: false, deletedCount: 0 };
           await trips.deleteIntention(id);
-          return { deleted: true };
+          return { success: true, deletedCount: 1 };
         }
         case 'getTodayContext':
           return snapshot().reminders;

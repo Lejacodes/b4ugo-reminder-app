@@ -44,7 +44,6 @@ export function littleGuyWhisper(input: {
   unfinishedPacking: number;
   weather?: CompactWeather | null;
 }): string | null {
-  const open = input.reminders.filter((item) => item.status === 'open');
   const today = parseIsoDate(todayIso());
   const soon = input.upcomingTrips
     .map((trip) => {
@@ -64,7 +63,5 @@ export function littleGuyWhisper(input: {
   if (input.unfinishedPacking > 0 && input.upcomingTrips.length > 0) {
     return `you still have ${input.unfinishedPacking} thing${input.unfinishedPacking === 1 ? '' : 's'} left before your trip.`;
   }
-  if (open.length === 1) return 'you have one little thing to remember today ♡';
-  if (open.length > 1) return "you've got a few little things waiting for you today ♡";
   return null;
 }

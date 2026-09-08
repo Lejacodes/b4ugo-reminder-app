@@ -9,7 +9,8 @@ import {
   PaperField,
   PaperPanel,
 } from '@/components/scrapbook';
-import { scrapbookPalette } from '@/constants/scrapbook';
+import { readableType, scrapbookPalette, readableFont } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { usePreferences } from '@/store/PreferencesProvider';
 
 const MAX_NAME_LENGTH = 40;
@@ -21,6 +22,7 @@ const MAX_NAME_LENGTH = 40;
  */
 export default function OnboardingNameScreen() {
   const router = useRouter();
+  const colors = useScrapbookPalette();
   const { profile, updateProfile } = usePreferences();
   const [name, setName] = useState(profile.displayName ?? '');
 
@@ -40,9 +42,9 @@ export default function OnboardingNameScreen() {
           <Handwriting variant="heading" accessibilityRole="header">
             what should I call you?
           </Handwriting>
-          <Handwriting variant="aside" tone="soft" style={styles.subtitle}>
+          <Text style={[styles.subtitle, { color: colors.inkSoft }]}>
             just a name for the top of the page.
-          </Handwriting>
+          </Text>
 
           <PaperField
             accessibilityLabel="Your name"
@@ -82,6 +84,9 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   subtitle: {
+    ...readableFont,
+    fontSize: readableType.item.fontSize,
+    lineHeight: readableType.item.lineHeight,
     marginTop: 2,
     marginBottom: 22,
   },

@@ -120,8 +120,8 @@ the system font. The split is deliberate and defined in
 
 | Face | Token | Used for |
 |------|-------|----------|
-| Starry Night | `DISPLAY_FONT` | BLUGO wordmark, page titles, section titles, short expressive headings, field labels |
-| System sans | `TEXT_FONT` | Body, list items, counts, settings, emails, dates, locations, metadata, button labels, errors, hints |
+| Starry Night | `DISPLAY_FONT` | B4UGO wordmark, top-level screen titles, major section headers, Little Guy personality lines |
+| System sans | `TEXT_FONT` | Body, checklists, inputs, form labels, dates, places, toggles, buttons, tab labels, errors, hints |
 
 The rule: Starry Night is only used where a misread costs nothing. Anything a
 person must read exactly or check character by character goes in the system

@@ -5,7 +5,7 @@ import { Platform, StyleSheet, View, type ColorValue } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { tabBarContentHeight } from "@/constants/spacing";
-import { minTouchTarget } from "@/constants/typography";
+import { fontWeight, minTouchTarget } from "@/constants/typography";
 import { useTheme } from "@/hooks/use-theme";
 
 type TabIconName = ComponentProps<typeof Ionicons>["name"];
@@ -56,6 +56,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        headerRight: () => null,
         tabBarActiveTintColor: theme.tabBarActive,
         tabBarInactiveTintColor: theme.tabBarInactive,
         tabBarStyle: {
@@ -85,12 +86,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="reminders"
+        name="on-the-way-back"
         options={{
-          title: "Reminders",
-          tabBarAccessibilityLabel: "Reminders tab",
+          title: "Way Back",
+          tabBarLabel: "Way Back",
+          tabBarAccessibilityLabel: "On the Way Back tab",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="list-outline" color={color} focused={focused} />
+            <TabIcon name="navigate-outline" color={color} focused={focused} />
           ),
         }}
       />
@@ -115,7 +117,7 @@ export default function TabLayout() {
           title: "Trips",
           tabBarAccessibilityLabel: "Trips tab",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="airplane-outline" color={color} focused={focused} />
+            <TabIcon name="briefcase-outline" color={color} focused={focused} />
           ),
         }}
       />
@@ -123,7 +125,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
-          tabBarAccessibilityLabel: "Profile and settings tab",
+          tabBarAccessibilityLabel: "Profile tab",
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="leaf-outline" color={color} focused={focused} />
           ),
@@ -137,8 +139,8 @@ const spacingTop = Platform.select({ ios: 4, default: 4 });
 
 const styles = StyleSheet.create({
   tabLabel: {
-    fontSize: 11,
-    fontWeight: "500",
+    fontSize: 10,
+    fontWeight: fontWeight.semibold,
     marginTop: 2,
   },
   addIconWrap: {

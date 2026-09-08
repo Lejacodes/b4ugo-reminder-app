@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { SwipeDeleteRow } from '@/components/lists/SwipeDeleteRow';
 import { palette as brand } from '@/constants/colors';
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableFont, readableType } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
@@ -11,18 +12,20 @@ type ChecklistItemProps = {
   reason?: string;
   checked: boolean;
   onToggle: () => void;
+  onDelete?: () => void;
 };
 
 /**
  * One take-with-you row. The box is the affordance; the reason (when present)
  * is readable sans so the "why" stays scannable.
  */
-export function ChecklistItem({ title, reason, checked, onToggle }: ChecklistItemProps) {
+export function ChecklistItem({ title, reason, checked, onToggle, onDelete }: ChecklistItemProps) {
   const colors = useScrapbookPalette();
   const label = reason ? `${title}. ${reason}` : title;
 
   return (
-    <Pressable
+    <SwipeDeleteRow onDelete={onDelete}>
+      <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
       accessibilityLabel={label}
@@ -41,19 +44,30 @@ export function ChecklistItem({ title, reason, checked, onToggle }: ChecklistIte
 
       <View style={styles.copy}>
         <Text
-          style={[styles.title, { color: checked ? colors.inkSoft : colors.ink }, checked && styles.titleChecked]}
+          style={[
+            styles.title,
+            readableFont,
+            { color: checked ? colors.inkSoft : colors.ink, fontFamily: readableFont.fontFamily },
+            checked && styles.titleChecked,
+          ]}
           numberOfLines={2}>
           {title}
         </Text>
         {reason ? (
           <Text
-            style={[styles.reason, { color: colors.inkSoft }, checked && styles.reasonChecked]}
+            style={[
+              styles.reason,
+              readableFont,
+              { color: colors.inkSoft, fontFamily: readableFont.fontFamily },
+              checked && styles.reasonChecked,
+            ]}
             numberOfLines={2}>
             {reason}
           </Text>
         ) : null}
       </View>
-    </Pressable>
+      </Pressable>
+    </SwipeDeleteRow>
   );
 }
 
@@ -84,7 +98,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   title: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
   },
@@ -92,7 +106,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   reason: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
   },

@@ -2,6 +2,7 @@ import { AI_GENTLE_HERE_MESSAGE, AI_UNAVAILABLE_MESSAGE } from './ai-prompts';
 import type { AIProvider } from './ai-provider';
 import { interpretLocally, formatToolResult } from './fallback-provider';
 import { protectNecessitiesFromPacking, validateToolCall } from './ai-tools';
+import { composeVerifiedReply, guardAssistantClaims } from './tool-result';
 import { AI_TOOL_SCHEMAS } from './tool-schemas';
 import type { AIContextSnapshot, AIMessage, AIResponse, AIToolCall, AIToolName } from './types';
 
@@ -21,15 +22,7 @@ export function composeReplyFromTools(
   first: AIResponse,
   results: Array<{ name: AIToolName; payload: unknown }>,
 ): string {
-  const extras = results
-    .map((item) => {
-      if (item.payload && typeof item.payload === 'object' && 'error' in item.payload) {
-        return String((item.payload as { error: unknown }).error);
-      }
-      return formatToolResult(item.name, item.payload);
-    })
-    .filter(Boolean);
-  return [first.message, ...extras].filter(Boolean).join('\n') || AI_GENTLE_HERE_MESSAGE;
+  return composeVerifiedReply(first.message, results, formatToolResult, AI_GENTLE_HERE_MESSAGE);
 }
 
 export async function runValidatedTool(
@@ -97,7 +90,14 @@ export async function runChatTurn(input: {
           };
         }
       }
-      const content = reply.message.trim() || first.message.trim() || AI_GENTLE_HERE_MESSAGE;
+      const content = lastResults.length
+        ? guardAssistantClaims(
+            reply.message.trim() || first.message.trim(),
+            lastResults,
+            formatToolResult,
+            AI_GENTLE_HERE_MESSAGE,
+          )
+        : reply.message.trim() || first.message.trim() || AI_GENTLE_HERE_MESSAGE;
       return {
         messages: [...messages, { role: 'assistant', content }],
         assistantMessage: content,

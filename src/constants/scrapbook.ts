@@ -4,6 +4,8 @@
  * Opening and scrapbook share the same oat desk, cream paper, and matcha marks
  * so the first window and the signed-in app feel like one place.
  */
+import { type TextStyle } from 'react-native';
+
 import { palette } from './colors';
 import { openingPalette, STARRY_NIGHT_FONT } from './opening';
 import { fontFamily } from './typography';
@@ -51,20 +53,20 @@ export function isMatchaSurface(color: string, palette: ScrapbookPalette): boole
 
 export const scrapbookPalette: ScrapbookPalette = {
   desk: palette.oat,
-  deskDot: 'rgba(118, 132, 91, 0.22)',
+  deskDot: 'rgba(107, 142, 106, 0.22)',
   paper: palette.cream,
-  paperWarm: palette.oat,
+  paperWarm: palette.cream,
   paperBacking: palette.softMatcha,
   ink: palette.espresso,
   inkSoft: palette.warmGraySecondary,
-  line: 'rgba(177, 183, 190, 0.7)',
-  marginLine: 'rgba(118, 132, 91, 0.28)',
+  line: palette.cloud,
+  marginLine: 'rgba(107, 142, 106, 0.28)',
   butter: palette.softMatcha,
   butterDeep: palette.deepForest,
   tape: palette.softMatcha,
   clip: palette.softMatcha,
   doodle: palette.softMatcha,
-  shadow: 'rgba(96, 51, 20, 0.16)',
+  shadow: 'rgba(44, 34, 30, 0.14)',
   blush: palette.oat,
   blushDeep: palette.cloud,
   stickyButter: palette.softMatcha,
@@ -77,33 +79,33 @@ export const scrapbookPalette: ScrapbookPalette = {
 };
 
 /**
- * Dark scrapbook: deep espresso desk, lighter paper, oat text, matcha accent.
+ * Dark scrapbook: deep slate-matcha desk, cream ink, lifted matcha tape.
  */
 export const scrapbookPaletteDark: ScrapbookPalette = {
-  desk: palette.darkSurface,
-  deskDot: 'rgba(118, 132, 91, 0.2)',
-  paper: palette.darkEspresso,
-  paperWarm: palette.darkSurfaceElevated,
-  paperBacking: palette.deepForest,
-  ink: palette.oat,
-  inkSoft: palette.cloud,
-  line: 'rgba(216, 211, 179, 0.28)',
-  marginLine: 'rgba(118, 132, 91, 0.35)',
-  butter: palette.softMatcha,
-  butterDeep: palette.sage,
-  tape: palette.softMatcha,
-  clip: palette.softMatcha,
-  doodle: palette.sage,
-  shadow: 'rgba(26, 24, 20, 0.45)',
-  blush: palette.darkEspresso,
-  blushDeep: palette.cloudDark,
-  stickyButter: palette.softMatcha,
-  stickyBlush: palette.darkSurfaceElevated,
-  stickyCream: palette.darkSurfaceElevated,
-  stickyEdge: palette.cloudDark,
-  slipInk: palette.oat,
-  slip: palette.darkSurface,
-  inkOnMatcha: palette.cream,
+  desk: '#121614',
+  deskDot: 'rgba(142, 168, 140, 0.22)',
+  paper: '#1B211E',
+  paperWarm: '#1B211E',
+  paperBacking: '#8EA88C',
+  ink: '#ECEAE4',
+  inkSoft: '#9DA8A1',
+  line: '#28322D',
+  marginLine: 'rgba(142, 168, 140, 0.35)',
+  butter: '#8EA88C',
+  butterDeep: '#8EA88C',
+  tape: '#8EA88C',
+  clip: '#8EA88C',
+  doodle: '#8EA88C',
+  shadow: 'rgba(0, 0, 0, 0.45)',
+  blush: '#1B211E',
+  blushDeep: '#9DA8A1',
+  stickyButter: '#8EA88C',
+  stickyBlush: '#1B211E',
+  stickyCream: '#1B211E',
+  stickyEdge: '#28322D',
+  slipInk: '#ECEAE4',
+  slip: '#121614',
+  inkOnMatcha: '#121614',
 };
 
 /** Sticky notes cycle through these so a grid never looks uniform. */
@@ -114,10 +116,10 @@ export const stickyColors = [
 ] as const;
 
 /**
- * Small rotations applied round-robin. Nothing on the desk sits perfectly
- * straight, but the tilt stays under a couple of degrees so text is readable.
+ * Small rotations applied round-robin. Cards stay between 1° and 2° so
+ * body text stays horizontal enough to scan.
  */
-export const paperTilts = ['-1.4deg', '1.1deg', '-0.7deg', '1.8deg', '-2deg', '0.9deg'] as const;
+export const paperTilts = ['-1.4deg', '1.1deg', '-1.7deg', '1.8deg', '-2deg', '1.2deg'] as const;
 
 export function tiltAt(index: number): string {
   return paperTilts[index % paperTilts.length];
@@ -126,18 +128,21 @@ export function tiltAt(index: number): string {
 /**
  * Two typefaces, and the split between them is deliberate.
  *
- * Starry Night is the voice of the app: the wordmark, headings, sticky-note
- * labels, button faces, short asides. It is a handwriting face, so it is only
- * ever used where a misread costs nothing.
+ * Starry Night is only for: the B4UGO wordmark, top-level screen titles,
+ * and Little Guy dialogue (whispers and chat lines). It is never used for
+ * body copy, section titles, lists, fields, badges, or buttons.
  *
- * The system sans takes everything a person has to read exactly or check
- * character by character — email addresses, passwords, error text, password
- * rules, and any explanation longer than a phrase. Getting one of those wrong
- * because an 'l' looked like a '1' is a real failure, and no amount of charm
- * is worth it.
+ * The system sans takes everything a person has to read exactly — checklist
+ * items, inputs, labels, dates, places, toggles, and buttons.
  */
 export const DISPLAY_FONT = STARRY_NIGHT_FONT;
 export const TEXT_FONT = fontFamily.sans;
+
+/**
+ * System sans for anything a person must read. Always sets `fontFamily` so
+ * checklist rows cannot inherit Starry Night from a parent or from `useFonts`.
+ */
+export const readableFont: TextStyle = { fontFamily: TEXT_FONT };
 
 /** Starry Night sizes. Decorative text only. */
 export const scrapbookType = {

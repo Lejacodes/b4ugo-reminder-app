@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
@@ -35,7 +35,6 @@ import {
   WAND_STAR,
   WAND_STICK,
 } from '@/constants/little-guy-art';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import {
   expressionFromMood,
@@ -50,26 +49,23 @@ import { MemoryParticle } from './MemoryParticle';
 const idle = animation.littleGuy;
 
 const DEFAULT_PARTICLES: MemoryParticlePosition[] = [
-  { ...CONSTELLATION_SLOTS[0], type: 'reminder', size: 8 },
-  { ...CONSTELLATION_SLOTS[1], type: 'buy', size: 7 },
-  { ...CONSTELLATION_SLOTS[2], type: 'trip', size: 9 },
-  { ...CONSTELLATION_SLOTS[3], type: 'task', size: 7 },
-  { ...CONSTELLATION_SLOTS[7], type: 'memory', size: 6 },
+  { id: 'demo-due', ...CONSTELLATION_SLOTS[0], type: 'due', size: 8 },
+  { id: 'demo-errand', ...CONSTELLATION_SLOTS[1], type: 'errand', size: 7 },
+  { id: 'demo-trip', ...CONSTELLATION_SLOTS[2], type: 'trip', size: 9 },
+  { id: 'demo-necessity', ...CONSTELLATION_SLOTS[3], type: 'necessity', size: 7 },
+  { id: 'demo-urgent', ...CONSTELLATION_SLOTS[7], type: 'urgent', size: 6 },
 ];
 
 /** Expressions that deserve a small hop when he arrives at them. */
 const REACTIONS: LittleGuyExpression[] = ['happy', 'proud', 'excited', 'surprised'];
 
-function useGuyColors(isDark: boolean) {
-  return useMemo(
-    () => ({
-      body: isDark ? palette.guyBodyDark : palette.guyBody,
-      outline: isDark ? palette.guyOutlineDark : palette.guyOutline,
-      feature: isDark ? palette.guyFeatureDark : palette.guyFeature,
-      blush: isDark ? palette.guyBlushDark : palette.guyBlush,
-    }),
-    [isDark],
-  );
+function useGuyColors() {
+  return {
+    body: palette.guyBody,
+    outline: palette.guyOutline,
+    feature: palette.guyFeature,
+    blush: palette.guyBlush,
+  };
 }
 
 /** Sway back and forth forever, starting from a resting middle position. */
@@ -142,9 +138,7 @@ export function LittleGuy({
 }: LittleGuyProps) {
   const face = expression ?? expressionFromMood(mood);
   const shape = faceForExpression(face);
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const colors = useGuyColors(isDark);
+  const colors = useGuyColors();
   const reduceMotion = useReducedMotion();
 
   const scale = size / ARTBOARD.width;
@@ -279,7 +273,7 @@ export function LittleGuy({
       importantForAccessibility={accessibilityLabel != null ? 'yes' : 'no-hide-descendants'}>
       {dots.map((dot, index) => (
         <MemoryParticle
-          key={`${dot.type}-${dot.x}-${dot.y}-${index}`}
+          key={dot.id ?? `${dot.type}-${dot.x}-${dot.y}-${index}`}
           type={dot.type}
           size={dot.size * scale}
           x={(dot.x - dot.size / 2) * scale}

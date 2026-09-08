@@ -139,7 +139,15 @@ export type LittleGuyMood =
   | 'proud'
   | 'remembering';
 
-export type ConstellationKind = 'reminder' | 'buy' | 'trip' | 'task' | 'important';
+/** Urgency buckets that drive constellation spark color. */
+export type ConstellationKind =
+  | 'urgent'
+  | 'due'
+  | 'errand'
+  | 'nearby'
+  | 'necessity'
+  | 'general'
+  | 'trip';
 
 export type ConstellationPixel = {
   id: string;

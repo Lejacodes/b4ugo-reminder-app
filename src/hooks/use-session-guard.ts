@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 
+import { resolveLaunchTarget } from '@/lib/launch/resolve-launch-target';
 import {
   hasEnteredOpeningSession,
+  markOpeningEntered,
   subscribeOpeningSession,
 } from '@/lib/opening-session';
 import { useAuth } from '@/store/AuthProvider';
@@ -11,15 +14,10 @@ import { usePreferences } from '@/store/PreferencesProvider';
 /**
  * Decides which of the four route groups the user belongs in.
  *
- *   fresh launch              → /opening   (paper animation, every launch)
- *   signed out, been here     → /auth      (log in / create account)
+ *   signed in, setup done     → /(tabs)   (skips /opening on cold start)
  *   signed in, setup pending  → /onboarding
- *   signed in, setup done     → /(tabs)
- *
- * Authentication comes before anything personal is asked for, so a name or a
- * preference is only ever collected once there is an account to attach it to.
- * A stored session does not skip the opening animation; it only decides where
- * to go after the paper has finished unfolding.
+ *   signed out, first run     → /opening  (paper unfold)
+ *   signed out, already seen  → /auth
  */
 export function useSessionGuard() {
   const { status } = useAuth();
@@ -36,29 +34,37 @@ export function useSessionGuard() {
     const inAuth = root === 'auth';
     const inOnboarding = root === 'onboarding';
 
-    if (!enteredOpening) {
-      if (!inOpening) router.replace('/opening');
+    const target = resolveLaunchTarget({
+      status,
+      prefsLoading: isLoading,
+      hasCompletedOnboarding,
+      enteredOpening,
+    });
+
+    if (target === 'hold') return;
+
+    if (target === 'tabs') {
+      markOpeningEntered();
+      if (inOpening || inAuth || inOnboarding) router.replace('/(tabs)');
+      void SplashScreen.hideAsync();
       return;
     }
 
-    // Hold still until we know who the user is and what they've already done.
-    if (status === 'restoring' || isLoading) return;
-
-    if (status === 'signed-out') {
-      // The opening window has already played this launch — after a sign-out
-      // or an expired session, go straight back to the log in sheet.
-      if (!inAuth && !inOpening) router.replace('/auth/sign-in');
-      return;
-    }
-
-    if (!hasCompletedOnboarding) {
+    if (target === 'onboarding') {
+      markOpeningEntered();
       if (!inOnboarding) router.replace('/onboarding/name');
+      void SplashScreen.hideAsync();
       return;
     }
 
-    if (inOnboarding || inAuth || inOpening) {
-      router.replace('/(tabs)');
+    if (target === 'opening') {
+      if (!inOpening) router.replace('/opening');
+      void SplashScreen.hideAsync();
+      return;
     }
+
+    if (!inAuth && !inOpening) router.replace('/auth/sign-in');
+    void SplashScreen.hideAsync();
   }, [
     status,
     enteredOpening,

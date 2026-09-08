@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { DISPLAY_FONT, isMatchaSurface, scrapbookType } from '@/constants/scrapbook';
+import { isMatchaSurface, readableType, readableFont } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
@@ -91,18 +91,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     right: 9,
-    fontFamily: DISPLAY_FONT,
-    fontSize: 20,
+    ...readableFont,
+    fontSize: 18,
+    fontWeight: '600',
   },
   label: {
-    fontFamily: DISPLAY_FONT,
-    fontSize: scrapbookType.title.fontSize,
-    lineHeight: scrapbookType.title.lineHeight,
+    ...readableFont,
+    fontSize: readableType.item.fontSize,
+    lineHeight: readableType.item.lineHeight,
+    fontWeight: '600',
   },
   aside: {
-    fontFamily: DISPLAY_FONT,
-    fontSize: 15,
-    lineHeight: 19,
+    ...readableFont,
+    fontSize: readableType.meta.fontSize,
+    lineHeight: readableType.meta.lineHeight,
     marginTop: 2,
   },
 });

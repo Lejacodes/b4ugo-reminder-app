@@ -9,7 +9,8 @@ import {
   QuietLink,
   StickyNote,
 } from '@/components/scrapbook';
-import { scrapbookPalette, stickyColors, tiltAt } from '@/constants/scrapbook';
+import { readableType, scrapbookPalette, stickyColors, tiltAt, readableFont } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { usePreferences } from '@/store/PreferencesProvider';
 import { interestOptions, type OnboardingInterest } from '@/types';
 
@@ -22,6 +23,7 @@ import { interestOptions, type OnboardingInterest } from '@/types';
  */
 export default function GettingToKnowYouScreen() {
   const router = useRouter();
+  const colors = useScrapbookPalette();
   const { profile, updateProfile, completeOnboarding } = usePreferences();
   const [picked, setPicked] = useState<OnboardingInterest[]>(profile.interests);
   const [saving, setSaving] = useState(false);
@@ -52,9 +54,9 @@ export default function GettingToKnowYouScreen() {
         <Handwriting variant="heading" accessibilityRole="header">
           {greeting}
         </Handwriting>
-        <Handwriting variant="aside" tone="soft" style={styles.subtitle}>
+        <Text style={[styles.subtitle, { color: colors.inkSoft }]}>
           what should I keep an eye on? pick as many as you like.
-        </Handwriting>
+        </Text>
       </View>
 
       <View style={styles.board}>
@@ -91,9 +93,9 @@ export default function GettingToKnowYouScreen() {
         />
       </View>
 
-      <Handwriting variant="aside" tone="soft" style={styles.fineprint}>
+      <Text style={[styles.fineprint, { color: colors.inkSoft }]}>
         you can change any of this later.
-      </Handwriting>
+      </Text>
     </DeskScreen>
   );
 }
@@ -105,6 +107,9 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
   },
   subtitle: {
+    ...readableFont,
+    fontSize: readableType.item.fontSize,
+    lineHeight: readableType.item.lineHeight,
     marginTop: 4,
   },
   board: {
@@ -140,6 +145,9 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   fineprint: {
+    ...readableFont,
+    fontSize: readableType.fine.fontSize,
+    lineHeight: readableType.fine.lineHeight,
     marginTop: 14,
     paddingLeft: 4,
   },

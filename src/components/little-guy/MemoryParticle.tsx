@@ -2,6 +2,8 @@ import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
+  FadeIn,
+  FadeOut,
   cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
@@ -95,27 +97,27 @@ export function MemoryParticle({
 
   return (
     <Animated.View
-      style={[
-        styles.particle,
-        { left: x, top: y, width: size, height: size },
-        animated ? animatedStyle : styles.still,
-      ]}>
-      <View
-        style={[
-          styles.halo,
-          {
-            width: size * 2.4,
-            height: size * 2.4,
-            borderRadius: size * 1.2,
-            marginLeft: -size * 0.7,
-            marginTop: -size * 0.7,
-            backgroundColor: color,
-          },
-        ]}
-      />
-      <View
-        style={[styles.core, { width: size, height: size, borderRadius: size / 2, backgroundColor: color }]}
-      />
+      entering={animated ? FadeIn.duration(280) : undefined}
+      exiting={animated ? FadeOut.duration(220) : undefined}
+      style={[styles.particle, { left: x, top: y, width: size, height: size }]}>
+      <Animated.View style={[{ width: size, height: size }, animated ? animatedStyle : styles.still]}>
+        <View
+          style={[
+            styles.halo,
+            {
+              width: size * 2.4,
+              height: size * 2.4,
+              borderRadius: size * 1.2,
+              marginLeft: -size * 0.7,
+              marginTop: -size * 0.7,
+              backgroundColor: color,
+            },
+          ]}
+        />
+        <View
+          style={[styles.core, { width: size, height: size, borderRadius: size / 2, backgroundColor: color }]}
+        />
+      </Animated.View>
     </Animated.View>
   );
 }

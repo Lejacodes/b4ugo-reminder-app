@@ -2,47 +2,49 @@
  * B4UGO raw color palette.
  * Components should consume semantic tokens from theme.ts, not these directly.
  *
- * Core brand (source of truth):
- * Matcha #76845B, Oat #D8D3B3, Espresso #603314, Cloud #B1B7BE
+ * Light desk (source of truth):
+ * Desk #F3EFEA, Card #FCFAF7, Border #E2DDD5, Ink #2C221E,
+ * Muted #6E655F, Accent / tape #6B8E6A
  */
 
 export const palette = {
-  // Core brand
-  cream: '#F5F1E7',
-  oat: '#D8D3B3',
-  deepForest: '#465442',
-  softMatcha: '#76845B',
-  sage: '#9DB496',
-  espresso: '#603314',
-  cloud: '#B1B7BE',
+  // Core brand — light desk
+  cream: '#FCFAF7',
+  oat: '#F3EFEA',
+  deepForest: '#4F6B4E',
+  softMatcha: '#6B8E6A',
+  sage: '#8AA889',
+  espresso: '#2C221E',
+  cloud: '#E2DDD5',
 
   /** Readable warm grays for text hierarchy (not brand accent colors). */
-  warmGraySecondary: '#7A6F65',
-  warmGrayMuted: '#8F8278',
-  warmGrayDisabled: '#B1B7BE',
+  warmGraySecondary: '#6E655F',
+  warmGrayMuted: '#8A817A',
+  warmGrayDisabled: '#B7B1AA',
 
   // Accent colors — use intentionally, not everywhere
   mutedCoral: '#D9826B',
   dustyRose: '#C98F9A',
   softAqua: '#90C5BC',
 
-  // Dark mode bases — warm, not pure black
-  darkBackground: '#1A1814',
-  darkBackgroundElevated: '#242019',
-  darkSurface: '#2E261F',
-  darkSurfaceElevated: '#3A3028',
-  darkEspresso: '#4A3828',
-  darkBorder: '#3D3530',
+  // Dark mode — deep slate-matcha
+  darkBackground: '#121614',
+  darkBackgroundElevated: '#1B211E',
+  darkSurface: '#121614',
+  darkSurfaceElevated: '#1B211E',
+  darkEspresso: '#1B211E',
+  darkBorder: '#28322D',
+  darkAccent: '#8EA88C',
 
   // Text on dark
-  creamText: '#F5F1E7',
-  cloudDark: '#9BA3AB',
-  warmGraySecondaryDark: '#C4BCB3',
-  warmGrayMutedDark: '#A89F96',
-  warmGrayDisabledDark: '#6A6258',
+  creamText: '#ECEAE4',
+  cloudDark: '#9DA8A1',
+  warmGraySecondaryDark: '#9DA8A1',
+  warmGrayMutedDark: '#7E8882',
+  warmGrayDisabledDark: '#5C6560',
 
-  // Little Guy — warm cream fluff with soft ink linework, per the character sheet
-  guyBody: '#FDFBF4',
+  // Little Guy — warm cream in every appearance. Never invert for dark mode.
+  guyBody: '#FFFDF7',
   guyBodyDark: '#3A342C',
   guyShade: '#F0E7D6',
   guyShadeDark: '#463E33',
@@ -61,29 +63,36 @@ export const palette = {
 export type PaletteColor = keyof typeof palette;
 
 export type MemoryParticleColor =
-  | 'reminder'
-  | 'buy'
-  | 'trip'
-  | 'task'
-  | 'memory';
+  | 'urgent'
+  | 'due'
+  | 'errand'
+  | 'nearby'
+  | 'necessity'
+  | 'general'
+  | 'trip';
 
 /**
- * Constellation dot colors, one hue per kind of memory Little Guy is holding.
- * Kept in sync with PIXEL_COLORS in lib/ai/constellation.ts.
+ * Constellation spark colors, mapped from urgency.
+ * Overdue → coral, due today / departure → amber, errands → sage/green,
+ * persistent necessities → gold, future trip items → blue.
  */
 export const memoryParticleColors: Record<MemoryParticleColor, string> = {
-  reminder: '#7BA3C9',
-  buy: '#E4C36A',
-  trip: '#E08A86',
-  task: '#8FBF8A',
-  memory: '#A48BC4',
+  urgent: '#E56B6F',
+  due: '#F4A261',
+  errand: '#6E8B6B',
+  nearby: '#2A9D8F',
+  necessity: '#E9C46A',
+  general: '#D4A373',
+  trip: '#457B9D',
 };
 
-/** Dark-mode constellation dots — same hues, lifted slightly to stay readable. */
+/** Dark-mode constellation sparks — same hues, lifted slightly to stay readable. */
 export const memoryParticleColorsDark: Record<MemoryParticleColor, string> = {
-  reminder: '#8FB6DA',
-  buy: '#EBD07E',
-  trip: '#EC9E9A',
-  task: '#A2CF9C',
-  memory: '#B69ED6',
+  urgent: '#F08A8D',
+  due: '#F6B67A',
+  errand: '#86A383',
+  nearby: '#4BB5A8',
+  necessity: '#F0D285',
+  general: '#E0B78A',
+  trip: '#5E94B5',
 };

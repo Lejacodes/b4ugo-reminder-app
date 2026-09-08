@@ -7,6 +7,7 @@ export default function OpeningLayout() {
         headerShown: false,
         animation: 'fade',
         gestureEnabled: false,
+        headerRight: () => null,
       }}
     />
   );

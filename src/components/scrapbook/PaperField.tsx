@@ -8,12 +8,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 
-import {
-  DISPLAY_FONT,
-  readableType,
-  scrapbookType,
-  TEXT_FONT,
-} from '@/constants/scrapbook';
+import { readableType, readableFont } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
@@ -25,11 +20,7 @@ type PaperFieldProps = Omit<TextInputProps, 'style'> & {
   inputRef?: RefObject<TextInput | null>;
   /** Marks the field as the one the current error refers to. */
   invalid?: boolean;
-  /**
-   * `data` (default) sets the typed value in the system sans — correct for
-   * emails, passwords, and anything that has to be read exactly.
-   * `handwritten` keeps Starry Night, for short expressive answers like a name.
-   */
+  /** Kept for callers; both variants use the readable system face. */
   variant?: 'data' | 'handwritten';
 };
 
@@ -45,7 +36,7 @@ export function PaperField({
   hint,
   inputRef,
   invalid = false,
-  variant = 'data',
+  variant: _variant = 'data',
   ...inputProps
 }: PaperFieldProps) {
   const palette = useScrapbookPalette();
@@ -87,7 +78,6 @@ export function PaperField({
           style={[
             styles.input,
             { color: palette.ink },
-            variant === 'handwritten' && styles.inputHandwritten,
             inputProps.multiline && styles.inputMultiline,
           ]}
         />
@@ -118,9 +108,10 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   label: {
-    fontFamily: DISPLAY_FONT,
-    fontSize: scrapbookType.aside.fontSize,
-    lineHeight: scrapbookType.aside.lineHeight,
+    ...readableFont,
+    fontSize: readableType.meta.fontSize,
+    lineHeight: readableType.meta.lineHeight,
+    fontWeight: '500',
     marginBottom: 2,
   },
   line: {
@@ -135,15 +126,11 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.input.fontSize,
     minHeight: minTouchTarget,
     paddingVertical: 8,
     paddingHorizontal: 2,
-  },
-  inputHandwritten: {
-    fontFamily: DISPLAY_FONT,
-    fontSize: scrapbookType.body.fontSize,
   },
   inputMultiline: {
     minHeight: 88,
@@ -160,12 +147,12 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   revealLabel: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.helper.fontSize,
     textDecorationLine: 'underline',
   },
   hint: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.helper.fontSize,
     lineHeight: readableType.helper.lineHeight,
     marginTop: 5,

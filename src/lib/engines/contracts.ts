@@ -26,6 +26,10 @@ export type WeatherSnapshot = {
   rainLikely: boolean;
   temperatureC: number | null;
   summary: string;
+  /** Today's max precipitation probability, 0–100. */
+  precipitationProbability?: number | null;
+  /** Today's max UV index when the forecast includes it. */
+  uvIndex?: number | null;
 };
 
 export type DeviceLocation = {

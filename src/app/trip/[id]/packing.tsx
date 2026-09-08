@@ -7,7 +7,7 @@ import { ChecklistItem } from '@/components/before-ugo/ChecklistItem';
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
 import { ChipRow } from '@/components/trips';
 import { ButterButton, Handwriting, PaperField, PaperPanel, QuietLink } from '@/components/scrapbook';
-import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { readableType, scrapbookPalette, tiltAt, readableFont } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
@@ -129,6 +129,11 @@ export default function PackingScreen() {
                       }
                       togglePackingItem(item.id);
                     }}
+                    onDelete={() =>
+                      item.source === 'user'
+                        ? deletePackingItem(item.id)
+                        : dismissPackingItem(item.id)
+                    }
                   />
                   {listEditing && editingId === item.id ? (
                     <View>
@@ -169,7 +174,9 @@ export default function PackingScreen() {
         ) : null}
 
         <PaperPanel tilt={tiltAt(5)} tape="top-right">
-          <Handwriting variant="aside">add something</Handwriting>
+          <Text style={[styles.fieldLabel, { color: colors.ink, marginTop: 0, fontWeight: '500' }]}>
+            add something
+          </Text>
           <PaperField
             placeholder="Passport, adapter…"
             value={title}
@@ -228,19 +235,19 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   count: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.count.fontSize,
     lineHeight: readableType.count.lineHeight,
     color: scrapbookPalette.ink,
   },
   meta: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     color: scrapbookPalette.inkSoft,
   },
   fieldLabel: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     color: scrapbookPalette.inkSoft,
     marginTop: 8,
@@ -253,7 +260,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   fine: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.fine.fontSize,
     lineHeight: readableType.fine.lineHeight,
     color: scrapbookPalette.inkSoft,

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Handwriting, PlaceAutocomplete } from '@/components/scrapbook';
 import type { GeocodedDestination } from '@/lib/geocoding';
 import { palette as brand } from '@/constants/colors';
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, readableFont } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   fieldLabel: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     marginTop: 10,
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '-1deg' }],
   },
   chipLabel: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
   },
   pressed: {

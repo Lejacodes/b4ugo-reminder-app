@@ -173,6 +173,27 @@ describe('chat tool loop', () => {
     expect(turn.assistantMessage).toMatch(/checked off|done/i);
   });
 
+  it('does not claim a delete when the store removed nothing', async () => {
+    const execute = jest.fn().mockResolvedValue({ success: false, deletedCount: 0 });
+    const turn = await runChatTurn({
+      provider: new ScriptedProvider([
+        {
+          message: 'removed them all!',
+          toolCalls: [{ name: 'deleteReminder', args: { title: 'keys', confirm: 'yes' } }],
+        },
+        { message: 'removed them all!', toolCalls: [] },
+      ]),
+      history: [],
+      userText: 'clear checked items',
+      context: empty,
+      execute,
+    });
+    expect(execute).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'deleteReminder', args: expect.objectContaining({ title: 'keys' }) }),
+    );
+    expect(turn.assistantMessage).toBe("I couldn't find any checked items to remove.");
+  });
+
   it('rejects malformed tool arguments without executing', async () => {
     const execute = jest.fn();
     const turn = await runChatTurn({

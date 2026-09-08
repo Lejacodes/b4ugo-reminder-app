@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { ChipRow } from '@/components/trips/ChipRow';
 import { ButterButton, PaperField, PlaceAutocomplete, QuietLink } from '@/components/scrapbook';
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, readableFont } from '@/constants/scrapbook';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import type { GeocodedDestination } from '@/lib/geocoding';
 import { reverseGeocodeLocation } from '@/lib/geocoding/reverse-geocode';
@@ -141,7 +141,7 @@ export function IntentionComposer({
 
 const styles = StyleSheet.create({
   fieldLabel: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     marginTop: 4,
   },
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   locateError: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.helper.fontSize,
     lineHeight: readableType.helper.lineHeight,
     marginTop: 4,

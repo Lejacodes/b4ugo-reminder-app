@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, readableFont } from '@/constants/scrapbook';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { useAuth } from '@/store/AuthProvider';
 
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '0.6deg' }],
   },
   text: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.fine.fontSize,
     lineHeight: readableType.fine.lineHeight,
   },

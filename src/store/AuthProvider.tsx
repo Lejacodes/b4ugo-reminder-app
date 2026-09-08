@@ -10,6 +10,7 @@ import {
 } from 'react';
 
 import { authClient, toAuthError, type AuthSession, type AuthUser } from '@/lib/auth';
+import { clearOpeningSession } from '@/lib/opening-session';
 
 export type AuthStatus = 'restoring' | 'signed-out' | 'signed-in';
 
@@ -104,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await authClient.signOut();
     } finally {
+      clearOpeningSession();
       if (isMounted.current) {
         setSession(null);
         setStatus('signed-out');

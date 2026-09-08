@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   ButterButton,
@@ -19,6 +19,8 @@ import {
   validateSignIn,
   type AuthErrorCode,
 } from '@/lib/auth';
+import { readableType, readableFont } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { useAuth } from '@/store/AuthProvider';
 
 /** RFC 5321 caps an address at 254 characters. */
@@ -26,6 +28,7 @@ const MAX_EMAIL_LENGTH = 254;
 
 export default function SignInScreen() {
   const router = useRouter();
+  const colors = useScrapbookPalette();
   const { signIn, isSubmitting } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -66,9 +69,9 @@ export default function SignInScreen() {
         <Handwriting variant="display" accessibilityRole="header">
           welcome back.
         </Handwriting>
-        <Handwriting variant="aside" tone="soft">
+        <Text style={[styles.subtitle, { color: colors.inkSoft }]}>
           everything&apos;s where you left it.
-        </Handwriting>
+        </Text>
       </View>
 
       <PaperPanel tilt="1.1deg" tape="top-left">
@@ -118,9 +121,7 @@ export default function SignInScreen() {
       </PaperPanel>
 
       <View style={styles.footer}>
-        <Handwriting variant="aside" tone="soft">
-          first time here?
-        </Handwriting>
+        <Text style={[styles.subtitle, { color: colors.inkSoft }]}>first time here?</Text>
         <QuietLink
           label="create an account"
           accessibilityLabel="Go to create account"
@@ -139,6 +140,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 22,
     paddingLeft: 4,
+  },
+  subtitle: {
+    ...readableFont,
+    fontSize: readableType.item.fontSize,
+    lineHeight: readableType.item.lineHeight,
+    marginTop: 6,
   },
   actions: {
     marginTop: 10,

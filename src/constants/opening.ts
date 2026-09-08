@@ -8,20 +8,20 @@ import { palette } from './colors';
 
 export const openingPalette = {
   desk: palette.oat,
-  deskDot: 'rgba(118, 132, 91, 0.22)',
+  deskDot: 'rgba(107, 142, 106, 0.22)',
   paper: palette.cream,
-  paperWarm: palette.oat,
+  paperWarm: palette.cream,
   paperBacking: palette.softMatcha,
   ink: palette.espresso,
   inkSoft: palette.warmGraySecondary,
-  line: 'rgba(177, 183, 190, 0.7)',
-  marginLine: 'rgba(118, 132, 91, 0.28)',
+  line: palette.cloud,
+  marginLine: 'rgba(107, 142, 106, 0.28)',
   butter: palette.softMatcha,
   butterDeep: palette.deepForest,
   tape: palette.softMatcha,
   clip: palette.softMatcha,
   doodle: palette.softMatcha,
-  shadow: 'rgba(96, 51, 20, 0.16)',
+  shadow: 'rgba(44, 34, 30, 0.14)',
 } as const;
 
 export const STARRY_NIGHT_FONT = 'StarryNight';

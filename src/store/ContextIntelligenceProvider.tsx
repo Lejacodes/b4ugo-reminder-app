@@ -27,6 +27,7 @@ import {
   type NotificationRecord,
 } from '@/lib/notifications/dedupe';
 import { planDueReminderActions } from '@/lib/notifications/due-reminders';
+import { watchWifiDepartureTrigger } from '@/lib/notifications/departure-trigger';
 import { appNotificationService, copyForReminder } from '@/lib/notifications/notification-service';
 import { hrefFromNotificationData, isDueNotificationId } from '@/lib/notifications/routing';
 import { STORAGE_KEYS, preferencesStorage, scopedKey } from '@/lib/storage/preferences-storage';
@@ -366,6 +367,14 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
     upcomingTrips,
     userId,
   ]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' || status !== 'signed-in' || !userId) return;
+    return watchWifiDepartureTrigger({
+      userId,
+      pushEnabled: preferences.notifications.pushEnabled,
+    });
+  }, [preferences.notifications.pushEnabled, status, userId]);
 
   return children;
 }

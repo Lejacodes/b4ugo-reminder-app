@@ -6,7 +6,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
 import { ChipRow } from '@/components/trips';
 import { ButterButton, Handwriting, PaperField, PaperPanel, QuietLink } from '@/components/scrapbook';
-import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { readableType, scrapbookPalette, tiltAt, readableFont } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
@@ -109,7 +109,9 @@ export default function TemplateDetailScreen() {
         </PaperPanel>
 
         <PaperPanel tilt={tiltAt(2)} tape="top-left">
-          <Handwriting variant="aside">add an item</Handwriting>
+          <Text style={[styles.fieldLabel, { color: colors.ink, marginTop: 0, fontWeight: '500' }]}>
+            add an item
+          </Text>
           <PaperField value={title} onChangeText={setTitle} placeholder="Towel" />
           <ChipRow
             options={PACKING_CATEGORIES.map((key) => PACKING_CATEGORY_LABELS[key])}
@@ -155,13 +157,19 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   meta: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     color: scrapbookPalette.inkSoft,
   },
+  fieldLabel: {
+    ...readableFont,
+    fontSize: readableType.item.fontSize,
+    lineHeight: readableType.item.lineHeight,
+    marginTop: 14,
+  },
   item: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
     color: scrapbookPalette.ink,

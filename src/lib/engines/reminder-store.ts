@@ -50,8 +50,13 @@ export async function loadNecessities(userId: string): Promise<PersonalNecessity
     await ensureMigrated(userId);
     const remote = await reminderRepository.listNecessities();
     if (!remote) return local;
-    await preferencesStorage.setItem(scopedKey(STORAGE_KEYS.necessities, userId), JSON.stringify(remote));
-    return remote;
+    const localById = new Map(local.map((item) => [item.id, item]));
+    const merged = remote.map((item) => ({
+      ...item,
+      activeDays: localById.get(item.id)?.activeDays ?? item.activeDays,
+    }));
+    await preferencesStorage.setItem(scopedKey(STORAGE_KEYS.necessities, userId), JSON.stringify(merged));
+    return merged;
   } catch {
     return local;
   }

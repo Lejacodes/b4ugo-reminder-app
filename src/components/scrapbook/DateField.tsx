@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { DISPLAY_FONT, readableType, scrapbookType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, readableFont } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import { formatHumanDate, parseIsoDate, toIsoDate, todayIso } from '@/lib/trips/dates';
@@ -196,9 +196,10 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   label: {
-    fontFamily: DISPLAY_FONT,
-    fontSize: scrapbookType.aside.fontSize,
-    lineHeight: scrapbookType.aside.lineHeight,
+    ...readableFont,
+    fontSize: readableType.meta.fontSize,
+    lineHeight: readableType.meta.lineHeight,
+    fontWeight: '500',
     marginBottom: 2,
   },
   line: {
@@ -208,13 +209,13 @@ const styles = StyleSheet.create({
     paddingBottom: 1,
   },
   value: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.input.fontSize,
     paddingVertical: 8,
     paddingHorizontal: 2,
   },
   hint: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.helper.fontSize,
     lineHeight: readableType.helper.lineHeight,
     marginTop: 5,
@@ -256,12 +257,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   monthNavLabel: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: 22,
     lineHeight: 26,
   },
   monthTitle: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
     fontWeight: '600',
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
   weekday: {
     width: '14.285%',
     textAlign: 'center',
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.helper.fontSize,
     paddingVertical: 4,
   },
@@ -288,7 +289,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   dayLabel: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
   },
   dayDisabled: {

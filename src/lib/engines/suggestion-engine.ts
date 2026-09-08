@@ -4,6 +4,7 @@
  * This is a local rule table, not a model. It only runs AFTER the user
  * names a destination/purpose. It never invents a destination on its own.
  */
+import { weatherInjections } from '@/lib/context/weather-injections';
 import type { BeforeUgoContext } from '@/types/reminder';
 import type { SuggestionEngine, SuggestionItem, TripPackItem, WeatherSnapshot } from './contracts';
 
@@ -77,31 +78,10 @@ export class LocalSuggestionEngine implements SuggestionEngine {
       out.push(item);
     };
 
-    if (weather?.isLive && weather.rainLikely) {
+    for (const injection of weatherInjections(weather)) {
       add({
-        title: 'Umbrella',
-        reason: 'rain expected today',
-        source: 'weather',
-      });
-    }
-
-    if (weather?.isLive && weather.temperatureC != null && weather.temperatureC <= 12) {
-      add({
-        title: 'Jacket',
-        reason: 'it will be cold',
-        source: 'weather',
-      });
-    }
-
-    if (weather?.isLive && weather.temperatureC != null && weather.temperatureC >= 28) {
-      add({
-        title: 'Water bottle',
-        reason: 'it will be hot',
-        source: 'weather',
-      });
-      add({
-        title: 'Sunscreen',
-        reason: 'it will be hot',
+        title: injection.title,
+        reason: injection.reason,
         source: 'weather',
       });
     }

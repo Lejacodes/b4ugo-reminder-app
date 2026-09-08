@@ -5,7 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
 import { ButterButton, Handwriting, PaperField, PaperPanel, QuietLink } from '@/components/scrapbook';
-import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { readableType, scrapbookPalette, tiltAt, readableFont } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   meta: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     color: scrapbookPalette.inkSoft,

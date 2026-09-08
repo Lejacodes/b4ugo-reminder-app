@@ -7,7 +7,7 @@ import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
 import { LiveMap, type LiveMapPin } from '@/components/map';
 import { IntentionComposer } from '@/components/trips';
 import { Handwriting, PaperPanel, QuietLink } from '@/components/scrapbook';
-import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { readableType, scrapbookPalette, tiltAt, readableFont } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
@@ -203,14 +203,14 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   meta: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     color: scrapbookPalette.inkSoft,
     marginTop: 4,
   },
   item: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
     color: scrapbookPalette.ink,

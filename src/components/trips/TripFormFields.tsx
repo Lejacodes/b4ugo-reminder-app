@@ -2,7 +2,7 @@ import { Text } from 'react-native';
 
 import { ChipRow } from '@/components/trips/ChipRow';
 import { DateField, PaperField, PlaceAutocomplete } from '@/components/scrapbook';
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, readableFont } from '@/constants/scrapbook';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import type { GeocodedDestination } from '@/lib/geocoding';
 import { daysBetween, formatDuration, parseIsoDate } from '@/lib/trips/dates';
@@ -84,7 +84,7 @@ export function TripFormFields({ state, onChange, onPlaceSelect, templates }: Tr
       {computed != null ? (
         <Text
           style={{
-            fontFamily: TEXT_FONT,
+            ...readableFont,
             fontSize: readableType.meta.fontSize,
             color: colors.inkSoft,
             marginTop: -8,
@@ -102,15 +102,15 @@ export function TripFormFields({ state, onChange, onPlaceSelect, templates }: Tr
           keyboardType="number-pad"
         />
       )}
-      <Text style={{ fontFamily: TEXT_FONT, fontSize: readableType.meta.fontSize, color: colors.inkSoft, marginTop: 8 }}>
+      <Text style={{ ...readableFont, fontSize: readableType.meta.fontSize, color: colors.inkSoft, marginTop: 8 }}>
         activity
       </Text>
       <ChipRow options={ACTIVITY_OPTIONS} value={state.activity} onChange={(activity) => onChange({ activity })} />
-      <Text style={{ fontFamily: TEXT_FONT, fontSize: readableType.meta.fontSize, color: colors.inkSoft, marginTop: 8 }}>
+      <Text style={{ ...readableFont, fontSize: readableType.meta.fontSize, color: colors.inkSoft, marginTop: 8 }}>
         season / climate
       </Text>
       <ChipRow options={SEASON_OPTIONS} value={state.season} onChange={(season) => onChange({ season })} />
-      <Text style={{ fontFamily: TEXT_FONT, fontSize: readableType.meta.fontSize, color: colors.inkSoft, marginTop: 8 }}>
+      <Text style={{ ...readableFont, fontSize: readableType.meta.fontSize, color: colors.inkSoft, marginTop: 8 }}>
         accommodation
       </Text>
       <ChipRow
@@ -118,7 +118,7 @@ export function TripFormFields({ state, onChange, onPlaceSelect, templates }: Tr
         value={state.accommodation}
         onChange={(accommodation) => onChange({ accommodation })}
       />
-      <Text style={{ fontFamily: TEXT_FONT, fontSize: readableType.meta.fontSize, color: colors.inkSoft, marginTop: 8 }}>
+      <Text style={{ ...readableFont, fontSize: readableType.meta.fontSize, color: colors.inkSoft, marginTop: 8 }}>
         transportation
       </Text>
       <ChipRow
@@ -144,7 +144,7 @@ export function TripFormFields({ state, onChange, onPlaceSelect, templates }: Tr
       />
       {templates && templates.length > 0 ? (
         <>
-          <Text style={{ fontFamily: TEXT_FONT, fontSize: readableType.meta.fontSize, color: colors.inkSoft, marginTop: 8 }}>
+          <Text style={{ ...readableFont, fontSize: readableType.meta.fontSize, color: colors.inkSoft, marginTop: 8 }}>
             template
           </Text>
           <ChipRow

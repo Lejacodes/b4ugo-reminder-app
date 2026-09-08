@@ -3,7 +3,9 @@ const ALLOWED_PREFIXES = [
   '/before-ugo',
   '/on-the-way-back',
   '/trip/',
+  '/(tabs)',
   '/(tabs)/reminders',
+  '/(tabs)/on-the-way-back',
   '/(tabs)/trips',
 ];
 
@@ -27,7 +29,7 @@ export function hrefForDueReminder(item: {
   if (item.category === 'onTheWayBack') return '/on-the-way-back';
   if (item.category === 'beforeUgo') return '/before-ugo';
   if (item.contextId && item.contextId.startsWith('trip-')) return `/trip/${item.contextId}`;
-  return '/reminders';
+  return '/(tabs)';
 }
 
 export function dueNotificationId(reminderId: string, dueAt?: string | null): string {

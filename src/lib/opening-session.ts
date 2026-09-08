@@ -12,6 +12,12 @@ export function markOpeningEntered(): void {
   listeners.forEach((listener) => listener());
 }
 
+/** Call on sign-out so the next login can play the paper unfold again. */
+export function clearOpeningSession(): void {
+  enteredThisSession = false;
+  listeners.forEach((listener) => listener());
+}
+
 export function subscribeOpeningSession(listener: Listener): () => void {
   listeners.add(listener);
   return () => {

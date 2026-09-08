@@ -73,7 +73,7 @@ export class LocalNotificationService implements NotificationService {
         {
           reminderId: reminder.id,
           title: reminder.title,
-          href: reminder.category === 'onTheWayBack' ? '/on-the-way-back' : '/reminders',
+          href: reminder.category === 'onTheWayBack' ? '/on-the-way-back' : '/(tabs)',
         },
       ],
     });

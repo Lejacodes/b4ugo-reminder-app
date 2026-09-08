@@ -12,7 +12,7 @@ import {
   QuietLink,
   SlipNote,
 } from '@/components/scrapbook';
-import { readableType, TEXT_FONT } from '@/constants/scrapbook';
+import { readableType, readableFont } from '@/constants/scrapbook';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
 import {
   AuthError,
@@ -75,9 +75,9 @@ export default function CreateAccountScreen() {
         <Handwriting variant="display" accessibilityRole="header">
           new here?
         </Handwriting>
-        <Handwriting variant="aside" tone="soft">
+        <Text style={[styles.subtitle, { color: colors.inkSoft }]}>
           let&apos;s make you a shelf of your own.
-        </Handwriting>
+        </Text>
       </View>
 
       <PaperPanel tilt="-1.2deg" tape="top-right">
@@ -151,9 +151,7 @@ export default function CreateAccountScreen() {
       </PaperPanel>
 
       <View style={styles.footer}>
-        <Handwriting variant="aside" tone="soft">
-          already have one?
-        </Handwriting>
+        <Text style={[styles.subtitle, { color: colors.inkSoft }]}>already have one?</Text>
         <QuietLink
           label="log in instead"
           accessibilityLabel="Go to log in"
@@ -173,12 +171,18 @@ const styles = StyleSheet.create({
     marginBottom: 22,
     paddingLeft: 4,
   },
+  subtitle: {
+    ...readableFont,
+    fontSize: readableType.item.fontSize,
+    lineHeight: readableType.item.lineHeight,
+    marginTop: 6,
+  },
   actions: {
     marginTop: 10,
   },
   fineprint: {
     marginTop: 20,
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.fine.fontSize,
     lineHeight: readableType.fine.lineHeight,
   },

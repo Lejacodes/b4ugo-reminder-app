@@ -5,3 +5,13 @@ export {
   packedTitlesForTrip,
   packingOpenForTrip,
 } from './necessities';
+export {
+  weatherInjections,
+  weatherStatusPhrase,
+  weatherBadgeForText,
+  weatherBadgeIconForText,
+  weatherKey,
+  rainExpected,
+  type WeatherInjection,
+  type WeatherBadgeIcon,
+} from './weather-injections';

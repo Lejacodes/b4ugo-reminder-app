@@ -6,7 +6,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ScrapbookHeader } from '@/components/before-ugo/ScrapbookHeader';
 import { IntentionComposer } from '@/components/trips';
 import { ButterButton, Handwriting, PaperField, PaperPanel, QuietLink } from '@/components/scrapbook';
-import { readableType, scrapbookPalette, TEXT_FONT, tiltAt } from '@/constants/scrapbook';
+import { readableType, scrapbookPalette, tiltAt, readableFont } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useResponsive } from '@/hooks/use-responsive';
 import { useDeskStyle, useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
@@ -274,44 +274,44 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   destination: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: 20,
     lineHeight: 26,
     color: scrapbookPalette.ink,
   },
   range: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: 17,
     lineHeight: 23,
     marginTop: 8,
   },
   duration: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.count.fontSize,
     lineHeight: readableType.count.lineHeight,
     marginTop: 4,
   },
   tags: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     marginTop: 10,
   },
   meta: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     color: scrapbookPalette.inkSoft,
   },
   count: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.count.fontSize,
     lineHeight: readableType.count.lineHeight,
     color: scrapbookPalette.ink,
     marginTop: 6,
   },
   item: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.item.fontSize,
     lineHeight: readableType.item.lineHeight,
     color: scrapbookPalette.ink,
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   detailLabel: {
-    fontFamily: TEXT_FONT,
+    ...readableFont,
     fontSize: readableType.meta.fontSize,
     lineHeight: readableType.meta.lineHeight,
     marginBottom: 2,

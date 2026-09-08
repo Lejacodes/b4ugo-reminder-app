@@ -13,17 +13,18 @@ describe('constellation dots', () => {
   });
 
   it('places one dot per real pixel and never invents extras', () => {
-    const dots = pixelsToParticles([pixel('a', 'reminder'), pixel('b', 'trip')]);
+    const dots = pixelsToParticles([pixel('a', 'general'), pixel('b', 'trip')]);
 
     expect(dots).toHaveLength(2);
-    expect(dots.map((dot) => dot.type)).toEqual(['reminder', 'trip']);
+    expect(dots.map((dot) => dot.type)).toEqual(['general', 'trip']);
+    expect(dots.map((dot) => dot.id)).toEqual(['a', 'b']);
   });
 
   it('thins out as things get resolved', () => {
     const busy = pixelsToParticles([
-      pixel('a', 'reminder'),
-      pixel('b', 'buy'),
-      pixel('c', 'task'),
+      pixel('a', 'general'),
+      pixel('b', 'errand'),
+      pixel('c', 'necessity'),
       pixel('d', 'trip'),
     ]);
     const calm = pixelsToParticles([pixel('d', 'trip')]);
@@ -31,12 +32,22 @@ describe('constellation dots', () => {
     expect(calm.length).toBeLessThan(busy.length);
   });
 
-  it('maps the important kind onto the memory hue', () => {
-    expect(pixelsToParticles([pixel('a', 'important')])[0].type).toBe('memory');
+  it('maps overdue items onto the urgent hue', () => {
+    expect(pixelsToParticles([pixel('a', 'urgent')])[0].type).toBe('urgent');
+  });
+
+  it('keeps a remaining spark in the same orbit when another is checked off', () => {
+    const before = pixelsToParticles([pixel('keep', 'errand'), pixel('gone', 'due')]);
+    const after = pixelsToParticles([pixel('keep', 'errand')]);
+    const keepBefore = before.find((dot) => dot.id === 'keep');
+    const keepAfter = after.find((dot) => dot.id === 'keep');
+
+    expect(keepAfter?.x).toBe(keepBefore?.x);
+    expect(keepAfter?.y).toBe(keepBefore?.y);
   });
 
   it('caps at the number of available orbit slots', () => {
-    const many = Array.from({ length: 20 }, (_, i) => pixel(`p${i}`, 'reminder'));
+    const many = Array.from({ length: 20 }, (_, i) => pixel(`p${i}`, 'general'));
 
     expect(pixelsToParticles(many)).toHaveLength(CONSTELLATION_SLOTS.length);
   });
