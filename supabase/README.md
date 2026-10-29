@@ -43,3 +43,13 @@ EXPO_PUBLIC_AI_API_URL=supabase
 ```
 
 The function only talks to Gemini. Reminders, trips, packing, and places still go through the app's validated tool layer and existing stores.
+
+## Account deletion
+
+Deploy the authenticated deletion function before distributing a build:
+
+```
+supabase functions deploy delete-account
+```
+
+Supabase supplies the URL, anon key, and service-role key to the function environment. The client never receives the service-role key. The function verifies the caller's bearer token before deleting that same user; database rows are removed by the existing `ON DELETE CASCADE` foreign keys.

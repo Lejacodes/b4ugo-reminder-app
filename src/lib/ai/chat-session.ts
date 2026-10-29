@@ -12,6 +12,7 @@ export class ChatSession {
     return this.messages.filter(
       (item) =>
         (item.role === 'user' || item.role === 'assistant') &&
+        (item.role !== 'assistant' || (item.toolCalls?.length ?? 0) === 0) &&
         item.content.trim().length > 0,
     );
   }
@@ -27,6 +28,8 @@ export class ChatSession {
 
 export function isVisibleChatMessage(item: AIMessage): boolean {
   return (
-    (item.role === 'user' || item.role === 'assistant') && item.content.trim().length > 0
+    (item.role === 'user' || item.role === 'assistant') &&
+    (item.role !== 'assistant' || (item.toolCalls?.length ?? 0) === 0) &&
+    item.content.trim().length > 0
   );
 }

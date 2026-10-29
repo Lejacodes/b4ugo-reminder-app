@@ -45,7 +45,7 @@ export function IntentionComposer({
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState<string | null>(null);
 
-  const useCurrentLocation = async () => {
+  const handleCurrentLocation = async () => {
     setLocateError(null);
     setLocating(true);
     try {
@@ -106,7 +106,7 @@ export function IntentionComposer({
         label={locating ? 'finding you…' : 'use where i am now'}
         accessibilityLabel="Use my current GPS location"
         disabled={locating || busy}
-        onPress={() => void useCurrentLocation()}
+        onPress={() => void handleCurrentLocation()}
       />
       {locateError ? <Text style={[styles.locateError, { color: colors.inkSoft }]}>{locateError}</Text> : null}
       <PaperField

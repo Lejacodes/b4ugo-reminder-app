@@ -33,6 +33,7 @@ export function useSessionGuard() {
     const inOpening = root === 'opening';
     const inAuth = root === 'auth';
     const inOnboarding = root === 'onboarding';
+    const inLegal = root === 'legal';
 
     const target = resolveLaunchTarget({
       status,
@@ -52,18 +53,18 @@ export function useSessionGuard() {
 
     if (target === 'onboarding') {
       markOpeningEntered();
-      if (!inOnboarding) router.replace('/onboarding/name');
+      if (!inOnboarding && !inLegal) router.replace('/onboarding/name');
       void SplashScreen.hideAsync();
       return;
     }
 
     if (target === 'opening') {
-      if (!inOpening) router.replace('/opening');
+      if (!inOpening && !inLegal) router.replace('/opening');
       void SplashScreen.hideAsync();
       return;
     }
 
-    if (!inAuth && !inOpening) router.replace('/auth/sign-in');
+    if (!inAuth && !inOpening && !inLegal) router.replace('/auth/sign-in');
     void SplashScreen.hideAsync();
   }, [
     status,

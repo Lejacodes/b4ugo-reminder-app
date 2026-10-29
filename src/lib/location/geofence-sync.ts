@@ -4,6 +4,7 @@ import { clearGeofenceManifest, saveGeofenceManifest } from '@/lib/location/geof
 import { GEOFENCE_TASK_NAME } from '@/lib/location/geofence-task';
 import type { PlaceAnchor } from '@/lib/location/place-anchors';
 import { deviceLocationService } from '@/lib/location/device-location';
+import { appNotificationService } from '@/lib/notifications/notification-service';
 
 export async function syncGeofenceRegions(input: {
   anchors: PlaceAnchor[];
@@ -12,8 +13,7 @@ export async function syncGeofenceRegions(input: {
   if (Platform.OS === 'web') return;
 
   if (!input.enabled || input.anchors.length === 0) {
-    await stopGeofencing();
-    await clearGeofenceManifest();
+    await clearGeofenceRegistrations();
     return;
   }
 
@@ -57,11 +57,40 @@ export async function syncGeofenceRegions(input: {
 }
 
 async function stopGeofencing(): Promise<void> {
+  const Location = await import('expo-location');
+  const started = await Location.hasStartedGeofencingAsync(GEOFENCE_TASK_NAME);
+  if (started) await Location.stopGeofencingAsync(GEOFENCE_TASK_NAME);
+}
+
+/**
+ * Removes every device-side artifact that could notify for the previous user.
+ * The manifest is cleared first so even a racing background task has no copy
+ * to display while native region monitoring is being stopped.
+ */
+export async function clearGeofenceRegistrations(): Promise<void> {
+  const failures: unknown[] = [];
   try {
-    const Location = await import('expo-location');
-    const started = await Location.hasStartedGeofencingAsync(GEOFENCE_TASK_NAME);
-    if (started) await Location.stopGeofencingAsync(GEOFENCE_TASK_NAME);
-  } catch {
-    // Already stopped.
+    await clearGeofenceManifest();
+  } catch (error) {
+    failures.push(error);
+  }
+
+  if (Platform.OS !== 'web') {
+    try {
+      await stopGeofencing();
+    } catch (error) {
+      failures.push(error);
+    }
+
+    try {
+      const ids = await appNotificationService.listScheduledIds();
+      await Promise.all(ids.filter((id) => id.startsWith('geo:')).map((id) => appNotificationService.cancel(id)));
+    } catch (error) {
+      failures.push(error);
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new AggregateError(failures, 'geofence cleanup failed');
   }
 }

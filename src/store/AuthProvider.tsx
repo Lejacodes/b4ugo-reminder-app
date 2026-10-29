@@ -10,6 +10,7 @@ import {
 } from 'react';
 
 import { authClient, toAuthError, type AuthSession, type AuthUser } from '@/lib/auth';
+import { signOutWithCleanup } from '@/lib/auth/sign-out-cleanup';
 import { clearOpeningSession } from '@/lib/opening-session';
 
 export type AuthStatus = 'restoring' | 'signed-out' | 'signed-in';
@@ -24,6 +25,7 @@ type AuthContextValue = {
   createAccount: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -103,13 +105,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     try {
-      await authClient.signOut();
+      await signOutWithCleanup(() => authClient.signOut());
     } finally {
       clearOpeningSession();
       if (isMounted.current) {
         setSession(null);
         setStatus('signed-out');
       }
+    }
+  }, []);
+
+  const deleteAccount = useCallback(async () => {
+    setIsSubmitting(true);
+    try {
+      await signOutWithCleanup(() => authClient.deleteAccount());
+      clearOpeningSession();
+      if (isMounted.current) {
+        setSession(null);
+        setStatus('signed-out');
+      }
+    } catch (error) {
+      throw toAuthError(error);
+    } finally {
+      if (isMounted.current) setIsSubmitting(false);
     }
   }, []);
 
@@ -122,8 +140,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createAccount,
       signIn,
       signOut,
+      deleteAccount,
     }),
-    [status, session, isSubmitting, createAccount, signIn, signOut],
+    [status, session, isSubmitting, createAccount, signIn, signOut, deleteAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

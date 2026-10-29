@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { readableFont, readableType } from '@/constants/scrapbook';
+import { readableFont } from '@/constants/scrapbook';
 import type { ScrapbookPalette } from '@/constants/scrapbook';
 
 type ChatBubbleProps = {
@@ -19,7 +19,7 @@ export function ChatBubble({ role, content, colors }: ChatBubbleProps) {
           styles.bubble,
           isUser ? styles.bubbleUser : styles.bubbleAssistant,
           isUser
-            ? { backgroundColor: colors.butter, borderColor: colors.butterDeep }
+            ? { backgroundColor: colors.stickyButter, borderColor: colors.butterDeep }
             : { backgroundColor: colors.paper, borderColor: colors.line },
         ]}>
         <Text

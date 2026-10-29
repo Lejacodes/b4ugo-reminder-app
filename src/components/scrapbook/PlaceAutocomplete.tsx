@@ -92,23 +92,16 @@ export function PlaceAutocomplete({
 
   useEffect(() => {
     const query = value.trim();
-    if (query.length < 2) {
-      setSuggestions([]);
-      setOpen(false);
-      return;
-    }
-
-    if (lockedTextRef.current === query) {
-      setSuggestions([]);
-      setOpen(false);
-      return;
-    }
-
-    lockedTextRef.current = null;
-    setUsingGps(false);
-
     const current = ++requestId.current;
     const timer = setTimeout(async () => {
+      if (query.length < 2 || lockedTextRef.current === query) {
+        setSuggestions([]);
+        setOpen(false);
+        return;
+      }
+
+      lockedTextRef.current = null;
+      setUsingGps(false);
       try {
         const results = await geocodingService.searchPlaces(query, {
           near: preferNearby && origin ? origin : undefined,
@@ -123,7 +116,7 @@ export function PlaceAutocomplete({
         if (current !== requestId.current) return;
         setSuggestions([]);
       }
-    }, 280);
+    }, query.length < 2 || lockedTextRef.current === query ? 0 : 280);
 
     return () => clearTimeout(timer);
   }, [countryCode, maxDistanceKm, origin, preferNearby, savedPlaces, value]);
@@ -138,7 +131,7 @@ export function PlaceAutocomplete({
     setLocateError(null);
   };
 
-  const useCurrentLocation = async () => {
+  const handleCurrentLocation = async () => {
     setLocateError(null);
     setLocating(true);
     try {
@@ -203,7 +196,7 @@ export function PlaceAutocomplete({
           label={locating ? 'finding you…' : 'use where i am now'}
           accessibilityLabel="Use my current location"
           disabled={locating}
-          onPress={() => void useCurrentLocation()}
+          onPress={() => void handleCurrentLocation()}
         />
       ) : null}
       {usingGps ? (

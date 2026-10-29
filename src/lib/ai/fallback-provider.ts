@@ -3,7 +3,11 @@ import { AI_AMBIGUOUS_MESSAGE, AI_GENTLE_HERE_MESSAGE } from './ai-prompts';
 import type { AIProvider } from './ai-provider';
 import { isGenericPlaceName } from './ai-tools';
 import { parseDateRange, parseRelativeDay, parseRelativeDueAt } from './parse-when';
-import { composeVerifiedReply, formatVerifiedMutation } from './tool-result';
+import {
+  composeVerifiedReply,
+  formatVerifiedMutation,
+  verifiedCreationResult,
+} from './tool-result';
 import type { AIContextSnapshot, AIRequest, AIResponse, AIToolName, CompactPlace } from './types';
 
 function findTrip(context: AIContextSnapshot, hint?: string | null) {
@@ -274,10 +278,22 @@ export function interpretLocally(text: string, context: AIContextSnapshot): AIRe
 }
 
 function followUpFromTools(request: AIRequest): AIResponse | null {
-  const tools = request.messages.filter((item) => item.role === 'tool');
-  const lastAssistant = [...request.messages]
-    .reverse()
-    .find((item) => item.role === 'assistant' && (item.toolCalls?.length ?? 0) > 0);
+  let assistantIndex = -1;
+  let lastUserIndex = -1;
+  for (let index = request.messages.length - 1; index >= 0; index -= 1) {
+    const item = request.messages[index];
+    if (lastUserIndex < 0 && item.role === 'user') lastUserIndex = index;
+    if (assistantIndex < 0 && item.role === 'assistant' && (item.toolCalls?.length ?? 0) > 0) {
+      assistantIndex = index;
+    }
+    if (assistantIndex >= 0 && lastUserIndex >= 0) break;
+  }
+
+  // A user message after the tool call starts a new turn. Never replay results
+  // from an earlier action as the answer to that new message.
+  if (assistantIndex < 0 || lastUserIndex > assistantIndex) return null;
+  const lastAssistant = request.messages[assistantIndex];
+  const tools = request.messages.slice(assistantIndex + 1).filter((item) => item.role === 'tool');
   if (!tools.length || !lastAssistant) return null;
 
   const results = tools.map((item, index) => {
@@ -310,11 +326,19 @@ export class FallbackAIProvider implements AIProvider {
 export function formatToolResult(name: string, payload: unknown): string {
   const verified = formatVerifiedMutation(name, payload);
   if (verified !== null) return verified;
-  if (name === 'createReminder' || name === 'createTrip' || name === 'addIntention' || name === 'createSavedPlace') {
-    return '';
+  const created = verifiedCreationResult(name, payload);
+  if (created) {
+    if (!created.success) return created.error ?? "i couldn't save that.";
+    if (name === 'createReminder') return `saved “${created.displayName}” ♡`;
+    if (name === 'createTrip') return `saved your trip to ${created.displayName} ♡`;
+    if (name === 'addIntention' || name === 'createSavedPlace') {
+      return `saved “${created.displayName}” for later ♡`;
+    }
+    if (name === 'addPackingItem') return `added “${created.displayName}” to your packing list ♡`;
+    if (name === 'addPersonalNecessity') return `saved “${created.displayName}” as a personal necessity ♡`;
   }
   if (name === 'suggestPacking' && Array.isArray(payload)) {
-    const lines = (payload as Array<{ title: string; reason?: string }>).slice(0, 8).map((item) =>
+    const lines = (payload as { title: string; reason?: string }[]).slice(0, 8).map((item) =>
       item.reason ? `${item.title} — ${item.reason}` : item.title,
     );
     return lines.length ? `you might want:\n${lines.join('\n')}` : 'your list already looks complete.';
@@ -326,19 +350,19 @@ export function formatToolResult(name: string, payload: unknown): string {
     return `still open: ${data.missing.slice(0, 8).join(', ')}`;
   }
   if (name === 'getTodayContext' && Array.isArray(payload)) {
-    const titles = (payload as Array<{ title: string }>).map((item) => item.title);
+    const titles = (payload as { title: string }[]).map((item) => item.title);
     if (!titles.length) return 'your constellation is looking pretty calm now.';
     if (titles.length === 1) return `you've got one little thing waiting today ♡\n${titles[0]}`;
     return `you've got a few little things waiting today ♡\n${titles.slice(0, 8).join(', ')}`;
   }
   if (name === 'getUpcomingTrips' && Array.isArray(payload)) {
-    const trips = payload as Array<{
+    const trips = payload as {
       title: string;
       destination: string;
       startDate: string | null;
       packed: number;
       total: number;
-    }>;
+    }[];
     if (!trips.length) return 'no trips planned yet.';
     const trip = trips[0];
     const pack = trip.total ? `${trip.packed} / ${trip.total} packed` : 'no packing yet';
@@ -346,9 +370,9 @@ export function formatToolResult(name: string, payload: unknown): string {
   }
   if (name === 'getUpcomingContext' && payload && typeof payload === 'object') {
     const data = payload as {
-      trips?: Array<{ title: string }>;
-      places?: Array<{ name: string }>;
-      intentions?: Array<{ title: string }>;
+      trips?: { title: string }[];
+      places?: { name: string }[];
+      intentions?: { title: string }[];
     };
     const kept = [
       ...(data.intentions ?? []).map((item) => item.title),

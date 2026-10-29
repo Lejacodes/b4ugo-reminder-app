@@ -11,7 +11,7 @@ export type ReverseGeocodedPlace = {
   countryCode: string | null;
 };
 
-function buildLabel(parts: Array<string | null | undefined>): string {
+function buildLabel(parts: (string | null | undefined)[]): string {
   return parts.filter((part) => part && part.trim().length > 0).join(', ');
 }
 

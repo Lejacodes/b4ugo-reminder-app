@@ -1,4 +1,40 @@
-import { formatDateRange, formatHumanDate, resolveTripDates } from '@/lib/trips/dates';
+import {
+  daysBetween,
+  formatDateRange,
+  formatHumanDate,
+  isPastTrip,
+  isUpcomingTrip,
+  parseIsoDate,
+  resolveTripDates,
+} from '@/lib/trips/dates';
+
+describe('daysBetween', () => {
+  it('returns signed differences for past, current, and future dates', () => {
+    const today = parseIsoDate('2026-10-29')!;
+    expect(daysBetween(today, parseIsoDate('2026-10-27')!)).toBe(-2);
+    expect(daysBetween(today, parseIsoDate('2026-10-29')!)).toBe(0);
+    expect(daysBetween(today, parseIsoDate('2026-11-01')!)).toBe(3);
+  });
+});
+
+describe('trip position relative to today', () => {
+  const today = '2026-10-29';
+
+  it('keeps past trips out of upcoming results', () => {
+    expect(isPastTrip('2026-10-20', '2026-10-22', today)).toBe(true);
+    expect(isUpcomingTrip('2026-10-20', '2026-10-22', today)).toBe(false);
+  });
+
+  it('treats a trip ending today as current, not past', () => {
+    expect(isPastTrip('2026-10-27', today, today)).toBe(false);
+    expect(isUpcomingTrip('2026-10-27', today, today)).toBe(true);
+  });
+
+  it('recognizes a future trip', () => {
+    expect(isPastTrip('2026-11-02', '2026-11-05', today)).toBe(false);
+    expect(isUpcomingTrip('2026-11-02', '2026-11-05', today)).toBe(true);
+  });
+});
 
 describe('formatHumanDate', () => {
   it('formats an ISO date for people', () => {

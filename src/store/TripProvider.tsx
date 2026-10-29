@@ -214,11 +214,14 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const templatesRef = useRef(templates);
   const intentionsRef = useRef(intentions);
   const necessitiesRef = useRef(personalNecessities);
-  tripsRef.current = trips;
-  packingRef.current = packingItems;
-  templatesRef.current = templates;
-  intentionsRef.current = intentions;
-  necessitiesRef.current = personalNecessities;
+
+  useEffect(() => {
+    tripsRef.current = trips;
+    packingRef.current = packingItems;
+    templatesRef.current = templates;
+    intentionsRef.current = intentions;
+    necessitiesRef.current = personalNecessities;
+  }, [intentions, packingItems, personalNecessities, templates, trips]);
 
   useEffect(() => {
     let cancelled = false;

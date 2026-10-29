@@ -12,6 +12,8 @@ import { buildAIContext } from '@/lib/ai/ai-context';
 import { missingPacking, suggestPackingForTrip } from '@/lib/ai/ai-packing';
 import { runChatTurn } from '@/lib/ai/chat-service';
 import { ChatSession } from '@/lib/ai/chat-session';
+import { FallbackAIProvider } from '@/lib/ai/fallback-provider';
+import { creationResult } from '@/lib/ai/tool-result';
 import { protectNecessitiesFromPacking, validateToolCall } from '@/lib/ai/ai-tools';
 import { buildConstellation } from '@/lib/ai/constellation';
 import { littleGuyWhisper, moodFromSituation } from '@/lib/ai/little-guy-mood';
@@ -27,6 +29,7 @@ import {
 import type { AIMessage, AIToolCall, CompactWeather, ConstellationPixel, LittleGuyMood } from '@/lib/ai/types';
 import { weatherService } from '@/lib/engines';
 import { usePlaces } from '@/store/PlaceProvider';
+import { usePreferences } from '@/store/PreferencesProvider';
 import { useReminders } from '@/store/ReminderProvider';
 import { useTrips } from '@/store/TripProvider';
 import type { PackingCategory, PackingSuggestion, TravelIntentionType } from '@/types/trip';
@@ -43,6 +46,7 @@ type LittleGuyContextValue = {
 };
 
 const LittleGuyContext = createContext<LittleGuyContextValue | null>(null);
+const localAIClient = new FallbackAIProvider();
 
 function asCategory(value: unknown): PackingCategory {
   const allowed: PackingCategory[] = [
@@ -62,6 +66,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
   const reminders = useReminders();
   const trips = useTrips();
   const places = usePlaces();
+  const { preferences } = usePreferences();
   const [session] = useState(() => new ChatSession());
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [busy, setBusy] = useState(false);
@@ -69,6 +74,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
   const [justCreatedTrip, setJustCreatedTrip] = useState(false);
   const [suggestions, setSuggestions] = useState<PackingSuggestion[]>([]);
   const [weather, setWeather] = useState<CompactWeather | null>(null);
+  const today = todayIso();
 
   const unfinishedPacking = useMemo(
     () =>
@@ -108,9 +114,10 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
         reminders: reminders.reminders,
         upcomingTrips: trips.upcomingTrips,
         unfinishedPacking,
+        today,
         weather,
       }),
-    [reminders.reminders, trips.upcomingTrips, unfinishedPacking, weather],
+    [reminders.reminders, trips.upcomingTrips, unfinishedPacking, today, weather],
   );
 
   const mood = useMemo(
@@ -122,9 +129,10 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
         reminders: reminders.reminders,
         upcomingTrips: trips.upcomingTrips,
         unfinishedPacking,
+        today,
         weather,
       }),
-    [busy, justSaved, justCreatedTrip, reminders.reminders, trips.upcomingTrips, unfinishedPacking, weather],
+    [busy, justSaved, justCreatedTrip, reminders.reminders, trips.upcomingTrips, unfinishedPacking, today, weather],
   );
 
   const snapshot = useCallback(() => {
@@ -181,7 +189,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
             });
           }
           setJustSaved(true);
-          return { saved: true, title };
+          return creationResult(title);
         }
         case 'updateReminder': {
           const id = resolveReminderId(ctx, args);
@@ -220,10 +228,15 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
           await reminders.deleteReminder(id);
           return { success: true, deletedCount: 1 };
         }
-        case 'createSavedPlace':
-          await places.upsertPlace({ name: String(args.name), label: typeof args.label === 'string' ? args.label : null });
+        case 'createSavedPlace': {
+          const place = await places.upsertPlace({
+            name: String(args.name),
+            label: typeof args.label === 'string' ? args.label : null,
+          });
+          if (!place) return { success: false, error: "i couldn't confirm that place was saved." };
           setJustSaved(true);
-          return { saved: true };
+          return creationResult(place.label ?? place.name);
+        }
         case 'updateSavedPlace': {
           const id = resolvePlaceId(ctx, args);
           if (!id) return { success: false, updatedCount: 0, error: 'which saved place?' };
@@ -251,8 +264,9 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
             accommodation: typeof args.accommodation === 'string' ? args.accommodation : null,
             transportation: typeof args.transportation === 'string' ? args.transportation : null,
           });
+          if (!trip) return { success: false, error: "i couldn't confirm that trip was saved." };
           setJustCreatedTrip(true);
-          return trip;
+          return creationResult(trip.destination);
         }
         case 'updateTrip': {
           const id = resolveTripId(ctx, args);
@@ -303,7 +317,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
           if (!trip) return { error: 'which trip?' };
           await trips.addPackingItem(trip.id, String(args.title), asCategory(args.category));
           setJustSaved(true);
-          return { saved: true };
+          return creationResult(String(args.title));
         }
         case 'removePackingItem': {
           const id = resolvePackingItemId(ctx, args);
@@ -359,7 +373,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
         case 'addPersonalNecessity':
           await reminders.addAlways(String(args.title));
           setJustSaved(true);
-          return { saved: true };
+          return creationResult(String(args.title));
         case 'addIntention': {
           const trip = tripByHint(args.tripId ?? args.destination);
           if (!trip) return { error: 'which trip should hold this?' };
@@ -373,7 +387,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
             note: typeof args.note === 'string' ? args.note : undefined,
           });
           setJustSaved(true);
-          return { saved: true };
+          return creationResult(String(args.title));
         }
         case 'updateIntention': {
           const id = resolveIntentionId(ctx, args);
@@ -421,7 +435,9 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
       setJustCreatedTrip(false);
       try {
         const turn = await runChatTurn({
-          provider: aiClient,
+          // Keep messages and the context snapshot on-device unless the user
+          // has explicitly enabled cloud AI parsing.
+          provider: preferences.privacy.aiParsingEnabled ? aiClient : localAIClient,
           history: session.all(),
           userText: trimmed,
           context: snapshot(),
@@ -441,7 +457,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
         setBusy(false);
       }
     },
-    [busy, execute, session, snapshot],
+    [busy, execute, preferences.privacy.aiParsingEnabled, session, snapshot],
   );
 
   const addSuggestedItem = useCallback(

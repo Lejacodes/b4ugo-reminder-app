@@ -34,7 +34,7 @@ export function todayIso(): string {
 
 export function daysBetween(start: Date, end: Date): number {
   const ms = end.getTime() - start.getTime();
-  return Math.max(0, Math.round(ms / 86400000));
+  return Math.round(ms / 86400000);
 }
 
 export function addDays(start: Date, days: number): Date {
@@ -62,7 +62,9 @@ export function resolveTripDates(input: {
     return {
       startDate: toIsoDate(start),
       endDate: toIsoDate(end),
-      durationDays: daysBetween(start, end) || duration,
+      // A trip duration cannot be negative. The ordering guard above already
+      // enforces this; clamp here to keep that domain rule local and explicit.
+      durationDays: Math.max(0, daysBetween(start, end)) || duration,
     };
   }
 
@@ -135,8 +137,12 @@ export function inferSeason(startDate: string | null): string | null {
   return 'autumn';
 }
 
-export function isUpcomingTrip(startDate: string | null, endDate: string | null): boolean {
-  const today = parseIsoDate(todayIso());
+export function isUpcomingTrip(
+  startDate: string | null,
+  endDate: string | null,
+  currentDate = todayIso(),
+): boolean {
+  const today = parseIsoDate(currentDate);
   if (!today) return true;
   const end = parseIsoDate(endDate);
   if (end) return end >= today;
@@ -145,8 +151,12 @@ export function isUpcomingTrip(startDate: string | null, endDate: string | null)
   return true;
 }
 
-export function isPastTrip(startDate: string | null, endDate: string | null): boolean {
-  const today = parseIsoDate(todayIso());
+export function isPastTrip(
+  startDate: string | null,
+  endDate: string | null,
+  currentDate = todayIso(),
+): boolean {
+  const today = parseIsoDate(currentDate);
   if (!today) return false;
   const end = parseIsoDate(endDate);
   if (end) return end < today;

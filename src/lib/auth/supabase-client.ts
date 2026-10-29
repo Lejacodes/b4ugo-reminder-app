@@ -119,5 +119,13 @@ export function createSupabaseAuthClient(): AuthClient {
       if (!supabase) return;
       await supabase.auth.signOut();
     },
+
+    async deleteAccount() {
+      const supabase = getSupabase();
+      if (!supabase) throw new AuthError('provider-not-configured');
+      const { error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
+      if (error) throw mapSupabaseAuthError(error);
+      await supabase.auth.signOut({ scope: 'local' });
+    },
   };
 }

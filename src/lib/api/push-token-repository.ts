@@ -24,6 +24,9 @@ export const pushTokenRepository = {
     if (!supabase) return;
     const userId = await requireSessionUserId();
     const { error } = await supabase.from('push_tokens').delete().eq('user_id', userId);
-    if (error) console.warn('[blugo] push token remove failed', error.message);
+    if (error) {
+      console.warn('[blugo] push token remove failed', error.message);
+      throw error;
+    }
   },
 };

@@ -40,7 +40,7 @@ function regionFor(location: DeviceLocation, delta = DEFAULT_DELTA): Region {
 export function LiveMap({ pins = [], height = 280, style, showAddress = true }: LiveMapProps) {
   const colors = useScrapbookPalette();
   const mapRef = useRef<MapView | null>(null);
-  const followUser = useRef(true);
+  const [followUser, setFollowUser] = useState(true);
   const { location, loading, error, permission, requestPermission, refresh } = useDeviceLocation({
     watch: true,
     highAccuracy: true,
@@ -67,9 +67,9 @@ export function LiveMap({ pins = [], height = 280, style, showAddress = true }: 
   }, [location, showAddress]);
 
   useEffect(() => {
-    if (!location || !followUser.current) return;
+    if (!location || !followUser) return;
     mapRef.current?.animateToRegion(regionFor(location), 450);
-  }, [location]);
+  }, [followUser, location]);
 
   const initialRegion = location ? regionFor(location) : undefined;
 
@@ -94,7 +94,7 @@ export function LiveMap({ pins = [], height = 280, style, showAddress = true }: 
             accessibilityRole="button"
             accessibilityLabel="Allow location access"
             onPress={() => void requestPermission()}
-            style={[styles.action, { borderColor: colors.butterDeep, backgroundColor: colors.butter }]}>
+            style={[styles.action, { borderColor: colors.butterDeep, backgroundColor: colors.stickyButter }]}>
             <Text style={[styles.actionText, { color: colors.ink }]}>use my location</Text>
           </Pressable>
         ) : null}
@@ -114,9 +114,9 @@ export function LiveMap({ pins = [], height = 280, style, showAddress = true }: 
             showsUserLocation
             showsMyLocationButton={false}
             showsCompass={false}
-            followsUserLocation={followUser.current}
+            followsUserLocation={followUser}
             onPanDrag={() => {
-              followUser.current = false;
+              setFollowUser(false);
             }}>
             {validPins.map((pin) => (
               <Marker
@@ -140,7 +140,7 @@ export function LiveMap({ pins = [], height = 280, style, showAddress = true }: 
             accessibilityRole="button"
             accessibilityLabel="Recenter map on my location"
             onPress={() => {
-              followUser.current = true;
+              setFollowUser(true);
               mapRef.current?.animateToRegion(regionFor(location), 450);
               void refresh();
             }}

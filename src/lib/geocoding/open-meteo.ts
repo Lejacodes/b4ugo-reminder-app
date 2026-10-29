@@ -20,14 +20,14 @@ export interface GeocodingService {
 }
 
 type OpenMeteoGeoResponse = {
-  results?: Array<{
+  results?: {
     name: string;
     latitude: number;
     longitude: number;
     country?: string;
     admin1?: string;
     timezone?: string;
-  }>;
+  }[];
 };
 
 function mapHit(

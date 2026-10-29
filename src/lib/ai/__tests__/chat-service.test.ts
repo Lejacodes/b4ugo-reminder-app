@@ -2,9 +2,10 @@ import { createAIClient, isRemoteAIConfigured, resolveRemoteTarget } from '@/lib
 import { AI_UNAVAILABLE_MESSAGE } from '@/lib/ai/ai-prompts';
 import type { AIProvider } from '@/lib/ai/ai-provider';
 import { runChatTurn } from '@/lib/ai/chat-service';
-import { FallbackAIProvider } from '@/lib/ai/fallback-provider';
+import { FallbackAIProvider, formatToolResult } from '@/lib/ai/fallback-provider';
 import { parseRemotePayload, parseRemoteTarget, RemoteLLMProvider } from '@/lib/ai/remote-provider';
 import { ResilientAIProvider } from '@/lib/ai/resilient-provider';
+import { creationResult } from '@/lib/ai/tool-result';
 import type { AIContextSnapshot, AIResponse } from '@/lib/ai/types';
 
 const empty: AIContextSnapshot = {
@@ -40,8 +41,19 @@ class ScriptedProvider implements AIProvider {
 }
 
 describe('chat tool loop', () => {
+  it('formats every creation confirmation from the verified display name', () => {
+    expect(formatToolResult('createReminder', creationResult('Call mum'))).toBe('saved “Call mum” ♡');
+    expect(formatToolResult('createTrip', creationResult('Antalya'))).toBe('saved your trip to Antalya ♡');
+    expect(formatToolResult('createSavedPlace', creationResult('Corner café'))).toBe(
+      'saved “Corner café” for later ♡',
+    );
+    expect(formatToolResult('addIntention', creationResult('Try piyaz'))).toBe(
+      'saved “Try piyaz” for later ♡',
+    );
+  });
+
   it('runs a reminder through the validated layer', async () => {
-    const execute = jest.fn().mockResolvedValue({ saved: true });
+    const execute = jest.fn().mockResolvedValue(creationResult('buy sunscreen'));
     const turn = await runChatTurn({
       provider: new FallbackAIProvider(),
       history: [],
@@ -56,7 +68,24 @@ describe('chat tool loop', () => {
       }),
     );
     expect(turn.unavailable).toBe(false);
-    expect(turn.assistantMessage).toMatch(/tomorrow/i);
+    expect(turn.assistantMessage).toContain('buy sunscreen');
+    expect(turn.assistantMessage).not.toMatch(/i(?:'|’)ll remember that/i);
+  });
+
+  it('uses the verified reminder title instead of repeating a generic acknowledgement', async () => {
+    const execute = jest.fn(async (call) => creationResult(String(call.args.title)));
+    const history = [
+      { role: 'user' as const, content: 'remind me to buy milk' },
+      { role: 'assistant' as const, content: "sure ♡ i'll remember that." },
+    ];
+    const turn = await runChatTurn({
+      provider: new FallbackAIProvider(),
+      history,
+      userText: 'remind me to call the dentist',
+      context: empty,
+      execute,
+    });
+    expect(turn.assistantMessage).toBe('saved “call the dentist” ♡');
   });
 
   it('asks which supermarket instead of inventing one', async () => {
@@ -126,7 +155,9 @@ describe('chat tool loop', () => {
   });
 
   it('creates a trip and saves a plan from natural language', async () => {
-    const execute = jest.fn().mockResolvedValue({ saved: true });
+    const execute = jest.fn(async (call) =>
+      call.name === 'createTrip' ? creationResult(String(call.args.destination)) : creationResult(String(call.args.title)),
+    );
     const trip = await runChatTurn({
       provider: new FallbackAIProvider(),
       history: [],
@@ -156,6 +187,59 @@ describe('chat tool loop', () => {
       }),
     );
     expect(plan.assistantMessage.length).toBeGreaterThan(0);
+  });
+
+  it('does not replay an old save result on the next conversation turn', async () => {
+    const provider = new FallbackAIProvider();
+    const first = await runChatTurn({
+      provider,
+      history: [],
+      userText: 'remind me to meow',
+      context: empty,
+      execute: async () => creationResult('meow'),
+    });
+    const second = await runChatTurn({
+      provider,
+      history: first.messages,
+      userText: 'what r u doing',
+      context: empty,
+      execute: jest.fn(),
+    });
+
+    expect(second.assistantMessage.length).toBeGreaterThan(0);
+    expect(second.assistantMessage).not.toMatch(/saved|meow/i);
+  });
+
+  it('shows only the verified post-tool confirmation in visible chat', async () => {
+    const turn = await runChatTurn({
+      provider: new ScriptedProvider([
+        {
+          message: "sure ♡ i'll remember that.",
+          toolCalls: [{ name: 'createReminder', args: { title: 'meow', category: 'specific' } }],
+        },
+        { message: 'done', toolCalls: [] },
+      ]),
+      history: [],
+      userText: 'remind me to meow',
+      context: empty,
+      execute: async () => creationResult('meow'),
+    });
+    const visibleAssistant = turn.messages.filter(
+      (message) => message.role === 'assistant' && (message.toolCalls?.length ?? 0) === 0,
+    );
+
+    expect(visibleAssistant.map((message) => message.content)).toEqual(['saved “meow” ♡']);
+  });
+
+  it('does not infer creation success from an entity title alone', async () => {
+    const turn = await runChatTurn({
+      provider: new FallbackAIProvider(),
+      history: [],
+      userText: 'remind me to meow',
+      context: empty,
+      execute: async () => ({ title: 'meow' }),
+    });
+    expect(turn.assistantMessage).not.toMatch(/saved|remember that/i);
   });
 
   it('runs local actions when the remote model refuses with text only', async () => {

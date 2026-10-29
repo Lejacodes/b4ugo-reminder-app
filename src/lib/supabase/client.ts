@@ -55,7 +55,7 @@ const chunkedStorage = {
 
 export function isSupabaseConfigured(): boolean {
   return (
-    (authProviderId === 'supabase' || Boolean(authProviderConfig.supabase.url && authProviderConfig.supabase.anonKey)) &&
+    authProviderId === 'supabase' &&
     Boolean(authProviderConfig.supabase.url && authProviderConfig.supabase.anonKey)
   );
 }

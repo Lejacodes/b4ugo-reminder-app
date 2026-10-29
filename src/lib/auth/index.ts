@@ -32,6 +32,9 @@ const unconfiguredAuthClient: AuthClient = {
     throw new AuthError('provider-not-configured');
   },
   async signOut(): Promise<void> {},
+  async deleteAccount(): Promise<void> {
+    throw new AuthError('provider-not-configured');
+  },
 };
 
 function createAuthClient(): AuthClient {

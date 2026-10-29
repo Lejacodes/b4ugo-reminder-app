@@ -114,16 +114,16 @@ All text supports Dynamic Type via `allowFontScaling` (max 1.4× multiplier).
 
 ### Scrapbook screens: two typefaces
 
-The opening window, auth, and onboarding screens use Starry Night alongside
+The opening window, auth, and onboarding screens use Fraunces SuperSoft alongside
 the system font. The split is deliberate and defined in
 `src/constants/scrapbook.ts` as `DISPLAY_FONT` and `TEXT_FONT`.
 
 | Face | Token | Used for |
 |------|-------|----------|
-| Starry Night | `DISPLAY_FONT` | B4UGO wordmark, top-level screen titles, major section headers, Little Guy personality lines |
+| Fraunces SuperSoft | `DISPLAY_FONT` | B4UGO wordmark, top-level screen titles, major section headers, Little Guy personality lines |
 | System sans | `TEXT_FONT` | Body, checklists, inputs, form labels, dates, places, toggles, buttons, tab labels, errors, hints |
 
-The rule: Starry Night is only used where a misread costs nothing. Anything a
+The rule: Fraunces is only used where a misread costs nothing. Anything a
 person must read exactly or check character by character goes in the system
 face — an address mistyped because an `l` looked like a `1` is a real failure.
 

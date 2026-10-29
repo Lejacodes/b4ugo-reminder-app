@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
  * Platform system fonts — SF Pro on iOS, Roboto on Android, Inter fallback on web.
  * Distinction comes from hierarchy (size/weight/spacing), not decorative typefaces.
  *
- * iOS uses `ui-sans-serif` (SF Pro). Never omit fontFamily after Starry Night
+ * iOS uses `ui-sans-serif` (SF Pro). Never omit fontFamily after Fraunces
  * is loaded — an empty family inherits the display face.
  */
 type FontPair = {
@@ -14,7 +14,7 @@ type FontPair = {
 
 export const fontFamily = Platform.select<FontPair>({
   ios: {
-    // Must be an explicit family. After Starry Night loads, omitting fontFamily
+    // Must be an explicit family. After Fraunces loads, omitting fontFamily
     // makes every Text inherit that display face.
     sans: 'ui-sans-serif',
     mono: 'ui-monospace',

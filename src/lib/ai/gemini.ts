@@ -30,9 +30,9 @@ type GeminiContent = {
 };
 
 export type GeminiRequest = {
-  system_instruction: { parts: Array<{ text: string }> };
+  system_instruction: { parts: { text: string }[] };
   contents: GeminiContent[];
-  tools?: Array<{ functionDeclarations: unknown[] }>;
+  tools?: { functionDeclarations: unknown[] }[];
   tool_config?: {
     function_calling_config: { mode: 'AUTO' | 'ANY' | 'NONE' };
   };
@@ -150,10 +150,10 @@ export function parseGeminiResponse(data: unknown): AIResponse {
   }
   const record = data as {
     promptFeedback?: { blockReason?: string };
-    candidates?: Array<{
+    candidates?: {
       finishReason?: string;
       content?: { parts?: GeminiPart[] };
-    }>;
+    }[];
   };
   if (record.promptFeedback?.blockReason) {
     return { message: '', toolCalls: [], unavailable: true };

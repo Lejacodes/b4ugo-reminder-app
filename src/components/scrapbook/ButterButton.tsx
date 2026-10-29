@@ -34,8 +34,8 @@ export function ButterButton({
 }: ButterButtonProps) {
   const palette = useScrapbookPalette();
   const inactive = disabled || busy;
-  const fill = highContrast ? brand.softMatcha : palette.butter;
-  const typeColor = highContrast ? '#FFFFFF' : brand.cream;
+  const fill = highContrast ? brand.deepForest : palette.butterDeep;
+  const typeColor = highContrast ? brand.cream : palette.inkOnMatcha;
 
   return (
     <Pressable

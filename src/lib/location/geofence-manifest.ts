@@ -6,7 +6,7 @@ const MANIFEST_KEY = 'blugo.geofenceManifest';
 
 export type GeofenceManifestRegion = {
   placeName: string;
-  items: Array<{ reminderId: string; title: string; href: string }>;
+  items: { reminderId: string; title: string; href: string }[];
 };
 
 export type GeofenceManifest = {

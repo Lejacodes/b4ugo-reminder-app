@@ -69,7 +69,8 @@ export const scrapbookPalette: ScrapbookPalette = {
   shadow: 'rgba(44, 34, 30, 0.14)',
   blush: palette.oat,
   blushDeep: palette.cloud,
-  stickyButter: palette.softMatcha,
+  // Sage keeps espresso body text above WCAG AA contrast for normal text.
+  stickyButter: palette.sage,
   stickyBlush: palette.oat,
   stickyCream: palette.cream,
   stickyEdge: palette.cloud,
@@ -128,7 +129,7 @@ export function tiltAt(index: number): string {
 /**
  * Two typefaces, and the split between them is deliberate.
  *
- * Starry Night is only for: the B4UGO wordmark, top-level screen titles,
+ * Fraunces is only for: the B4UGO wordmark, top-level screen titles,
  * and Little Guy dialogue (whispers and chat lines). It is never used for
  * body copy, section titles, lists, fields, badges, or buttons.
  *
@@ -140,11 +141,11 @@ export const TEXT_FONT = fontFamily.sans;
 
 /**
  * System sans for anything a person must read. Always sets `fontFamily` so
- * checklist rows cannot inherit Starry Night from a parent or from `useFonts`.
+ * checklist rows cannot inherit Fraunces from a parent or from `useFonts`.
  */
 export const readableFont: TextStyle = { fontFamily: TEXT_FONT };
 
-/** Starry Night sizes. Decorative text only. */
+/** Fraunces sizes. Decorative text only. */
 export const scrapbookType = {
   display: { fontSize: 38, lineHeight: 46 },
   heading: { fontSize: 30, lineHeight: 38 },

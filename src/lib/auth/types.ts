@@ -67,4 +67,7 @@ export interface AuthClient {
   signIn(credentials: Credentials): Promise<AuthSession>;
 
   signOut(): Promise<void>;
+
+  /** Permanently removes the provider account and associated user data. */
+  deleteAccount(): Promise<void>;
 }

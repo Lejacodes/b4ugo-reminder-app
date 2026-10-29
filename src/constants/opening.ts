@@ -24,7 +24,8 @@ export const openingPalette = {
   shadow: 'rgba(44, 34, 30, 0.14)',
 } as const;
 
-export const STARRY_NIGHT_FONT = 'StarryNight';
+/** Soft display serif used for the wordmark, titles, and Little Guy lines. */
+export const STARRY_NIGHT_FONT = 'Fraunces';
 
 /** Independent stages so each beat can be driven on its own. */
 export type OpeningStage = 'logo' | 'ball' | 'unfold' | 'settle' | 'login';

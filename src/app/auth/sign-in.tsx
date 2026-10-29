@@ -130,6 +130,12 @@ export default function SignInScreen() {
         />
       </View>
 
+      <View style={styles.legalLinks}>
+        <QuietLink label="privacy" accessibilityLabel="Read privacy notice" onPress={() => router.push('/legal/privacy')} />
+        <QuietLink label="terms" accessibilityLabel="Read terms and conditions" onPress={() => router.push('/legal/terms')} />
+        <QuietLink label="cookies" accessibilityLabel="Read cookie policy" onPress={() => router.push('/legal/cookies')} />
+      </View>
+
       <PlaceholderAuthNotice />
     </DeskScreen>
   );
@@ -156,6 +162,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: 6,
+    paddingLeft: 4,
+  },
+  legalLinks: {
+    marginTop: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
     paddingLeft: 4,
   },
 });

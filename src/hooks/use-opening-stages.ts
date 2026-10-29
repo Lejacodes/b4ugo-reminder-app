@@ -10,19 +10,13 @@ export function useOpeningStages(reduceMotion: boolean): OpeningStage {
   const [stage, setStage] = useState<OpeningStage>(reduceMotion ? 'login' : 'logo');
 
   useEffect(() => {
-    if (reduceMotion) {
-      setStage('login');
-      return;
-    }
-
-    setStage('logo');
-
-    const timers = [
+    const timers = [setTimeout(() => setStage(reduceMotion ? 'login' : 'logo'), 0)];
+    if (!reduceMotion) timers.push(
       setTimeout(() => setStage('ball'), openingTiming.ballMs),
       setTimeout(() => setStage('unfold'), openingTiming.unfoldMs),
       setTimeout(() => setStage('settle'), openingTiming.settleMs),
       setTimeout(() => setStage('login'), openingTiming.loginMs),
-    ];
+    );
 
     return () => {
       timers.forEach(clearTimeout);

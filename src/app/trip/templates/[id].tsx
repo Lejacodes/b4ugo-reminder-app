@@ -40,7 +40,7 @@ export default function TemplateDetailScreen() {
     return (
       <SafeAreaView className="opening-desk" style={desk} edges={['top']}>
         <ScrapbookHeader title="template" />
-        <Text style={[styles.meta, { color: colors.inkSoft }]}>this template isn't here</Text>
+        <Text style={[styles.meta, { color: colors.inkSoft }]}>this template isn’t here</Text>
       </SafeAreaView>
     );
   }

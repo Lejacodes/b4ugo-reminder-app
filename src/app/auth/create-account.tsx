@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   ButterButton,
@@ -39,11 +39,17 @@ export default function CreateAccountScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [problem, setProblem] = useState<AuthErrorCode | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [consentProblem, setConsentProblem] = useState(false);
 
   const passwordRef = useRef<TextInput | null>(null);
   const confirmRef = useRef<TextInput | null>(null);
 
-  const message = problem ? new AuthError(problem).message : null;
+  const message = consentProblem
+    ? 'Please agree to the Terms to create an account.'
+    : problem
+      ? new AuthError(problem).message
+      : null;
 
   /** Clears the slip as soon as the user starts fixing what it complained about. */
   const edit = (setter: (value: string) => void) => (value: string) => {
@@ -54,6 +60,12 @@ export default function CreateAccountScreen() {
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setProblem(null);
+    setConsentProblem(false);
+
+    if (!acceptedTerms) {
+      setConsentProblem(true);
+      return;
+    }
 
     const invalid = validateCreateAccount(email, password, confirmPassword);
     if (invalid) {
@@ -135,6 +147,41 @@ export default function CreateAccountScreen() {
           onSubmitEditing={handleSubmit}
         />
 
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityLabel="Agree to the Terms and conditions"
+          accessibilityState={{ checked: acceptedTerms }}
+          onPress={() => {
+            setAcceptedTerms((current) => !current);
+            setConsentProblem(false);
+          }}
+          style={({ pressed }) => [styles.consentRow, pressed && styles.pressed]}>
+          <View
+            style={[
+              styles.checkbox,
+              { borderColor: colors.ink, backgroundColor: acceptedTerms ? colors.butter : colors.paper },
+            ]}>
+            <Text style={[styles.checkmark, { color: colors.inkOnMatcha }]}>
+              {acceptedTerms ? '✓' : ''}
+            </Text>
+          </View>
+          <Text style={[styles.consentText, { color: colors.ink }]}>
+            I agree to the Terms and conditions.
+          </Text>
+        </Pressable>
+        <View style={styles.legalLinks}>
+          <QuietLink
+            label="read terms"
+            accessibilityLabel="Read terms and conditions"
+            onPress={() => router.push('/legal/terms')}
+          />
+          <QuietLink
+            label="read privacy notice"
+            accessibilityLabel="Read privacy notice"
+            onPress={() => router.push('/legal/privacy')}
+          />
+        </View>
+
         <View style={styles.actions}>
           <ButterButton
             label="make my account"
@@ -179,6 +226,39 @@ const styles = StyleSheet.create({
   },
   actions: {
     marginTop: 10,
+  },
+  consentRow: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 2,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkmark: {
+    ...readableFont,
+    fontWeight: '700',
+  },
+  consentText: {
+    flex: 1,
+    ...readableFont,
+    fontSize: readableType.meta.fontSize,
+    lineHeight: 20,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 6,
+  },
+  pressed: {
+    opacity: 0.7,
   },
   fineprint: {
     marginTop: 20,

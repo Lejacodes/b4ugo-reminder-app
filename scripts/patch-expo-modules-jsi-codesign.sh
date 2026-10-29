@@ -15,7 +15,7 @@ if grep -q 'CODE_SIGNING_ALLOWED=NO' "$SCRIPT"; then
   exit 0
 fi
 
-python3 - <<'PY'
+python3 - "$SCRIPT" <<'PY'
 from pathlib import Path
 import sys
 
@@ -32,6 +32,5 @@ if needle not in text:
     sys.exit(0)
 script.write_text(text.replace(needle, replacement, 1))
 PY
-"$SCRIPT"
 
 echo "patched expo-modules-jsi build-xcframework.sh (disable intermediate codesign)"

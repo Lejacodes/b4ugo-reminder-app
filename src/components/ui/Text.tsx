@@ -1,8 +1,7 @@
 import { Text as RNText, type TextProps, type TextStyle } from 'react-native';
 
-import { fontFamily } from '@/constants/typography';
+import { fontFamily, TextVariant, textVariants } from '@/constants/typography';
 import { ThemeColor } from '@/constants/theme';
-import { TextVariant, textVariants } from '@/constants/typography';
 import { useTheme } from '@/hooks/use-theme';
 
 export type AppTextProps = TextProps & {

@@ -56,7 +56,13 @@ export default function LittleGuyScreen() {
         <ScrapbookHeader title="little guy" />
 
         <View style={[styles.stage, { width: guySize, height: guySize * 1.18 }]}>
-          <LittleGuy mood={mood} size={guySize} floating particles={pixelsToParticles(pixels)} />
+          <LittleGuy
+            mood={mood}
+            size={guySize}
+            floating
+            particles={pixelsToParticles(pixels)}
+            accessibilityLabel={`Little Guy is ${mood}`}
+          />
         </View>
         <Handwriting variant="aside" tone="soft" style={styles.sign}>
           little guy ✦

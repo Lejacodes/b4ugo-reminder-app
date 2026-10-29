@@ -9,11 +9,14 @@ type UseHoldToSpeakOptions = {
 export function useHoldToSpeak({ onTranscript }: UseHoldToSpeakOptions) {
   const handleRef = useRef<SpeechRecognitionHandle | null>(null);
   const onTranscriptRef = useRef(onTranscript);
-  onTranscriptRef.current = onTranscript;
 
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    onTranscriptRef.current = onTranscript;
+  }, [onTranscript]);
 
   useEffect(() => {
     let cancelled = false;

@@ -11,6 +11,58 @@ const DESTRUCTIVE_TOOLS = new Set<string>([
   'deleteIntention',
 ]);
 
+const CREATION_TOOLS = new Set<string>([
+  'createReminder',
+  'createTrip',
+  'createSavedPlace',
+  'addIntention',
+  'addPackingItem',
+  'addPersonalNecessity',
+]);
+
+const MUTATION_TOOLS = new Set<string>([
+  ...DESTRUCTIVE_TOOLS,
+  'createReminder',
+  'createTrip',
+  'createSavedPlace',
+  'addIntention',
+  'addPackingItem',
+  'addPersonalNecessity',
+  'completeReminder',
+  'updateReminder',
+  'updateTrip',
+  'updateSavedPlace',
+  'updateIntention',
+  'togglePackingItem',
+  'toggleAllPackingItems',
+]);
+
+export type CreationResult =
+  | { success: true; displayName: string }
+  | { success: false; error?: string };
+
+export function creationResult(displayName: string): CreationResult {
+  const normalized = displayName.trim();
+  return normalized
+    ? { success: true, displayName: normalized }
+    : { success: false, error: "i couldn't confirm what was saved." };
+}
+
+export function verifiedCreationResult(name: string, payload: unknown): CreationResult | null {
+  if (!CREATION_TOOLS.has(name) || !payload || typeof payload !== 'object') return null;
+  const data = payload as Record<string, unknown>;
+  if (data.success !== true) {
+    return {
+      success: false,
+      ...(typeof data.error === 'string' && data.error.trim() ? { error: data.error.trim() } : {}),
+    };
+  }
+  if (typeof data.displayName !== 'string' || !data.displayName.trim()) {
+    return { success: false, error: "i couldn't confirm what was saved." };
+  }
+  return { success: true, displayName: data.displayName.trim() };
+}
+
 export type ToolMutationResult = {
   success: boolean;
   deletedCount?: number;
@@ -70,6 +122,10 @@ export function isDestructiveTool(name: string): boolean {
   return DESTRUCTIVE_TOOLS.has(name);
 }
 
+export function isMutationTool(name: string): boolean {
+  return MUTATION_TOOLS.has(name);
+}
+
 export function isEmptyDestructive(item: { name: string; payload: unknown }): boolean {
   if (!isDestructiveTool(item.name)) return false;
   const counts = mutationCounts(item.payload);
@@ -122,7 +178,7 @@ export function formatVerifiedMutation(name: string, payload: unknown): string |
 
 export function composeVerifiedReply(
   preamble: string,
-  results: Array<{ name: AIToolName | string; payload: unknown }>,
+  results: { name: AIToolName | string; payload: unknown }[],
   format: (name: string, payload: unknown) => string,
   emptyFallback: string,
 ): string {
@@ -140,17 +196,24 @@ export function composeVerifiedReply(
     return extras.join('\n') || emptyFallback;
   }
 
+  // For mutations, the store result is the source of truth. Prefer it over a
+  // model's generic preamble so repeated saves do not all sound identical and
+  // the assistant never claims success before the write is verified.
+  if (results.some((item) => isMutationTool(item.name))) {
+    return extras.join('\n') || emptyFallback;
+  }
+
   return [preamble, ...extras].filter(Boolean).join('\n') || emptyFallback;
 }
 
 export function guardAssistantClaims(
   message: string,
-  results: Array<{ name: string; payload: unknown }>,
+  results: { name: string; payload: unknown }[],
   format: (name: string, payload: unknown) => string,
   emptyFallback: string,
 ): string {
   if (!results.length) return message.trim() || emptyFallback;
-  if (results.some((item) => isDestructiveTool(item.name))) {
+  if (results.some((item) => isMutationTool(item.name))) {
     return composeVerifiedReply('', results, format, emptyFallback);
   }
   return message.trim() || emptyFallback;

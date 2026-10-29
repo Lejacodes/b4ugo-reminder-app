@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     fontFamily: DISPLAY_FONT,
     fontSize: 32,
     lineHeight: 38,
-    letterSpacing: 1,
+    letterSpacing: -0.3,
   },
   wordmarkStar: {
     marginTop: 2,

@@ -91,7 +91,7 @@ export default function OnboardingPreferencesScreen() {
           />
           <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
           <PreferenceToggle
-            label="AI-assisted parsing"
+            label="Cloud AI-assisted parsing"
             value={privacy.aiParsingEnabled}
             onToggle={() =>
               updatePreferences({
@@ -99,6 +99,9 @@ export default function OnboardingPreferencesScreen() {
               })
             }
           />
+          <AppText variant="caption" color="textSecondary">
+            When on, your message and relevant reminder or trip context are sent to the configured AI service. Leave off to use on-device parsing only.
+          </AppText>
         </Card>
 
         <Button

@@ -20,7 +20,7 @@ function toolId(call: AIToolCall, index: number): string {
 
 export function composeReplyFromTools(
   first: AIResponse,
-  results: Array<{ name: AIToolName; payload: unknown }>,
+  results: { name: AIToolName; payload: unknown }[],
 ): string {
   return composeVerifiedReply(first.message, results, formatToolResult, AI_GENTLE_HERE_MESSAGE);
 }
@@ -54,7 +54,7 @@ export async function runChatTurn(input: {
   const maxRounds = input.maxRounds ?? 4;
 
   let first: AIResponse | null = null;
-  let lastResults: Array<{ name: AIToolName; payload: unknown }> = [];
+  let lastResults: { name: AIToolName; payload: unknown }[] = [];
 
   for (let round = 0; round <= maxRounds; round += 1) {
     const reply = await input.provider.complete({
@@ -77,7 +77,7 @@ export async function runChatTurn(input: {
       if (round === 0) {
         const local = interpretLocally(input.userText.trim(), input.context);
         if (local.toolCalls.length) {
-          const results: Array<{ name: AIToolName; payload: unknown }> = [];
+          const results: { name: AIToolName; payload: unknown }[] = [];
           for (const call of local.toolCalls) {
             const payload = await runValidatedTool(call, input.execute);
             results.push({ name: call.name, payload });
@@ -112,7 +112,7 @@ export async function runChatTurn(input: {
     };
     messages = [...messages, assistantWithTools];
 
-    const results: Array<{ name: AIToolName; payload: unknown }> = [];
+    const results: { name: AIToolName; payload: unknown }[] = [];
     for (const [index, call] of reply.toolCalls.entries()) {
       const payload = await runValidatedTool(call, input.execute);
       results.push({ name: call.name, payload });

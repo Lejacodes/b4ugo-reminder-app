@@ -1,4 +1,5 @@
-import 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
 import '@/lib/location/geofence-task';
 
 import { useEffect } from 'react';
@@ -6,7 +7,6 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { STARRY_NIGHT_FONT } from '@/constants/opening';
@@ -49,6 +49,7 @@ function RootNavigator() {
         <Stack.Screen name="reminders" options={{ animation: 'fade' }} />
         <Stack.Screen name="trip" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="little-guy" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="legal/[document]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen
           name="onboarding"
           options={{ gestureEnabled: false, animation: 'fade' }}
@@ -60,7 +61,7 @@ function RootNavigator() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    [STARRY_NIGHT_FONT]: require('../font/starrynight.ttf'),
+    [STARRY_NIGHT_FONT]: require('../font/fraunces-supersoft-bold.ttf'),
   });
 
   if (!fontsLoaded && !fontError) {

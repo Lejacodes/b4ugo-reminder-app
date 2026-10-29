@@ -60,7 +60,7 @@ export function useHomeBoard() {
       return () => {
         cancelled = true;
       };
-    }, [home?.latitude, home?.longitude, reminders.context]),
+    }, [home, reminders.context]),
   );
 
   const tripReminders = useMemo(() => {

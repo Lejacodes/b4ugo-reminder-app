@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { openingEase, openingEaseExit, openingPalette } from '@/constants/opening';
+import { openingEaseExit, openingPalette } from '@/constants/opening';
 
 type PaperBallProps = {
   visible: boolean;

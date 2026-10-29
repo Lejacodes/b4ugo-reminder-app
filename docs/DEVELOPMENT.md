@@ -67,7 +67,9 @@ See [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md). Never hardcode colors in components.
 
 ## Environment variables
 
-No environment variables are required for Phase 1–2.
+No environment variables are required for local development. Set
+`EXPO_PUBLIC_AUTH_PROVIDER=none` to use the development-only local login. A
+configured provider is only activated when its name is selected explicitly.
 
 When added, create `.env.local` (gitignored) from `.env.example`.
 

@@ -50,7 +50,7 @@ export default function TripDetailScreen() {
     return (
       <SafeAreaView className="opening-desk" style={desk} edges={['top']}>
         <ScrapbookHeader title="trip" />
-        <Text style={[styles.meta, { color: colors.inkSoft }]}>this page isn't in the notebook anymore</Text>
+        <Text style={[styles.meta, { color: colors.inkSoft }]}>this page isn’t in the notebook anymore</Text>
       </SafeAreaView>
     );
   }

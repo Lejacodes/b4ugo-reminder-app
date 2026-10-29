@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,7 +13,6 @@ import {
   ScrapbookSwitch,
 } from '@/components/scrapbook';
 import { NecessityDayChips } from '@/components/profile/NecessityDayChips';
-import { palette as brand } from '@/constants/colors';
 import { readableType, tiltAt, readableFont } from '@/constants/scrapbook';
 import { maxContentWidth, spacing } from '@/constants/spacing';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
@@ -43,15 +42,13 @@ export default function ProfileScreen() {
   const { scheme, setAppearance } = useAppearance();
   const { profile, preferences, updateProfile, updatePreferences, resetAll } = usePreferences();
   const { home, setHome } = usePlaces();
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount, isSubmitting } = useAuth();
   const { personalNecessities, updateNecessityActiveDays } = useReminders();
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(profile.displayName ?? '');
-
-  useEffect(() => {
-    setNameDraft(profile.displayName ?? '');
-  }, [profile.displayName]);
+  const [confirmingDeletion, setConfirmingDeletion] = useState(false);
+  const [deletionError, setDeletionError] = useState(false);
 
   const displayName = profile.displayName?.trim() || 'you';
   const email = user?.email ?? null;
@@ -123,7 +120,10 @@ export default function ProfileScreen() {
             <QuietLink
               label="change name"
               accessibilityLabel="Edit display name"
-              onPress={() => setEditingName(true)}
+              onPress={() => {
+                setNameDraft(profile.displayName ?? '');
+                setEditingName(true);
+              }}
             />
           )}
 
@@ -141,12 +141,12 @@ export default function ProfileScreen() {
                   style={({ pressed }) => [
                     styles.chip,
                     {
-                      backgroundColor: selected ? colors.stickyButter : colors.stickyCream,
+                      backgroundColor: selected ? colors.butterDeep : colors.stickyCream,
                       borderColor: selected ? colors.ink : colors.stickyEdge,
                     },
                     pressed && styles.pressed,
                   ]}>
-                  <Text style={[styles.chipLabel, { color: selected ? brand.cream : colors.ink }]}>
+                  <Text style={[styles.chipLabel, { color: selected ? colors.inkOnMatcha : colors.ink }]}>
                     {option.label}
                   </Text>
                 </Pressable>
@@ -253,8 +253,8 @@ export default function ProfileScreen() {
                   <View
                     accessibilityRole="text"
                     accessibilityLabel="Needed for GPS triggers"
-                    style={[styles.homeBadge, { backgroundColor: colors.tape }]}>
-                    <Text style={[styles.homeBadgeLabel, { color: brand.cream }]}>set for GPS</Text>
+                    style={[styles.homeBadge, { backgroundColor: colors.butterDeep }]}>
+                    <Text style={[styles.homeBadgeLabel, { color: colors.inkOnMatcha }]}>set for GPS</Text>
                   </View>
                 ) : null}
               </View>
@@ -289,7 +289,7 @@ export default function ProfileScreen() {
             />
           </View>
           <PreferenceRow
-            title="AI parsing"
+            title="Cloud AI parsing"
             value={preferences.privacy.aiParsingEnabled}
             onValueChange={(next) =>
               updatePreferences({
@@ -331,7 +331,66 @@ export default function ProfileScreen() {
               accessibilityLabel="Log out of your account"
               onPress={signOut}
             />
+            {!confirmingDeletion ? (
+              <QuietLink
+                label="delete account and data"
+                accessibilityLabel="Delete account and all associated data"
+                onPress={() => {
+                  setDeletionError(false);
+                  setConfirmingDeletion(true);
+                }}
+              />
+            ) : (
+              <View style={[styles.deleteConfirm, { borderColor: colors.ink }]}>
+                <Text style={[styles.deleteCopy, { color: colors.ink }]}>
+                  This permanently deletes your account and associated cloud and device data. It cannot be undone.
+                </Text>
+                {deletionError ? (
+                  <Text accessibilityRole="alert" style={[styles.deleteCopy, { color: colors.ink }]}>
+                    Account deletion failed. Nothing was deleted; please try again.
+                  </Text>
+                ) : null}
+                <ButterButton
+                  label="permanently delete account"
+                  accessibilityLabel="Permanently delete account and data"
+                  busy={isSubmitting}
+                  onPress={async () => {
+                    setDeletionError(false);
+                    try {
+                      await deleteAccount();
+                      await resetAll();
+                    } catch {
+                      setDeletionError(true);
+                    }
+                  }}
+                />
+                <QuietLink
+                  label="cancel deletion"
+                  accessibilityLabel="Cancel account deletion"
+                  disabled={isSubmitting}
+                  onPress={() => setConfirmingDeletion(false)}
+                />
+              </View>
+            )}
           </View>
+        </PaperPanel>
+
+        <PaperPanel tilt={tiltAt(4)} tape="top-right">
+          <Handwriting variant="title" accessibilityRole="header">
+            privacy &amp; legal
+          </Handwriting>
+          <Text style={[styles.locationHint, { color: colors.inkSoft, marginTop: 8 }]}>
+            Analytics tracking is off and no analytics SDK is installed. Cloud AI is used only when AI parsing is on.
+          </Text>
+          <View style={styles.legalLinks}>
+            <QuietLink label="privacy notice" onPress={() => router.push('/legal/privacy')} />
+            <QuietLink label="terms and conditions" onPress={() => router.push('/legal/terms')} />
+            <QuietLink label="cookie policy" onPress={() => router.push('/legal/cookies')} />
+            <QuietLink label="refund policy" onPress={() => router.push('/legal/refunds')} />
+          </View>
+          <Text style={[styles.releaseBlocker, { color: colors.ink }]} accessibilityRole="alert">
+            Before release: add verified business details and deploy the account-deletion function.
+          </Text>
         </PaperPanel>
 
         {!preferences.hasCompletedOnboarding ? (
@@ -534,6 +593,27 @@ const styles = StyleSheet.create({
   },
   accountActions: {
     marginTop: 8,
+    gap: 4,
+  },
+  deleteConfirm: {
+    borderWidth: 2,
+    padding: 12,
+    gap: 8,
+  },
+  deleteCopy: {
+    ...readableFont,
+    fontSize: readableType.meta.fontSize,
+    lineHeight: readableType.meta.lineHeight,
+  },
+  legalLinks: {
+    gap: 2,
+  },
+  releaseBlocker: {
+    ...readableFont,
+    fontSize: readableType.fine.fontSize,
+    lineHeight: readableType.fine.lineHeight,
+    fontWeight: '700',
+    marginTop: 10,
   },
   devSlip: {
     borderWidth: 1,

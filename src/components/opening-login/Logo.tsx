@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     lineHeight: 50,
     color: openingPalette.ink,
     textAlign: 'center',
-    letterSpacing: 1.2,
+    letterSpacing: -0.4,
   },
   hidden: {
     opacity: 0,

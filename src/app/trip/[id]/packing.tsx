@@ -57,7 +57,7 @@ export default function PackingScreen() {
     return (
       <SafeAreaView className="opening-desk" style={desk} edges={['top']}>
         <ScrapbookHeader title="packing" />
-        <Text style={[styles.meta, { color: colors.inkSoft }]}>this trip isn't here</Text>
+        <Text style={[styles.meta, { color: colors.inkSoft }]}>this trip isn’t here</Text>
       </SafeAreaView>
     );
   }

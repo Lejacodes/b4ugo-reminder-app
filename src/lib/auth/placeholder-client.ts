@@ -108,6 +108,10 @@ class PlaceholderAuthClient implements AuthClient {
   async signOut(): Promise<void> {
     await clearStoredSession();
   }
+
+  async deleteAccount(): Promise<void> {
+    await clearStoredSession();
+  }
 }
 
 export const placeholderAuthClient: AuthClient = new PlaceholderAuthClient();

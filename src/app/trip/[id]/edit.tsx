@@ -46,7 +46,7 @@ export default function EditTripScreen() {
     return (
       <SafeAreaView className="opening-desk" style={desk} edges={['top']}>
         <ScrapbookHeader title="edit" />
-        <Text style={[styles.meta, { color: colors.inkSoft }]}>this trip isn't here</Text>
+        <Text style={[styles.meta, { color: colors.inkSoft }]}>this trip isn’t here</Text>
       </SafeAreaView>
     );
   }

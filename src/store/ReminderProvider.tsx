@@ -169,10 +169,13 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   const necessitiesRef = useRef<PersonalNecessity[]>([]);
   const contextRef = useRef<BeforeUgoContext | null>(null);
   const sessionRef = useRef<DepartureSession>(departureSession);
-  remindersRef.current = reminders;
-  necessitiesRef.current = personalNecessities;
-  contextRef.current = context;
-  sessionRef.current = departureSession;
+
+  useEffect(() => {
+    remindersRef.current = reminders;
+    necessitiesRef.current = personalNecessities;
+    contextRef.current = context;
+    sessionRef.current = departureSession;
+  }, [context, departureSession, personalNecessities, reminders]);
 
   useEffect(() => {
     let cancelled = false;

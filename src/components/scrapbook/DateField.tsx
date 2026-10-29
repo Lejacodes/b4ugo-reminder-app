@@ -164,7 +164,7 @@ export function DateField({ label, hint, value, onChange, minimumDate, maximumDa
                     }}
                     style={[
                       styles.dayCell,
-                      selected && { backgroundColor: palette.stickyButter },
+                      selected && { backgroundColor: palette.butterDeep },
                       disabled && styles.dayDisabled,
                     ]}>
                     <Text

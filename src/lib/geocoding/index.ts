@@ -1,5 +1,3 @@
-import type { PlaceLookup } from '@/lib/engines/contracts';
-
 import { searchPlacesNearby, type PlaceSearchOptions } from './nearby-search';
 import {
   openMeteoGeocodingService,

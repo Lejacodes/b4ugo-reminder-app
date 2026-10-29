@@ -62,21 +62,19 @@ Route: `src/app/opening/` → `/opening`.
 
 ## Typography
 
-The intended face is **Starry Night** (Lauren Ashpole), loaded from the file you added:
+The intended face is **Fraunces SuperSoft Bold** (Undercase Type, OFL), loaded from:
 
-`src/font/starrynight.ttf`
+`src/font/fraunces-supersoft-bold.ttf`
 
 Loaded at runtime in `src/app/_layout.tsx` with Expo Font `useFonts` (SDK 57, works in Expo Go and on web):
 
 ```ts
 useFonts({
-  StarryNight: require('../font/starrynight.ttf'),
+  Fraunces: require('../font/fraunces-supersoft-bold.ttf'),
 });
 ```
 
-Used on this window for the wordmark, prompts, and both actions, and carried through the auth and onboarding screens that follow. The main tabs still use the system font.
-
-Verify the font license before a commercial release.
+Used on this window for the wordmark, prompts, and both actions, and carried through the auth and onboarding screens that follow. Checklists, fields, and buttons stay on the system sans.
 
 ---
 

@@ -1,5 +1,5 @@
 import { buildConstellation, CONSTELLATION_MAX, PIXEL_COLORS } from '@/lib/ai/constellation';
-import { moodFromSituation } from '@/lib/ai/little-guy-mood';
+import { littleGuyWhisper, moodFromSituation } from '@/lib/ai/little-guy-mood';
 import type { PersonalNecessity, Reminder } from '@/types/reminder';
 import type { PackingItem, Trip } from '@/types/trip';
 
@@ -158,6 +158,7 @@ describe('Little Guy mood', () => {
   it('thinks while processing and sleeps when nothing needs attention', () => {
     expect(
       moodFromSituation({
+        today: TODAY,
         processing: true,
         reminders: [],
         upcomingTrips: [],
@@ -166,6 +167,7 @@ describe('Little Guy mood', () => {
     ).toBe('thinking');
     expect(
       moodFromSituation({
+        today: TODAY,
         reminders: [],
         upcomingTrips: [],
         unfinishedPacking: 0,
@@ -173,6 +175,7 @@ describe('Little Guy mood', () => {
     ).toBe('sleepy');
     expect(
       moodFromSituation({
+        today: TODAY,
         justSaved: true,
         reminders: [reminder('Sunscreen')],
         upcomingTrips: [],
@@ -184,6 +187,7 @@ describe('Little Guy mood', () => {
   it('looks preoccupied when packing is unfinished', () => {
     expect(
       moodFromSituation({
+        today: TODAY,
         reminders: [],
         upcomingTrips: [futureTrip],
         unfinishedPacking: 3,
@@ -194,6 +198,7 @@ describe('Little Guy mood', () => {
   it('looks preoccupied when a lot of reminders are open', () => {
     expect(
       moodFromSituation({
+        today: TODAY,
         reminders: ['a', 'b', 'c', 'd'].map((title) => reminder(title)),
         upcomingTrips: [],
         unfinishedPacking: 0,
@@ -204,6 +209,7 @@ describe('Little Guy mood', () => {
   it('is quietly attentive when a couple of things are waiting', () => {
     expect(
       moodFromSituation({
+        today: TODAY,
         reminders: [reminder('Sunscreen')],
         upcomingTrips: [],
         unfinishedPacking: 0,
@@ -214,10 +220,25 @@ describe('Little Guy mood', () => {
   it('is proud once a trip is fully packed and nothing is open', () => {
     expect(
       moodFromSituation({
+        today: TODAY,
         reminders: [],
         upcomingTrips: [futureTrip],
         unfinishedPacking: 0,
       }),
     ).toBe('proud');
+  });
+
+  it('uses the injected date for past, current, and future trip signals', () => {
+    const past = trip({ id: 'past', startDate: '2026-09-01', endDate: '2026-09-03', status: 'planned' });
+    const current = trip({ id: 'current', startDate: TODAY, endDate: '2026-09-10', status: 'planned' });
+    const future = trip({ id: 'future', startDate: '2026-09-10', endDate: '2026-09-12', status: 'planned' });
+
+    const base = { reminders: [], unfinishedPacking: 0, today: TODAY };
+    expect(moodFromSituation({ ...base, upcomingTrips: [past] })).toBe('proud');
+    expect(littleGuyWhisper({ ...base, unfinishedPacking: 2, upcomingTrips: [past] })).toBeNull();
+    expect(moodFromSituation({ ...base, upcomingTrips: [current] })).toBe('excited');
+    expect(littleGuyWhisper({ ...base, upcomingTrips: [current] })).toBe('your trip is today ♡');
+    expect(moodFromSituation({ ...base, upcomingTrips: [future] })).toBe('excited');
+    expect(littleGuyWhisper({ ...base, upcomingTrips: [future] })).toBe('your trip is in 2 days ♡');
   });
 });
