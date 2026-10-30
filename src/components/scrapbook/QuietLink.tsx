@@ -4,6 +4,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { readableType, readableFont } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
+import { useAsyncAction } from '@/hooks/use-async-action';
 
 type QuietLinkProps = {
   label: string;
@@ -24,14 +25,16 @@ export function QuietLink({
   style,
 }: QuietLinkProps) {
   const palette = useScrapbookPalette();
+  const action = useAsyncAction(onPress);
 
   return (
+    <>
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
+      accessibilityState={{ disabled: disabled || action.pending, busy: action.pending }}
+      disabled={disabled || action.pending}
+      onPress={action.run}
       hitSlop={8}
       style={({ pressed }) => [
         styles.wrap,
@@ -42,6 +45,8 @@ export function QuietLink({
       ]}>
       <Text style={[styles.label, { color: palette.inkSoft }]}>{label}</Text>
     </Pressable>
+    {action.error ? <Text accessibilityRole="alert" style={[readableFont, readableType.item, { color: palette.ink }]}>{action.error}</Text> : null}
+    </>
   );
 }
 

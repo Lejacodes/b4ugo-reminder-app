@@ -8,10 +8,10 @@ import {
   type ReactNode,
 } from 'react';
 
-import { ensureMigrated } from '@/lib/api/migration';
-import { profileRepository } from '@/lib/api/profile-repository';
-import { STORAGE_KEYS, preferencesStorage, scopedKey } from '@/lib/storage/preferences-storage';
-import { isSupabaseConfigured } from '@/lib/supabase/client';
+import { ensureLocalRecordsMigrated, STORAGE_KEYS, preferencesStorage, scopedKey } from '@/lib/storage/preferences-storage';
+import { readSingleton, writeSingleton } from '@/lib/sync/local';
+import { useRecordRevision } from '@/hooks/use-record-revision';
+import { useAccountGuard } from '@/hooks/use-account-guard';
 import { useAuth } from '@/store/AuthProvider';
 import {
   defaultUserPreferences,
@@ -43,6 +43,8 @@ const PreferencesContext = createContext<PreferencesContextValue | null>(null);
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const { status, user } = useAuth();
   const userId = user?.id ?? null;
+  const recordRevision = useRecordRevision(userId);
+  const assertAccount = useAccountGuard(userId);
 
   const [profile, setProfile] = useState<UserProfile>(defaultUserProfile());
   const [preferences, setPreferences] = useState<UserPreferences>(defaultUserPreferences());
@@ -66,44 +68,24 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
       setIsLoading(true);
       try {
+        await ensureLocalRecordsMigrated(userId);
         const [storedProfile, storedPreferences] = await Promise.all([
-          preferencesStorage.getItem(scopedKey(STORAGE_KEYS.profile, userId)),
-          preferencesStorage.getItem(scopedKey(STORAGE_KEYS.preferences, userId)),
+          readSingleton<UserProfile>(userId, 'profile'),
+          readSingleton<UserPreferences>(userId, 'preferences'),
         ]);
 
         if (cancelled) return;
 
-        let nextProfile = storedProfile
-          ? { ...defaultUserProfile(userId), ...(JSON.parse(storedProfile) as UserProfile) }
+        const nextProfile = storedProfile
+          ? { ...defaultUserProfile(userId), ...storedProfile }
           : defaultUserProfile(userId);
-        let nextPreferences = storedPreferences
-          ? { ...defaultUserPreferences(), ...(JSON.parse(storedPreferences) as UserPreferences) }
+        const nextPreferences = storedPreferences
+          ? { ...defaultUserPreferences(), ...storedPreferences }
           : defaultUserPreferences();
-
-        if (isSupabaseConfigured()) {
-          try {
-            await ensureMigrated(userId, user?.email);
-            const [remoteProfile, remotePreferences] = await Promise.all([
-              profileRepository.getProfile(),
-              profileRepository.getPreferences(),
-            ]);
-            if (remoteProfile) nextProfile = { ...nextProfile, ...remoteProfile, userId };
-            if (remotePreferences) nextPreferences = { ...nextPreferences, ...remotePreferences };
-          } catch {
-            // Keep the local cache if the remote read fails.
-          }
-        }
 
         if (cancelled) return;
         setProfile(nextProfile);
         setPreferences(nextPreferences);
-        await Promise.all([
-          preferencesStorage.setItem(scopedKey(STORAGE_KEYS.profile, userId), JSON.stringify(nextProfile)),
-          preferencesStorage.setItem(
-            scopedKey(STORAGE_KEYS.preferences, userId),
-            JSON.stringify(nextPreferences),
-          ),
-        ]);
       } catch {
         if (cancelled) return;
         // Unreadable local data is treated as a fresh profile; the account
@@ -119,44 +101,30 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [status, userId, user?.email]);
+  }, [status, userId, recordRevision]);
 
   const persistProfile = useCallback(
     async (next: UserProfile) => {
-      setProfile(next);
-      if (!userId) return;
-      await preferencesStorage.setItem(
-        scopedKey(STORAGE_KEYS.profile, userId),
-        JSON.stringify(next),
-      );
-      if (isSupabaseConfigured()) {
-        try {
-          await profileRepository.upsertProfile(next);
-        } catch {
-          // Keep the local cache if the remote write fails.
-        }
+      assertAccount();
+      if (userId) {
+        await writeSingleton(userId, 'profile', next, profile);
       }
+      assertAccount();
+      setProfile(next);
     },
-    [userId],
+    [userId, profile, assertAccount],
   );
 
   const persistPreferences = useCallback(
     async (next: UserPreferences) => {
-      setPreferences(next);
-      if (!userId) return;
-      await preferencesStorage.setItem(
-        scopedKey(STORAGE_KEYS.preferences, userId),
-        JSON.stringify(next),
-      );
-      if (isSupabaseConfigured()) {
-        try {
-          await profileRepository.upsertPreferences(next);
-        } catch {
-          // Keep the local cache if the remote write fails.
-        }
+      assertAccount();
+      if (userId) {
+        await writeSingleton(userId, 'preferences', next, preferences);
       }
+      assertAccount();
+      setPreferences(next);
     },
-    [userId],
+    [userId, preferences, assertAccount],
   );
 
   const updateProfile = useCallback(

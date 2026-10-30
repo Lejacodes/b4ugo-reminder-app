@@ -5,19 +5,10 @@
 export type NotificationPreferences = {
   /** Whether the user wants reminders delivered as push notifications. */
   pushEnabled: boolean;
-  /** Whether quiet hours should suppress non-urgent reminders. */
-  quietHoursEnabled: boolean;
-  /** 24h format, e.g. "22:00". Only used when quietHoursEnabled is true. */
-  quietHoursStart: string | null;
-  /** 24h format, e.g. "07:00". Only used when quietHoursEnabled is true. */
-  quietHoursEnd: string | null;
 };
 
 export const defaultNotificationPreferences = (): NotificationPreferences => ({
-  pushEnabled: true,
-  quietHoursEnabled: false,
-  quietHoursStart: null,
-  quietHoursEnd: null,
+  pushEnabled: false,
 });
 
 /**

@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased] — Improvement Phase 1 reliability checkpoint — 2026-10-30
+
+- Added SQLite/WAL native and locked browser persistence, verified/retryable legacy migration and an atomic record/outbox boundary. Credentials remain in SecureStore.
+- Replaced collection synchronization with operation IDs, versions, explicit tombstones and conflict review. Added local record/sync status, retries and account fences.
+- Added data-preserving canonical-sync and installation/delivery-attempt migrations; hosted deployment remains unperformed.
+- Onboarding now includes explained notification/location/privacy/AI choices; removed automatic location requests and unsupported quiet-hours fields.
+- Added Profile diagnostics, installation-only token cleanup, registration retry, geofence first-start/caps/cancellation and bounded logout cleanup.
+- Local/cloud due delivery is selected per installation. The authorized sender checks tickets, handles receipts/invalid tokens, and preserves uncertain submissions without blindly resending them.
+- Saves publish after commit; core creation commands distinguish duplicate/no-change; scrapbook actions show retained errors; input survives rejected saves.
+- Verified 45 suites/208 tests, 20 isolated PostgreSQL assertions, 10 injected push-handler scenarios, TypeScript/lint/diff/online Expo/config and a 34-route web export. Native/hosted/device acceptance remains open; later phases remain gated.
+
 All notable changes to B4UGO are documented here.
 
 ## [Unreleased] — Dynamic constellation + swipe-delete packing

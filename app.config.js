@@ -2,8 +2,9 @@ const appJson = require('./app.json');
 
 const plugins = (appJson.expo.plugins ?? []).filter((plugin) => {
   const name = Array.isArray(plugin) ? plugin[0] : plugin;
-  return name !== 'expo-notifications' && name !== 'expo-location' && name !== 'expo-speech-recognition';
+  return name !== 'expo-notifications' && name !== 'expo-location' && name !== 'expo-speech-recognition' && name !== 'expo-sqlite';
 });
+plugins.push('expo-sqlite');
 plugins.push([
   'expo-location',
   {

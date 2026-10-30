@@ -24,6 +24,7 @@ export default function EditTripScreen() {
   const { horizontalPadding, isTablet } = useResponsive();
   const { getTrip, updateTrip } = useTrips();
   const trip = getTrip(id);
+  const [originalTrip] = useState(trip);
 
   const [form, setForm] = useState<TripFormState>({
     title: trip?.title ?? '',
@@ -79,8 +80,10 @@ export default function EditTripScreen() {
         timezone: place?.timezone ?? null,
         country: place?.country ?? null,
         region: place?.region ?? null,
-      });
+      }, originalTrip);
       router.back();
+    } catch {
+      setError('Could not save this trip. Your changes are still here. If another device changed it, go back and review the latest trip before editing again.');
     } finally {
       setBusy(false);
     }

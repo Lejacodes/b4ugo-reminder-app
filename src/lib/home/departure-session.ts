@@ -1,5 +1,6 @@
 import { todayIso } from '@/lib/trips/dates';
-import { STORAGE_KEYS, preferencesStorage, scopedKey } from '@/lib/storage/preferences-storage';
+import { ensureLocalRecordsMigrated, STORAGE_KEYS, preferencesStorage, scopedKey } from '@/lib/storage/preferences-storage';
+import { localRepository } from '@/lib/sync/local';
 
 export type DepartureSession = {
   date: string;
@@ -27,17 +28,14 @@ export function normalizeDepartureSession(
 }
 
 export async function loadDepartureSession(userId: string, today: string = todayIso()): Promise<DepartureSession> {
-  try {
-    const raw = await preferencesStorage.getItem(scopedKey(STORAGE_KEYS.departureSession, userId));
-    if (!raw) return emptyDepartureSession(today);
-    return normalizeDepartureSession(JSON.parse(raw) as DepartureSession, today);
-  } catch {
-    return emptyDepartureSession(today);
-  }
+  await ensureLocalRecordsMigrated(userId);
+  const raw = await preferencesStorage.getItem(scopedKey(STORAGE_KEYS.departureSession, userId));
+  await localRepository.importDevice(userId, 'departureSession', raw ? JSON.parse(raw) : emptyDepartureSession(today));
+  return normalizeDepartureSession(await localRepository.readDevice<DepartureSession>(userId, 'departureSession'), today);
 }
 
 export async function saveDepartureSession(userId: string, session: DepartureSession): Promise<void> {
-  await preferencesStorage.setItem(scopedKey(STORAGE_KEYS.departureSession, userId), JSON.stringify(session));
+  await localRepository.write(userId, [], { departureSession: session });
 }
 
 export function sessionCheckKey(kind: 'nec' | 'wx', id: string): string {

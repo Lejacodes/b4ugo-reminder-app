@@ -16,6 +16,7 @@ import { classifySmartAdd, type SmartAddTarget } from '@/lib/add/classify-intent
 import type { GeocodedDestination } from '@/lib/geocoding';
 import { usePlaces } from '@/store/PlaceProvider';
 import { useReminders } from '@/store/ReminderProvider';
+import { useSync } from '@/store/SyncProvider';
 
 import '@/components/opening-login/opening-login.css';
 
@@ -32,6 +33,7 @@ export default function AddScreen() {
   const { horizontalPadding, isTablet } = useResponsive();
   const { context, addAlways, addThisTrip, addOnTheWayBack } = useReminders();
   const { places } = usePlaces();
+  const sync = useSync();
 
   const [title, setTitle] = useState('');
   const [target, setTarget] = useState<SmartAddTarget>('beforeILeave');
@@ -40,6 +42,7 @@ export default function AddScreen() {
   const [selectedPlace, setSelectedPlace] = useState<GeocodedDestination | null>(null);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const compactPlaces = useMemo(
     () => places.map((item) => ({ id: item.id, name: item.name, type: item.type })),
@@ -75,6 +78,7 @@ export default function AddScreen() {
     if (!canSave || busy) return;
     setBusy(true);
     setSaved(false);
+    setSaveError(null);
     try {
       const classified = classifySmartAdd(title, {
         hasTripContext: Boolean(context),
@@ -83,25 +87,33 @@ export default function AddScreen() {
       const trimmed = (classified.title || title).trim();
       const nextTarget = manualTarget ? target : classified.target;
       const placeName = selectedPlace?.placeName ?? (place.trim() || classified.placeName || '');
+      let result;
 
       if (nextTarget === 'onTheWayBack') {
-        await addOnTheWayBack(trimmed, {
+        result = await addOnTheWayBack(trimmed, {
           placeName,
           latitude: selectedPlace?.latitude ?? null,
           longitude: selectedPlace?.longitude ?? null,
         });
       } else if (nextTarget === 'trip' && context) {
-        await addThisTrip(trimmed);
+        result = await addThisTrip(trimmed);
       } else {
-        await addAlways(trimmed);
+        result = await addAlways(trimmed);
       }
 
-      setTitle('');
-      setPlace('');
+      if (result.status === 'unchanged') {
+        setSaveError('This item is already on your list. Nothing was added.');
+        return;
+      }
+
+      setTitle((current) => current === title ? '' : current);
+      setPlace((current) => current === place ? '' : current);
       setSelectedPlace(null);
       setManualTarget(false);
       setTarget('beforeILeave');
       setSaved(true);
+    } catch {
+      setSaveError('Could not save this item. Your text is still here — please try again.');
     } finally {
       setBusy(false);
     }
@@ -134,6 +146,7 @@ export default function AddScreen() {
                 accessibilityLabel="What do you need to remember?"
                 placeholder="What do you need to remember?"
                 value={title}
+                editable={!busy}
                 onChangeText={(value) => {
                   setTitle(value);
                   setSaved(false);
@@ -144,6 +157,7 @@ export default function AddScreen() {
             </View>
             <Pressable
               accessibilityRole="button"
+              disabled={busy}
               accessibilityLabel={listening ? 'Listening. Release to stop.' : 'Hold to speak'}
               onPressIn={onPressIn}
               onPressOut={onPressOut}
@@ -164,11 +178,17 @@ export default function AddScreen() {
           {voiceError ? (
             <Text style={[styles.fine, { color: colors.inkSoft }]}>{voiceError}</Text>
           ) : null}
+          {saveError ? (
+            <Text accessibilityRole="alert" style={[styles.fine, { color: colors.slipInk }]}>
+              {saveError}
+            </Text>
+          ) : null}
+          {saved ? <Text accessibilityLiveRegion="polite" style={[styles.fine, { color: colors.inkSoft }]}>Saved on this device. {sync.pending > 0 ? `${sync.pending} changes waiting to synchronize.` : ''}</Text> : null}
 
           <View style={styles.chips}>
             {TARGETS.map((option) => {
               const selected = target === option.id;
-              const disabled = option.id === 'trip' && !context;
+              const disabled = busy || option.id === 'trip' && !context;
               return (
                 <Pressable
                   key={option.id}

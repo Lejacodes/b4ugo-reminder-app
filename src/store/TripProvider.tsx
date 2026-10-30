@@ -24,6 +24,10 @@ import {
   saveTrips,
 } from '@/lib/trips/trip-store';
 import { useAuth } from '@/store/AuthProvider';
+import { useRecordRevision } from '@/hooks/use-record-revision';
+import { useAccountGuard } from '@/hooks/use-account-guard';
+import { collectionChange, localRepository } from '@/lib/sync/local';
+import { persisted, unchanged, type SaveResult } from '@/lib/storage/mutation-result';
 import { useReminders } from '@/store/ReminderProvider';
 import { createId, titlesMatch } from '@/types/reminder';
 import type {
@@ -153,13 +157,13 @@ type TripContextValue = {
   packingFor: (tripId: string) => PackingItem[];
   packingProgress: (tripId: string) => { packed: number; total: number };
   intentionsFor: (tripId: string) => TravelIntention[];
-  createTrip: (draft: TripDraft, options?: { templateId?: string; generate?: boolean }) => Promise<Trip | null>;
-  updateTrip: (id: string, draft: TripDraft) => Promise<void>;
+  createTrip: (draft: TripDraft, options?: { templateId?: string; generate?: boolean }) => Promise<SaveResult<Trip> | null>;
+  updateTrip: (id: string, draft: TripDraft, expected?: Trip) => Promise<void>;
   archiveTrip: (id: string) => Promise<void>;
   deleteTrip: (id: string) => Promise<void>;
   enterTravelMode: (id: string) => Promise<void>;
   togglePackingItem: (id: string) => Promise<void>;
-  addPackingItem: (tripId: string, title: string, category: PackingCategory) => Promise<void>;
+  addPackingItem: (tripId: string, title: string, category: PackingCategory) => Promise<SaveResult<PackingItem>>;
   updatePackingItem: (
     id: string,
     patch: { title?: string; category?: PackingCategory },
@@ -181,7 +185,7 @@ type TripContextValue = {
     note?: string;
     latitude?: number | null;
     longitude?: number | null;
-  }) => Promise<void>;
+  }) => Promise<SaveResult<TravelIntention>>;
   updateIntention: (
     id: string,
     patch: {
@@ -202,6 +206,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const { status, user } = useAuth();
   const { personalNecessities } = useReminders();
   const userId = user?.id ?? null;
+  const recordRevision = useRecordRevision(userId);
+  const assertAccount = useAccountGuard(userId);
 
   const [trips, setTrips] = useState<Trip[]>([]);
   const [packingItems, setPackingItems] = useState<PackingItem[]>([]);
@@ -251,7 +257,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
 
         let nextTemplates = storedTemplates;
-        if (nextTemplates.length === 0) {
+        if (nextTemplates.length === 0 && !(await localRepository.hasHistory(userId, 'packingTemplates'))) {
           nextTemplates = STARTER_TEMPLATES.map((entry) => buildTemplate(entry.name, entry.items));
           await savePackingTemplates(userId, nextTemplates);
         }
@@ -276,66 +282,54 @@ export function TripProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [status, userId]);
+  }, [status, userId, recordRevision]);
 
   const persistTrips = useCallback(
     async (next: Trip[]) => {
+      assertAccount();
+      if (userId) await saveTrips(userId, next, tripsRef.current);
+      assertAccount();
       tripsRef.current = next;
       setTrips(next);
-      if (!userId) return;
-      try {
-        await saveTrips(userId, next);
-      } catch {
-        // Keep in-memory trips if keystore write fails.
-      }
     },
-    [userId],
+    [userId, assertAccount],
   );
 
   const persistPacking = useCallback(
     async (next: PackingItem[]) => {
+      assertAccount();
+      if (userId) await savePackingItems(userId, next, packingRef.current);
+      assertAccount();
       packingRef.current = next;
       setPackingItems(next);
-      if (!userId) return;
-      try {
-        await savePackingItems(userId, next);
-      } catch {
-        // Keep in-memory packing if keystore write fails.
-      }
     },
-    [userId],
+    [userId, assertAccount],
   );
 
   const persistTemplates = useCallback(
     async (next: PackingTemplate[]) => {
+      assertAccount();
+      if (userId) await savePackingTemplates(userId, next, templatesRef.current);
+      assertAccount();
       templatesRef.current = next;
       setTemplates(next);
-      if (!userId) return;
-      try {
-        await savePackingTemplates(userId, next);
-      } catch {
-        // Keep in-memory templates if keystore write fails.
-      }
     },
-    [userId],
+    [userId, assertAccount],
   );
 
   const persistIntentions = useCallback(
     async (next: TravelIntention[]) => {
+      assertAccount();
+      if (userId) await saveTravelIntentions(userId, next, intentionsRef.current);
+      assertAccount();
       intentionsRef.current = next;
       setIntentions(next);
-      if (!userId) return;
-      try {
-        await saveTravelIntentions(userId, next);
-      } catch {
-        // Keep in-memory intentions if keystore write fails.
-      }
     },
-    [userId],
+    [userId, assertAccount],
   );
 
   const mergeSuggestions = useCallback(
-    async (trip: Trip, source: PackingSource, extra?: PackingTemplateItem[]) => {
+    async (trip: Trip, source: PackingSource, extra?: PackingTemplateItem[], commit = true) => {
       const current = packingRef.current;
       const forTrip = current.filter((item) => item.tripId === trip.id);
       const blocked = new Set(
@@ -387,33 +381,42 @@ export function TripProvider({ children }: { children: ReactNode }) {
         );
       }
 
-      if (added.length === 0) return;
-      await persistPacking([...current, ...added]);
+      if (commit && added.length > 0) await persistPacking([...current, ...added]);
+      return added;
     },
     [persistPacking],
   );
 
   const createTrip = useCallback(
     async (draft: TripDraft, options?: { templateId?: string; generate?: boolean }) => {
+      assertAccount();
       if (!draft.title.trim() || !draft.destination.trim()) return null;
       const trip = await buildTrip(draft);
-      await persistTrips([...tripsRef.current, trip]);
+      const existing = tripsRef.current.find((item) => titlesMatch(item.title, trip.title) &&
+        titlesMatch(item.destination, trip.destination) && item.startDate === trip.startDate && item.endDate === trip.endDate);
+      if (existing) return unchanged(existing);
 
       const template = options?.templateId
         ? templatesRef.current.find((item) => item.id === options.templateId)
         : undefined;
-      if (template) {
-        await mergeSuggestions(trip, 'generated', template.items);
-      } else if (options?.generate !== false) {
-        await mergeSuggestions(trip, 'generated');
-      }
-      return trip;
+      const added = template || options?.generate !== false
+        ? await mergeSuggestions(trip, 'generated', template?.items, false) : [];
+      if (!userId) throw new Error('Sign in before saving a trip');
+      const nextTrips = [...tripsRef.current, trip];
+      const nextPacking = [...packingRef.current, ...added];
+      assertAccount();
+      await localRepository.write(userId, [collectionChange('trips', tripsRef.current, nextTrips),
+        collectionChange('packingItems', packingRef.current, nextPacking)]);
+      assertAccount();
+      tripsRef.current = nextTrips; setTrips(nextTrips);
+      packingRef.current = nextPacking; setPackingItems(nextPacking);
+      return persisted(trip);
     },
-    [mergeSuggestions, persistTrips],
+    [mergeSuggestions, userId, assertAccount],
   );
 
   const updateTrip = useCallback(
-    async (id: string, draft: TripDraft) => {
+    async (id: string, draft: TripDraft, expected?: Trip) => {
       const dates = resolveTripDates({
         startDate: draft.startDate,
         endDate: draft.endDate,
@@ -421,6 +424,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
       });
       const destination = draft.destination.trim();
       const current = tripsRef.current.find((trip) => trip.id === id);
+      if (!current) throw new Error('This trip is no longer available');
+      if (expected && JSON.stringify(current) !== JSON.stringify(expected)) throw new Error('This trip changed while you were editing');
       const geo =
         draft.latitude != null && draft.longitude != null
           ? {
@@ -460,6 +465,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
             }
           : trip,
       );
+      if (tripsRef.current.find((trip) => trip.id === id) !== current) throw new Error('This trip changed while you were editing');
       await persistTrips(next);
     },
     [persistTrips],
@@ -477,11 +483,22 @@ export function TripProvider({ children }: { children: ReactNode }) {
 
   const deleteTrip = useCallback(
     async (id: string) => {
-      await persistTrips(tripsRef.current.filter((trip) => trip.id !== id));
-      await persistPacking(packingRef.current.filter((item) => item.tripId !== id));
-      await persistIntentions(intentionsRef.current.filter((item) => item.tripId !== id));
+      if (!userId) throw new Error('Sign in before changing a trip');
+      assertAccount();
+      const nextTrips = tripsRef.current.filter((trip) => trip.id !== id);
+      const nextPacking = packingRef.current.filter((item) => item.tripId !== id);
+      const nextIntentions = intentionsRef.current.filter((item) => item.tripId !== id);
+      await localRepository.write(userId, [
+        collectionChange('packingItems', packingRef.current, nextPacking),
+        collectionChange('travelIntentions', intentionsRef.current, nextIntentions),
+        collectionChange('trips', tripsRef.current, nextTrips),
+      ]);
+      assertAccount();
+      tripsRef.current = nextTrips; setTrips(nextTrips);
+      packingRef.current = nextPacking; setPackingItems(nextPacking);
+      intentionsRef.current = nextIntentions; setIntentions(nextIntentions);
     },
-    [persistIntentions, persistPacking, persistTrips],
+    [userId, assertAccount],
   );
 
   const enterTravelMode = useCallback(
@@ -509,15 +526,15 @@ export function TripProvider({ children }: { children: ReactNode }) {
   const addPackingItem = useCallback(
     async (tripId: string, title: string, category: PackingCategory) => {
       const trimmed = title.trim();
-      if (!trimmed) return;
-      const exists = packingRef.current.some(
+      if (!trimmed) throw new Error('A packing item needs a title');
+      const existing = packingRef.current.find(
         (item) => item.tripId === tripId && !item.dismissed && titlesMatch(item.title, trimmed),
       );
-      if (exists) return;
-      await persistPacking([
-        ...packingRef.current,
-        buildPackingItem({ tripId, title: trimmed, category, source: 'user' }),
-      ]);
+      if (existing) return unchanged(existing);
+      if (!tripsRef.current.some((trip) => trip.id === tripId)) throw new Error('This trip is unavailable');
+      const entity = buildPackingItem({ tripId, title: trimmed, category, source: 'user' });
+      await persistPacking([...packingRef.current, entity]);
+      return persisted(entity);
     },
     [persistPacking],
   );
@@ -672,7 +689,10 @@ export function TripProvider({ children }: { children: ReactNode }) {
       longitude?: number | null;
     }) => {
       const trimmed = input.title.trim();
-      if (!trimmed) return;
+      if (!trimmed) throw new Error('A trip plan needs a title');
+      const existing = intentionsRef.current.find((item) => item.tripId === input.tripId && titlesMatch(item.title, trimmed));
+      if (existing) return unchanged(existing);
+      if (!tripsRef.current.some((trip) => trip.id === input.tripId)) throw new Error('This trip is unavailable');
       const place = input.placeName?.trim();
       const geo =
         input.latitude != null && input.longitude != null
@@ -680,9 +700,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
           : place
             ? await geocodingService.searchDestination(place)
             : null;
-      await persistIntentions([
-        ...intentionsRef.current,
-        buildIntention({
+      const entity = buildIntention({
           tripId: input.tripId,
           title: trimmed,
           type: input.type,
@@ -690,8 +708,9 @@ export function TripProvider({ children }: { children: ReactNode }) {
           note: input.note,
           latitude: geo?.latitude ?? null,
           longitude: geo?.longitude ?? null,
-        }),
-      ]);
+        });
+      await persistIntentions([...intentionsRef.current, entity]);
+      return persisted(entity);
     },
     [persistIntentions],
   );

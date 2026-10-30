@@ -76,6 +76,7 @@ export async function handleWifiDepartureTransition(input: {
   to: NetworkKind;
   now?: Date;
   pushEnabled?: boolean;
+  isCurrent?: () => boolean;
 }): Promise<boolean> {
   if (Platform.OS === 'web') return false;
   if (input.pushEnabled === false) return false;
@@ -84,6 +85,7 @@ export async function handleWifiDepartureTransition(input: {
   const now = input.now ?? new Date();
   if (!isMorningDepartureWindow(now)) return false;
   if (!(await shouldFireWifiDepartureTrigger(input.userId, now.getTime()))) return false;
+  if (input.isCurrent && !input.isCurrent()) return false;
 
   await notifyWifiDepartureTrigger(input.userId, now.getTime());
   return true;
@@ -99,11 +101,13 @@ export function watchWifiDepartureTrigger(input: {
   if (Platform.OS === 'web') return () => undefined;
 
   let previous: NetworkKind = 'other';
+  let cancelled = false;
   let unsub: (() => void) | undefined;
 
   void import('@react-native-community/netinfo')
     .then((NetInfo) => {
       return NetInfo.default.fetch().then((state) => {
+        if (cancelled) return;
         previous = networkKindFromState(state);
         unsub = NetInfo.default.addEventListener((state) => {
           const next = networkKindFromState(state);
@@ -112,7 +116,8 @@ export function watchWifiDepartureTrigger(input: {
             from: previous,
             to: next,
             pushEnabled: input.pushEnabled,
-          });
+            isCurrent: () => !cancelled,
+          }).catch(() => undefined);
           previous = next;
         });
       });
@@ -120,6 +125,7 @@ export function watchWifiDepartureTrigger(input: {
     .catch(() => undefined);
 
   return () => {
+    cancelled = true;
     unsub?.();
   };
 }

@@ -1,5 +1,7 @@
 import { pushTokenRepository } from '@/lib/api/push-token-repository';
 import { clearGeofenceRegistrations } from '@/lib/location/geofence-sync';
+import { invalidatePushRegistration } from '@/lib/notifications/installation';
+import { appNotificationService } from '@/lib/notifications/notification-service';
 
 export type SignOutCleanupStep = 'push-token' | 'geofences';
 
@@ -14,9 +16,22 @@ export type SignOutResult = {
 };
 
 const defaultCleanup = {
-  removePushToken: () => pushTokenRepository.removeAllForCurrentUser(),
-  clearGeofences: () => clearGeofenceRegistrations(),
+  removePushToken: () => pushTokenRepository.removeCurrentInstallation(),
+  clearGeofences: async () => {
+    await clearGeofenceRegistrations();
+    const ids = await appNotificationService.listScheduledIds();
+    await Promise.all(ids.map((id) => appNotificationService.cancel(id)));
+  },
 };
+
+async function bounded(task: () => Promise<void>): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([task(), new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Cleanup timed out')), 5000);
+    })]);
+  } finally { clearTimeout(timer); }
+}
 
 /**
  * Cleans user-scoped device/server registrations while authentication still
@@ -27,6 +42,7 @@ export async function signOutWithCleanup(
   invalidateSession: () => Promise<void>,
   overrides: Partial<Omit<SignOutDependencies, 'invalidateSession'>> = {},
 ): Promise<SignOutResult> {
+  invalidatePushRegistration();
   const dependencies: SignOutDependencies = {
     ...defaultCleanup,
     ...overrides,
@@ -34,8 +50,8 @@ export async function signOutWithCleanup(
   };
 
   const settled = await Promise.allSettled([
-    dependencies.removePushToken(),
-    dependencies.clearGeofences(),
+    bounded(dependencies.removePushToken),
+    bounded(dependencies.clearGeofences),
   ]);
   const cleanupFailures: SignOutCleanupStep[] = [];
   if (settled[0].status === 'rejected') cleanupFailures.push('push-token');

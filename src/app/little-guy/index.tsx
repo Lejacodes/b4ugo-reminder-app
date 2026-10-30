@@ -32,9 +32,9 @@ export default function LittleGuyScreen() {
   });
 
   const submit = async () => {
-    const text = draft;
-    setDraft('');
-    await send(text);
+    const text = draft.trim();
+    if (!text) return;
+    if (await send(text)) setDraft((current) => (current.trim() === text ? '' : current));
   };
 
   return (

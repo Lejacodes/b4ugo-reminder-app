@@ -10,6 +10,8 @@ import {
 
 import { loadPlaces, savePlaces } from '@/lib/places/place-store';
 import { useAuth } from '@/store/AuthProvider';
+import { useRecordRevision } from '@/hooks/use-record-revision';
+import { useAccountGuard } from '@/hooks/use-account-guard';
 import { createId } from '@/types/reminder';
 import type { Place, SavedPlaceType } from '@/types/place';
 
@@ -37,6 +39,8 @@ const PlaceContext = createContext<PlaceContextValue | null>(null);
 export function PlaceProvider({ children }: { children: ReactNode }) {
   const { status, user } = useAuth();
   const userId = user?.id ?? null;
+  const recordRevision = useRecordRevision(userId);
+  const assertAccount = useAccountGuard(userId);
   const [places, setPlaces] = useState<Place[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -66,19 +70,16 @@ export function PlaceProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [status, userId]);
+  }, [status, userId, recordRevision]);
 
   const persist = useCallback(
     async (next: Place[]) => {
+      assertAccount();
+      if (userId) await savePlaces(userId, next, places);
+      assertAccount();
       setPlaces(next);
-      if (!userId) return;
-      try {
-        await savePlaces(userId, next);
-      } catch {
-        // Keep in-memory places if persistence fails.
-      }
     },
-    [userId],
+    [userId, places, assertAccount],
   );
 
   const upsertPlace = useCallback(

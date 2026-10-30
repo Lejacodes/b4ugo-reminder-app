@@ -15,7 +15,6 @@ import {
   loadNecessities,
   loadReminders,
   placeService,
-  saveContext,
   saveNecessities,
   saveReminders,
   suggestionEngine,
@@ -34,6 +33,10 @@ import { dropDepartureRows, stripClonedNecessityRows } from '@/lib/reminders/con
 import { todayIso } from '@/lib/trips/dates';
 import { loadPackingItems, loadTrips } from '@/lib/trips/trip-store';
 import { useAuth } from '@/store/AuthProvider';
+import { useRecordRevision } from '@/hooks/use-record-revision';
+import { useAccountGuard } from '@/hooks/use-account-guard';
+import { collectionChange, localRepository } from '@/lib/sync/local';
+import { persisted, unchanged, type SaveResult } from '@/lib/storage/mutation-result';
 import {
   createId,
   titlesMatch,
@@ -135,17 +138,17 @@ type ReminderContextValue = {
   setGoingTo: (input: ContextInput) => Promise<void>;
   clearGoingTo: () => Promise<void>;
   toggleReminder: (id: string) => Promise<void>;
-  addAlways: (title: string) => Promise<void>;
-  addThisTrip: (title: string) => Promise<void>;
+  addAlways: (title: string) => Promise<SaveResult<PersonalNecessity>>;
+  addThisTrip: (title: string) => Promise<SaveResult<Reminder>>;
   addOnTheWayBack: (
     title: string,
     place?: string | { placeName: string; latitude?: number | null; longitude?: number | null },
-  ) => Promise<void>;
+  ) => Promise<SaveResult<Reminder>>;
   addSpecific: (
     title: string,
     extras?: { person?: string; placeName?: string; latitude?: number | null; longitude?: number | null },
   ) => Promise<void>;
-  addReminder: (input: CreateReminderInput) => Promise<void>;
+  addReminder: (input: CreateReminderInput) => Promise<SaveResult<Reminder>>;
   updateReminder: (id: string, patch: { title?: string; dueAt?: string | null }) => Promise<void>;
   deleteReminder: (id: string) => Promise<void>;
   deleteReminders: (ids: string[]) => Promise<void>;
@@ -159,6 +162,8 @@ const ReminderContext = createContext<ReminderContextValue | null>(null);
 export function ReminderProvider({ children }: { children: ReactNode }) {
   const { status, user } = useAuth();
   const userId = user?.id ?? null;
+  const recordRevision = useRecordRevision(userId);
+  const assertAccount = useAccountGuard(userId);
 
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [personalNecessities, setPersonalNecessities] = useState<PersonalNecessity[]>([]);
@@ -208,7 +213,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
         let nextNecessities = migrated.necessities;
         let nextReminders = stripClonedNecessityRows(migrated.reminders);
 
-        if (nextNecessities.length === 0) {
+        if (nextNecessities.length === 0 && !(await localRepository.hasHistory(userId, 'necessities'))) {
           nextNecessities = STARTER_NECESSITIES.map((title) => buildNecessity(title, 'learned'));
         }
 
@@ -241,68 +246,57 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [status, userId]);
+  }, [status, userId, recordRevision]);
 
   const persistReminders = useCallback(
     async (next: Reminder[]) => {
+      assertAccount();
+      if (userId) await saveReminders(userId, next, remindersRef.current);
+      assertAccount();
       remindersRef.current = next;
       setReminders(next);
-      if (!userId) return;
-      try {
-        await saveReminders(userId, next);
-      } catch {
-        // Keep in-memory packed state even if persistence fails.
-      }
     },
-    [userId],
+    [userId, assertAccount],
   );
 
   const persistNecessities = useCallback(
     async (next: PersonalNecessity[]) => {
+      assertAccount();
+      if (userId) await saveNecessities(userId, next, necessitiesRef.current);
+      assertAccount();
       necessitiesRef.current = next;
       setPersonalNecessities(next);
-      if (!userId) return;
-      try {
-        await saveNecessities(userId, next);
-      } catch {
-        // Keep in-memory necessities even if persistence fails.
-      }
     },
-    [userId],
-  );
-
-  const persistContext = useCallback(
-    async (next: BeforeUgoContext | null) => {
-      contextRef.current = next;
-      setContext(next);
-      if (userId) await saveContext(userId, next);
-    },
-    [userId],
+    [userId, assertAccount],
   );
 
   const persistDepartureSession = useCallback(
     async (next: DepartureSession) => {
+      assertAccount();
+      if (userId) await saveDepartureSession(userId, next);
+      assertAccount();
       sessionRef.current = next;
       setDepartureSession(next);
-      if (userId) await saveDepartureSession(userId, next);
     },
-    [userId],
+    [userId, assertAccount],
   );
 
   const addReminder = useCallback(
     async (input: CreateReminderInput) => {
       const title = input.title.trim();
-      if (!title) return;
+      if (!title) throw new Error('A reminder needs a title');
       const current = remindersRef.current;
-      const duplicate = current.some(
+      const duplicate = current.find(
         (item) =>
           titlesMatch(item.title, title) &&
           item.category === input.category &&
           item.layer === (input.layer ?? null) &&
           item.contextId === (input.contextId ?? null),
       );
-      if (duplicate) return;
-      await persistReminders([...current, buildReminder({ ...input, title })]);
+      if (duplicate) return unchanged(duplicate);
+      const entity = buildReminder({ ...input, title });
+      await persistReminders([...current, entity]);
+      return persisted(entity);
     },
     [persistReminders],
   );
@@ -368,19 +362,25 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
 
   const deleteNecessity = useCallback(
     async (id: string) => {
+      assertAccount();
       const current = necessitiesRef.current;
       if (!current.some((item) => item.id === id)) return;
-      await persistNecessities(current.filter((item) => item.id !== id));
+      const nextNecessities = current.filter((item) => item.id !== id);
       const session = sessionRef.current;
       const key = sessionCheckKey('nec', id);
       const { [key]: _removed, ...checks } = session.checks;
-      await persistDepartureSession({
+      const nextSession = {
         ...session,
         checks,
         cleared: session.cleared.filter((value) => value !== key),
-      });
+      };
+      if (!userId) throw new Error('Sign in before editing essentials');
+      await localRepository.write(userId, [collectionChange('necessities', current, nextNecessities)], { departureSession: nextSession });
+      assertAccount();
+      necessitiesRef.current = nextNecessities; setPersonalNecessities(nextNecessities);
+      sessionRef.current = nextSession; setDepartureSession(nextSession);
     },
-    [persistDepartureSession, persistNecessities],
+    [userId, assertAccount],
   );
 
   const updateNecessityActiveDays = useCallback(
@@ -443,6 +443,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
 
   const setGoingTo = useCallback(
     async (input: ContextInput) => {
+      assertAccount();
       const destination = input.destination.trim();
       if (!destination) return;
 
@@ -473,29 +474,47 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
       const previousId = contextRef.current?.id ?? null;
       const generated = await buildTripChecklist(nextContext);
       const kept = dropDepartureRows(remindersRef.current, previousId);
-      await persistContext(nextContext);
-      await persistReminders([...kept, ...generated]);
+      assertAccount();
+      if (!userId) throw new Error('Sign in before saving a departure');
+      const nextReminders = [...kept, ...generated];
+      await localRepository.write(userId, [
+        { collection: 'context', before: contextRef.current ? [{ id: 'current', value: contextRef.current }] : [],
+          after: [{ id: 'current', value: nextContext }] },
+        collectionChange('reminders', remindersRef.current, nextReminders),
+      ]);
+      assertAccount();
+      remindersRef.current = nextReminders; setReminders(nextReminders);
+      contextRef.current = nextContext; setContext(nextContext);
     },
-    [buildTripChecklist, persistContext, persistReminders],
+    [buildTripChecklist, userId, assertAccount],
   );
 
   const clearGoingTo = useCallback(async () => {
+    assertAccount();
+    if (!userId) throw new Error('Sign in before editing a departure');
     const previousId = contextRef.current?.id ?? null;
-    await persistReminders(dropDepartureRows(remindersRef.current, previousId));
-    await persistContext(null);
-    await persistDepartureSession(emptyDepartureSession());
-  }, [persistContext, persistDepartureSession, persistReminders]);
+    const nextReminders = dropDepartureRows(remindersRef.current, previousId);
+    const nextSession = emptyDepartureSession();
+    await localRepository.write(userId, [collectionChange('reminders', remindersRef.current, nextReminders),
+      { collection: 'context', before: contextRef.current ? [{ id: 'current', value: contextRef.current }] : [], after: [] },
+    ], { departureSession: nextSession });
+    assertAccount();
+    remindersRef.current = nextReminders; setReminders(nextReminders);
+    contextRef.current = null; setContext(null);
+    sessionRef.current = nextSession; setDepartureSession(nextSession);
+  }, [userId, assertAccount]);
 
   const addAlways = useCallback(
     async (title: string) => {
       const trimmed = title.trim();
-      if (!trimmed) return;
+      if (!trimmed) throw new Error('An essential needs a title');
 
       const currentNecessities = necessitiesRef.current;
-      const exists = currentNecessities.some((item) => titlesMatch(item.title, trimmed));
-      if (!exists) {
-        await persistNecessities([...currentNecessities, buildNecessity(trimmed, 'user')]);
-      }
+      const existing = currentNecessities.find((item) => titlesMatch(item.title, trimmed));
+      if (existing) return unchanged(existing);
+      const entity = buildNecessity(trimmed, 'user');
+      await persistNecessities([...currentNecessities, entity]);
+      return persisted(entity);
     },
     [persistNecessities],
   );
@@ -503,8 +522,8 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   const addThisTrip = useCallback(
     async (title: string) => {
       const activeContext = contextRef.current;
-      if (!activeContext) return;
-      await addReminder({
+      if (!activeContext) throw new Error('Choose a departure before adding to it');
+      return addReminder({
         title,
         category: 'beforeUgo',
         layer: 'thisTrip',
@@ -535,7 +554,7 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
         location = await placeService.resolve(placeInput.trim());
       }
 
-      await addReminder({
+      return addReminder({
         title,
         category: 'onTheWayBack',
         source: 'user',

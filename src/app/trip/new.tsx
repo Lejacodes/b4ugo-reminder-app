@@ -56,7 +56,7 @@ export default function NewTripScreen() {
     setBusy(true);
     setError(null);
     try {
-      const trip = await createTrip(
+      const result = await createTrip(
         {
           title: form.title,
           destination: form.destination,
@@ -76,7 +76,10 @@ export default function NewTripScreen() {
         },
         { templateId: form.templateId || undefined, generate: true },
       );
-      if (trip) router.replace(tripHref(`/trip/${trip.id}`));
+      if (result?.status === 'unchanged') setError('A matching trip is already in Trips. Nothing was added.');
+      else if (result) router.replace(tripHref(`/trip/${result.entity.id}`));
+    } catch {
+      setError('Could not save this trip. Your details are still here — please try again.');
     } finally {
       setBusy(false);
     }

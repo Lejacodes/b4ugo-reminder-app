@@ -109,10 +109,6 @@ export function useDeviceLocation(options: UseDeviceLocationOptions = {}): UseDe
         await startWatch();
         return;
       }
-      if (status === 'undetermined') {
-        await requestPermission();
-        return;
-      }
       setLoading(false);
       setError('location access is off. enable it in Settings to see where you are.');
     }

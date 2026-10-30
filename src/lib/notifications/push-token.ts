@@ -5,6 +5,8 @@ import { Platform } from 'react-native';
 import { pushTokenRepository } from '@/lib/api/push-token-repository';
 
 import { appNotificationService } from './notification-service';
+import { invalidatePushRegistration, pushGeneration } from './installation';
+import { requireSessionUserId } from '@/lib/supabase/client';
 
 export function resolveEasProjectId(): string | null {
   const extra = Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined;
@@ -29,8 +31,8 @@ export async function obtainExpoPushToken(): Promise<string | null> {
     const Notifications = await import('expo-notifications');
     const token = await Notifications.getExpoPushTokenAsync({ projectId });
     return token.data ?? null;
-  } catch (error) {
-    console.warn('[blugo] push token failed', error);
+  } catch {
+    console.warn('[blugo] push token unavailable; retry after reconnecting');
     return null;
   }
 }
@@ -42,10 +44,13 @@ export async function syncPushRegistration(input: {
   if (Platform.OS === 'web') return 'skipped';
 
   if (!input.enabled) {
-    await pushTokenRepository.removeAllForCurrentUser().catch(() => undefined);
+    invalidatePushRegistration();
+    await pushTokenRepository.removeCurrentInstallation();
     return 'skipped';
   }
 
+  const generation = pushGeneration();
+  const userId = await requireSessionUserId();
   let status = await appNotificationService.getPermissionStatus();
   if (status !== 'granted' && input.requestPermission) {
     status = await appNotificationService.requestPermission();
@@ -53,8 +58,10 @@ export async function syncPushRegistration(input: {
   if (status !== 'granted') return status;
 
   const token = await obtainExpoPushToken();
-  if (!token) return 'granted';
+  if (!token) return 'skipped';
 
-  await pushTokenRepository.upsertToken(token, Platform.OS === 'ios' ? 'ios' : 'android');
+  if (generation !== pushGeneration() || await requireSessionUserId() !== userId) return 'skipped';
+  await pushTokenRepository.upsertToken(token, Platform.OS === 'ios' ? 'ios' : 'android', userId);
+  if (generation !== pushGeneration()) await pushTokenRepository.removeCurrentInstallation(userId);
   return 'granted';
 }

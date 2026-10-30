@@ -5,6 +5,7 @@ import { palette as brand } from '@/constants/colors';
 import { readableFont, readableType } from '@/constants/scrapbook';
 import { minTouchTarget } from '@/constants/typography';
 import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
+import { useAsyncAction } from '@/hooks/use-async-action';
 
 type ButterButtonProps = {
   label: string;
@@ -33,17 +34,20 @@ export function ButterButton({
   highContrast = false,
 }: ButterButtonProps) {
   const palette = useScrapbookPalette();
-  const inactive = disabled || busy;
+  const action = useAsyncAction(onPress);
+  const working = busy || action.pending;
+  const inactive = disabled || working;
   const fill = highContrast ? brand.deepForest : palette.butterDeep;
   const typeColor = highContrast ? brand.cream : palette.inkOnMatcha;
 
   return (
+    <>
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled: inactive, busy }}
+      accessibilityState={{ disabled: inactive, busy: working }}
       disabled={inactive}
-      onPress={onPress}
+      onPress={action.run}
       style={({ pressed }) => [
         styles.seal,
         fullWidth && styles.fullWidth,
@@ -61,14 +65,16 @@ export function ButterButton({
         ]}
       />
       <View style={styles.face}>
-        <Text style={[styles.label, { color: typeColor }, busy && styles.labelHidden]} numberOfLines={1}>
+        <Text style={[styles.label, { color: typeColor }, working && styles.labelHidden]} numberOfLines={1}>
           {label}
         </Text>
-        {busy && (
+        {working && (
           <ActivityIndicator color={typeColor} style={StyleSheet.absoluteFill} />
         )}
       </View>
     </Pressable>
+    {action.error ? <Text accessibilityRole="alert" style={[readableFont, readableType.item, { color: palette.ink }]}>{action.error}</Text> : null}
+    </>
   );
 }
 

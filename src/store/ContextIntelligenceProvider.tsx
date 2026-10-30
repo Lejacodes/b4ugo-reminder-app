@@ -37,6 +37,7 @@ import { usePreferences } from '@/store/PreferencesProvider';
 import { useReminders } from '@/store/ReminderProvider';
 import { useTrips } from '@/store/TripProvider';
 import type { AppContext } from '@/types/context';
+import { useNotificationDelivery } from '@/store/NotificationDeliveryProvider';
 
 async function loadLog(userId: string): Promise<NotificationRecord[]> {
   const raw = await preferencesStorage.getItem(scopedKey(STORAGE_KEYS.notificationLog, userId));
@@ -82,6 +83,7 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
   const router = useRouter();
   const { status, user } = useAuth();
   const userId = user?.id ?? null;
+  const delivery = useNotificationDelivery();
   const { preferences } = usePreferences();
   const { reminders, personalNecessities, context, onTheWayBackItems } = useReminders();
   const { packingItems, upcomingTrips, activeTrip } = useTrips();
@@ -90,6 +92,7 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
   const watchStop = useRef<(() => void) | null>(null);
   const handledResponse = useRef<string | null>(null);
   const anchorIndex = useRef<Map<string, PlaceAnchor>>(new Map());
+  const dueQueue = useRef<Promise<void>>(Promise.resolve());
 
   const shopAnchors = useMemo(
     () => buildPlaceAnchors(reminders, places),
@@ -101,13 +104,15 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
   }, [shopAnchors]);
 
   useEffect(() => {
+    let cancelled = false;
     if (!userId) {
       logRef.current = [];
       return;
     }
     loadLog(userId).then((records) => {
-      logRef.current = records;
-    });
+      if (!cancelled) logRef.current = records;
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
   }, [userId]);
 
   useEffect(() => {
@@ -153,13 +158,15 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
   useEffect(() => {
     if (Platform.OS === 'web') return;
     if (status !== 'signed-in' || !userId) return;
+    if (!delivery.ready) return;
 
     let cancelled = false;
-    void (async () => {
+    const run = dueQueue.current.catch(() => {}).then(async () => {
+      if (cancelled) return;
       try {
         const scheduledIds = await appNotificationService.listScheduledIds();
         if (cancelled) return;
-        if (!preferences.notifications.pushEnabled) {
+        if (!preferences.notifications.pushEnabled || delivery.mode === 'remote') {
           for (const id of scheduledIds) {
             if (isDueNotificationId(id)) await appNotificationService.cancel(id);
           }
@@ -179,16 +186,18 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
             href: action.href,
             at: action.at,
           });
+          if (cancelled) await appNotificationService.cancel(action.id);
         }
       } catch (error) {
         console.warn('[blugo] due reminder sync failed', error);
       }
-    })();
+    });
+    dueQueue.current = run;
 
     return () => {
       cancelled = true;
     };
-  }, [preferences.notifications.pushEnabled, reminders, status, userId]);
+  }, [preferences.notifications.pushEnabled, reminders, status, userId, delivery.ready, delivery.mode]);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -197,7 +206,9 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
     const enabled =
       preferences.notifications.pushEnabled && preferences.reminders.locationRemindersEnabled;
 
-    void syncGeofenceRegions({ anchors: shopAnchors, enabled });
+    void syncGeofenceRegions({ anchors: shopAnchors, enabled }).catch(() => {
+      console.warn('[blugo] geofencing unavailable; check diagnostics');
+    });
   }, [
     preferences.notifications.pushEnabled,
     preferences.reminders.locationRemindersEnabled,
@@ -235,8 +246,9 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
     }
 
     async function notifyShopAnchor(anchor: PlaceAnchor) {
-      if (!userId || !preferences.notifications.pushEnabled) return;
+      if (cancelled || !userId || !preferences.notifications.pushEnabled) return;
       if (!(await appNotificationService.isAvailable())) return;
+      if (cancelled) return;
 
       const contextKey = contextNotificationKey({
         kind: 'specificPlace',
@@ -253,13 +265,15 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
         body: copy.body,
         href: copy.href,
       });
+      if (cancelled) return;
       logRef.current = rememberNotification(logRef.current, notificationKey(notifyId, contextKey));
       await saveLog(userId, logRef.current);
     }
 
     async function notifyContext(appContext: AppContext, label?: string) {
-      if (!userId || !preferences.notifications.pushEnabled) return;
+      if (cancelled || !userId || !preferences.notifications.pushEnabled) return;
       if (!(await appNotificationService.isAvailable())) return;
+      if (cancelled) return;
       const ranked = evaluateReminders({
         context: appContext,
         reminders,
@@ -271,6 +285,7 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
       const contextKey = contextNotificationKey(appContext);
       const pending = remindersToNotify(ranked, logRef.current, contextKey);
       for (const item of pending) {
+        if (cancelled) return;
         const key = notificationKey(item.id, contextKey);
         const copy = copyForReminder(item, label);
         await appNotificationService.notifyNow({
@@ -279,12 +294,14 @@ export function ContextIntelligenceProvider({ children }: { children: React.Reac
           body: copy.body,
           href: item.href,
         });
+        if (cancelled) return;
         logRef.current = rememberNotification(logRef.current, key);
       }
       if (pending.length > 0) await saveLog(userId, logRef.current);
     }
 
     async function handleLocation(location: DeviceLocation) {
+      if (cancelled) return;
       if (!isValidCoordinates(location)) return;
 
       const tripPlaces: ProximityPlace[] = upcomingTrips

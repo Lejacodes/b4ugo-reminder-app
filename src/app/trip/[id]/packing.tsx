@@ -52,6 +52,7 @@ export default function PackingScreen() {
   const [listEditing, setListEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   if (!trip) {
     return (
@@ -66,9 +67,13 @@ export default function PackingScreen() {
     const trimmed = title.trim();
     if (!trimmed || busy) return;
     setBusy(true);
+    setSaveError(null);
     try {
-      await addPackingItem(trip.id, trimmed, category);
-      setTitle('');
+      const result = await addPackingItem(trip.id, trimmed, category);
+      if (result.status === 'unchanged') setSaveError('This item is already on the packing list. Nothing was added.');
+      else setTitle('');
+    } catch {
+      setSaveError('Could not save this item. Your text is still here — please try again.');
     } finally {
       setBusy(false);
     }
@@ -91,6 +96,7 @@ export default function PackingScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
         <ScrapbookHeader title="packing" icon="briefcase-outline" />
+        {saveError ? <Text accessibilityRole="alert" style={[readableFont, readableType.item, { color: colors.ink }]}>{saveError}</Text> : null}
         <Text style={[styles.count, { color: colors.ink }]}>{formatPackedProgress(progress.packed, progress.total)}</Text>
         <Text style={[styles.meta, { color: colors.inkSoft }]}>
           packed for this trip only

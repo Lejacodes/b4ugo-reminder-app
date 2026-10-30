@@ -14,7 +14,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useSessionGuard } from '@/hooks/use-session-guard';
 import { hideFloatingDevToolsButton } from '@/lib/dev/hide-dev-tools-button';
 import { AppearanceProvider } from '@/store/AppearanceProvider';
-import { AuthProvider } from '@/store/AuthProvider';
+import { AuthProvider, useAuth } from '@/store/AuthProvider';
 import { ContextIntelligenceProvider } from '@/store/ContextIntelligenceProvider';
 import { PushNotificationProvider } from '@/store/PushNotificationProvider';
 import { LittleGuyProvider } from '@/store/LittleGuyProvider';
@@ -22,6 +22,8 @@ import { PlaceProvider } from '@/store/PlaceProvider';
 import { PreferencesProvider } from '@/store/PreferencesProvider';
 import { ReminderProvider } from '@/store/ReminderProvider';
 import { TripProvider } from '@/store/TripProvider';
+import { SyncProvider } from '@/store/SyncProvider';
+import { NotificationDeliveryProvider } from '@/store/NotificationDeliveryProvider';
 
 export const unstable_settings = {
   initialRouteName: 'opening',
@@ -72,6 +74,17 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider>
       <AuthProvider>
+        <AccountProviders />
+      </AuthProvider>
+    </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+function AccountProviders() {
+  const { user, status } = useAuth();
+  return <SyncProvider key={`${status}:${user?.id ?? ''}`}>
+        <NotificationDeliveryProvider>
         <PreferencesProvider>
           <AppearanceProvider>
             <ReminderProvider>
@@ -89,8 +102,6 @@ export default function RootLayout() {
             </ReminderProvider>
           </AppearanceProvider>
         </PreferencesProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
-    </GestureHandlerRootView>
-  );
+        </NotificationDeliveryProvider>
+        </SyncProvider>;
 }

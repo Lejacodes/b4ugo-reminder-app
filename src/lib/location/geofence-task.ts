@@ -38,6 +38,8 @@ TaskManager.defineTask(GEOFENCE_TASK_NAME, async ({ data, error }) => {
 
   try {
     const Notifications = await import('expo-notifications');
+    const current = await loadGeofenceManifest();
+    if (current.updatedAt !== manifest.updatedAt || !current.regions[regionId]) return;
     await Notifications.scheduleNotificationAsync({
       identifier: `geo:${regionId}:${Date.now()}`,
       content: {

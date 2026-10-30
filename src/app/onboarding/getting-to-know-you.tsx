@@ -24,7 +24,7 @@ import { interestOptions, type OnboardingInterest } from '@/types';
 export default function GettingToKnowYouScreen() {
   const router = useRouter();
   const colors = useScrapbookPalette();
-  const { profile, updateProfile, completeOnboarding } = usePreferences();
+  const { profile, updateProfile } = usePreferences();
   const [picked, setPicked] = useState<OnboardingInterest[]>(profile.interests);
   const [saving, setSaving] = useState(false);
 
@@ -39,8 +39,7 @@ export default function GettingToKnowYouScreen() {
     setSaving(true);
     try {
       await updateProfile({ interests });
-      await completeOnboarding();
-      router.replace('/(tabs)');
+      router.push('/onboarding/preferences');
     } finally {
       setSaving(false);
     }
@@ -80,8 +79,8 @@ export default function GettingToKnowYouScreen() {
 
       <View style={styles.footer}>
         <ButterButton
-          label="all done"
-          accessibilityLabel="Save choices and finish setup"
+          label="continue"
+          accessibilityLabel="Save interests and review permissions and privacy"
           busy={saving}
           onPress={() => finish(picked)}
         />

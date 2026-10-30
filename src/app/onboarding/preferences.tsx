@@ -1,145 +1,57 @@
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
-
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Screen } from '@/components/ui/Screen';
-import { AppText } from '@/components/ui/Text';
-import { spacing } from '@/constants/spacing';
-import { useTheme } from '@/hooks/use-theme';
+import { useState } from 'react';
+import { Text, View } from 'react-native';
+import { ButterButton, DeskScreen, Handwriting, PaperPanel, QuietLink, ScrapbookSwitch } from '@/components/scrapbook';
+import { readableFont, readableType } from '@/constants/scrapbook';
+import { useScrapbookPalette } from '@/hooks/use-scrapbook-palette';
+import { deviceLocationService } from '@/lib/location/device-location';
 import { appNotificationService } from '@/lib/notifications/notification-service';
 import { usePreferences } from '@/store/PreferencesProvider';
 
-function PreferenceToggle({
-  label,
-  value,
-  onToggle,
-}: {
-  label: string;
-  value: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="switch"
-      accessibilityState={{ checked: value }}
-      accessibilityLabel={label}
-      onPress={onToggle}
-      style={({ pressed }) => [styles.toggle, pressed && { opacity: 0.85 }]}>
-      <AppText variant="bodyMedium" style={styles.toggleLabel}>
-        {label}
-      </AppText>
-      <AppText variant="caption" color={value ? 'primary' : 'textSecondary'}>
-        {value ? 'On' : 'Off'}
-      </AppText>
-    </Pressable>
-  );
-}
-
 export default function OnboardingPreferencesScreen() {
   const router = useRouter();
-  const theme = useTheme();
+  const colors = useScrapbookPalette();
   const { preferences, updatePreferences } = usePreferences();
-  const { reminders, privacy, notifications } = preferences;
-
-  const handleContinue = () => {
-    router.push('/onboarding/complete');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const change = async (task: () => Promise<void>) => {
+    if (busy) return;
+    setBusy(true); setError(null);
+    try { await task(); } catch { setError('Could not save your choice. Please try again.'); }
+    finally { setBusy(false); }
   };
-
+  const textStyle = { ...readableFont, ...readableType.item, color: colors.ink };
   return (
-    <Screen scroll withTabBarInset={false}>
-      <View style={styles.content}>
-        <AppText variant="heading">How should I help?</AppText>
-
-        <Card variant="muted" style={styles.card}>
-          <PreferenceToggle
-            label="Push notifications"
-            value={notifications.pushEnabled}
-            onToggle={async () => {
-              const next = !notifications.pushEnabled;
-              if (next) await appNotificationService.requestPermission();
-              await updatePreferences({
-                notifications: { ...notifications, pushEnabled: next },
-              });
-            }}
-          />
-          <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
-          <PreferenceToggle
-            label="Context-aware reminders"
-            value={reminders.preferContextual}
-            onToggle={() =>
-              updatePreferences({
-                reminders: {
-                  ...reminders,
-                  preferContextual: !reminders.preferContextual,
-                },
-              })
-            }
-          />
-          <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
-          <PreferenceToggle
-            label="Routine-based reminders"
-            value={reminders.routineRemindersEnabled}
-            onToggle={() =>
-              updatePreferences({
-                reminders: {
-                  ...reminders,
-                  routineRemindersEnabled: !reminders.routineRemindersEnabled,
-                },
-              })
-            }
-          />
-          <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
-          <PreferenceToggle
-            label="Cloud AI-assisted parsing"
-            value={privacy.aiParsingEnabled}
-            onToggle={() =>
-              updatePreferences({
-                privacy: { ...privacy, aiParsingEnabled: !privacy.aiParsingEnabled },
-              })
-            }
-          />
-          <AppText variant="caption" color="textSecondary">
-            When on, your message and relevant reminder or trip context are sent to the configured AI service. Leave off to use on-device parsing only.
-          </AppText>
-        </Card>
-
-        <Button
-          label="Continue"
-          variant="primary"
-          accessibilityLabel="Continue to finish onboarding"
-          onPress={handleContinue}
-          style={styles.button}
-        />
-      </View>
-    </Screen>
+    <DeskScreen scroll>
+      <Handwriting variant="heading" accessibilityRole="header">how should I help?</Handwriting>
+      <PaperPanel tape="top-left">
+        <Text style={textStyle}>These choices are optional. You can change them in Profile. Reminders still work when permissions are off.</Text>
+        <View style={{ gap: 20, marginTop: 20 }}>
+          <Text style={textStyle}>Notifications let B4UGO show reminders when the app is closed. Turn this on to see your device’s permission request.</Text>
+          <Text style={textStyle}>Allow reminder notifications</Text>
+          <ScrapbookSwitch disabled={busy} accessibilityLabel="Allow reminder notifications" value={preferences.notifications.pushEnabled}
+            onValueChange={(enabled) => void change(async () => {
+              const granted = !enabled || await appNotificationService.requestPermission() === 'granted';
+              await updatePreferences({ notifications: { pushEnabled: enabled && granted } });
+              if (!granted) setError('Notifications are off in device settings. You can keep using your lists.');
+            })} />
+          <Text style={textStyle}>Location reminders can nudge you near saved shops. Enabling this requests foreground location only. Background access is a separate choice in Profile. Your location is not shared with another person.</Text>
+          <Text style={textStyle}>Remind me near places</Text>
+          <ScrapbookSwitch disabled={busy} accessibilityLabel="Remind me near places" value={preferences.reminders.locationRemindersEnabled}
+            onValueChange={(enabled) => void change(async () => {
+              const granted = !enabled || await deviceLocationService.requestPermission() === 'granted';
+              await updatePreferences({ reminders: { ...preferences.reminders, locationRemindersEnabled: enabled && granted } });
+              if (!granted) setError('Location reminders are unavailable. Your lists and scheduled reminders remain available.');
+            })} />
+          <Text style={textStyle}>Cloud AI sends your message and reminder or trip context to the configured AI service. Leave it off to use local commands. No analytics are collected.</Text>
+          <Text style={textStyle}>Use optional cloud AI</Text>
+          <ScrapbookSwitch disabled={busy} accessibilityLabel="Use optional cloud AI" value={preferences.privacy.aiParsingEnabled}
+            onValueChange={(enabled) => void change(() => updatePreferences({ privacy: { ...preferences.privacy, aiParsingEnabled: enabled } }))} />
+          <QuietLink label="read the privacy notice" onPress={() => router.push('/legal/privacy')} />
+        </View>
+        {error ? <Text accessibilityRole="alert" style={textStyle}>{error}</Text> : null}
+      </PaperPanel>
+      <ButterButton label="continue" disabled={busy} onPress={() => router.push('/onboarding/complete')} />
+    </DeskScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    paddingTop: spacing.xxl,
-    paddingBottom: spacing.xxl,
-    gap: spacing.lg,
-  },
-  card: {
-    marginTop: spacing.sm,
-  },
-  toggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    minHeight: 44,
-  },
-  toggleLabel: {
-    flex: 1,
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    marginVertical: spacing.xs,
-  },
-  button: {
-    alignSelf: 'center',
-  },
-});

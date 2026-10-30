@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -189,16 +189,16 @@ export default function ProfileScreen() {
           <Handwriting variant="title" accessibilityRole="header">
             preferences
           </Handwriting>
+          <QuietLink label="diagnostics — permissions, sync & notifications" onPress={() => router.push('/diagnostics' as Href)} />
+          <Text style={[styles.locationHint, { color: colors.inkSoft }]}>Enable notifications to see reminders outside the app. Your device asks for permission when you turn this on.</Text>
 
           <PreferenceRow
             title="Push notifications"
             value={preferences.notifications.pushEnabled}
             onValueChange={async (next) => {
-              if (next) {
-                await appNotificationService.requestPermission();
-              }
+              const granted = !next || await appNotificationService.requestPermission() === 'granted';
               await updatePreferences({
-                notifications: { ...preferences.notifications, pushEnabled: next },
+                notifications: { ...preferences.notifications, pushEnabled: next && granted },
               });
             }}
           />
@@ -220,23 +220,26 @@ export default function ProfileScreen() {
               })
             }
           />
+          <Text style={[styles.locationHint, { color: colors.inkSoft }]}>Enable location reminders to allow foreground location near your saved shops. Background access is optional below.</Text>
           <PreferenceRow
             title="Location reminders"
             value={preferences.reminders.locationRemindersEnabled}
             onValueChange={async (next) => {
-              if (next) {
-                await deviceLocationService.requestPermission();
-                await appNotificationService.requestPermission();
-                await deviceLocationService.requestBackgroundPermission();
-              }
+              const granted = !next || await deviceLocationService.requestPermission() === 'granted';
               await updatePreferences({
-                reminders: { ...preferences.reminders, locationRemindersEnabled: next },
+                reminders: { ...preferences.reminders, locationRemindersEnabled: next && granted },
               });
             }}
           />
           <Text style={[styles.locationHint, { color: colors.inkSoft }]}>
             When you pass a shop you saved (Migros, PetZone…), B4UGO nudges you to buy what you listed there.
           </Text>
+          {preferences.reminders.locationRemindersEnabled ? (
+            <View>
+              <Text style={[styles.locationHint, { color: colors.inkSoft }]}>To remind you while B4UGO is closed, your device needs background location. Android may open Settings; choose Allow all the time only if you want this feature.</Text>
+              <QuietLink label="allow reminders while the app is closed" onPress={() => void deviceLocationService.requestBackgroundPermission()} />
+            </View>
+          ) : null}
           <View
             style={[
               styles.row,

@@ -124,8 +124,7 @@ export class ExpoNotificationService implements AppNotificationService {
   }
 
   async notifyNow(input: { id: string; title: string; body: string; href: string }): Promise<void> {
-    if (Platform.OS === 'web') return;
-    if (!(await this.isAvailable())) return;
+    if (Platform.OS === 'web' || !(await this.isAvailable())) throw new Error('Notifications are unavailable');
     try {
       await configureHandler();
       await ensureAndroidChannel();
@@ -141,13 +140,12 @@ export class ExpoNotificationService implements AppNotificationService {
         trigger: null,
       });
     } catch (error) {
-      console.warn('[blugo] notify failed', error);
+      throw error;
     }
   }
 
   async schedule(input: ScheduledReminder): Promise<void> {
-    if (Platform.OS === 'web') return;
-    if (!(await this.isAvailable())) return;
+    if (Platform.OS === 'web' || !(await this.isAvailable())) throw new Error('Notifications are unavailable');
     if (Number.isNaN(input.at.getTime())) return;
     if (input.at.getTime() <= Date.now()) {
       await this.notifyNow(input);
@@ -169,7 +167,7 @@ export class ExpoNotificationService implements AppNotificationService {
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: input.at },
       });
     } catch (error) {
-      console.warn('[blugo] schedule failed', error);
+      throw error;
     }
   }
 

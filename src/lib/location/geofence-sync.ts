@@ -6,37 +6,41 @@ import type { PlaceAnchor } from '@/lib/location/place-anchors';
 import { deviceLocationService } from '@/lib/location/device-location';
 import { appNotificationService } from '@/lib/notifications/notification-service';
 
-export async function syncGeofenceRegions(input: {
+let generation = 0;
+let pending: Promise<void> = Promise.resolve();
+export function syncGeofenceRegions(input: {
   anchors: PlaceAnchor[];
   enabled: boolean;
 }): Promise<void> {
+  const epoch = ++generation;
+  const run = pending.catch(() => {}).then(() => synchronizeRegions(input, epoch));
+  pending = run;
+  return run;
+}
+
+async function synchronizeRegions(input: { anchors: PlaceAnchor[]; enabled: boolean }, epoch: number): Promise<void> {
   if (Platform.OS === 'web') return;
+  if (epoch !== generation) return;
 
   if (!input.enabled || input.anchors.length === 0) {
-    await clearGeofenceRegistrations();
+    await clearRegistrations();
     return;
   }
 
   const backgroundReady = await deviceLocationService.hasBackgroundPermission();
+  if (epoch !== generation) return;
   if (!backgroundReady) {
-    await saveGeofenceManifest(input.anchors);
+    await clearRegistrations();
     return;
   }
 
   try {
     const Location = await import('expo-location');
-    const TaskManager = await import('expo-task-manager');
+    if (epoch !== generation) return;
+    const anchors = input.anchors.slice(0, Platform.OS === 'ios' ? 20 : 100);
+    await saveGeofenceManifest(anchors);
 
-    const registered = await TaskManager.isTaskRegisteredAsync(GEOFENCE_TASK_NAME);
-    if (!registered) {
-      console.warn('[blugo] geofence task not registered');
-      await saveGeofenceManifest(input.anchors);
-      return;
-    }
-
-    await saveGeofenceManifest(input.anchors);
-
-    const regions = input.anchors.map((anchor) => ({
+    const regions = anchors.map((anchor) => ({
       identifier: anchor.id,
       latitude: anchor.latitude,
       longitude: anchor.longitude,
@@ -46,13 +50,15 @@ export async function syncGeofenceRegions(input: {
     }));
 
     const started = await Location.hasStartedGeofencingAsync(GEOFENCE_TASK_NAME);
+    if (epoch !== generation) return;
     if (started) {
       await Location.stopGeofencingAsync(GEOFENCE_TASK_NAME);
     }
+    if (epoch !== generation) return;
     await Location.startGeofencingAsync(GEOFENCE_TASK_NAME, regions);
   } catch (error) {
-    console.warn('[blugo] geofence sync failed', error);
-    await saveGeofenceManifest(input.anchors);
+    await clearGeofenceManifest();
+    throw error;
   }
 }
 
@@ -68,6 +74,14 @@ async function stopGeofencing(): Promise<void> {
  * to display while native region monitoring is being stopped.
  */
 export async function clearGeofenceRegistrations(): Promise<void> {
+  generation += 1;
+  await clearGeofenceManifest();
+  const run = pending.catch(() => {}).then(clearRegistrations);
+  pending = run;
+  return run;
+}
+
+async function clearRegistrations(): Promise<void> {
   const failures: unknown[] = [];
   try {
     await clearGeofenceManifest();

@@ -1,5 +1,19 @@
 # B4UGO Security & Privacy
 
+## Current implementation correction — 2026-10-30
+
+The historical foundation sections below predate the current app and are retained as principles/history. They must not be read as saying auth, APIs, notifications, location or cloud AI are absent. Current contracts and evidence are in ARCHITECTURE, IMPLEMENTATION_LOG and TESTING.
+
+- Supabase Auth/RLS and authenticated functions exist. Phase 1 adds a versioned, authenticated per-record RPC; migration 0003 retires legacy table writes. Hosted deployment is unverified. The development placeholder is not release authorization.
+- Credentials stay in native SecureStore (session memory on web). Domain records, profile/preferences, optional coordinates, recovery snapshots and the outbox persist in native SQLite or web localStorage. SQLite uses the OS app sandbox; **SQLCipher/application-level database encryption is not enabled**. Web records are accessible to same-origin scripts and can be evicted/cleared. Do not describe domain data as keystore-encrypted; release storage/threat-model review remains required.
+- Scoped migration sources remain until account erasure. Confirmed deletion removes scoped records/recovery evidence. Sign-out retains private account-scoped offline records. Unowned device snapshots are not imported.
+- Notification/location/cloud-AI features are optional. Onboarding explains permissions; new installs default them off. Background location is a separate action. No analytics SDK or care-partner sharing was added.
+- Local notifications can display item content under OS notification settings. Cloud messages are generic; the sender uses scheduler auth, individual tickets/receipts and installation-only registration/cleanup. Offline deregistration and recall of accepted OS notifications are not guaranteed. Quiet hours are not offered.
+- AI remains opt-in and uses application services. Deterministic-first dispatch, minimal relevant context and application-owned destructive confirmation remain Phase 3 work. No service-role/Gemini secret was added to the client or logs.
+- Local PostgreSQL/SQLite and injected-handler tests pass; gateway/device/accessibility/live registration and receipts remain unverified.
+
+## Historical foundation and standing principles
+
 This document establishes security and privacy principles for B4UGO.
 It describes what is protected **today** and what will be implemented in later phases.
 

@@ -32,6 +32,8 @@ import { usePlaces } from '@/store/PlaceProvider';
 import { usePreferences } from '@/store/PreferencesProvider';
 import { useReminders } from '@/store/ReminderProvider';
 import { useTrips } from '@/store/TripProvider';
+import { useAuth } from '@/store/AuthProvider';
+import { useAccountGuard } from '@/hooks/use-account-guard';
 import type { PackingCategory, PackingSuggestion, TravelIntentionType } from '@/types/trip';
 
 type LittleGuyContextValue = {
@@ -41,7 +43,7 @@ type LittleGuyContextValue = {
   pixels: ConstellationPixel[];
   suggestions: PackingSuggestion[];
   busy: boolean;
-  send: (text: string) => Promise<void>;
+  send: (text: string) => Promise<boolean>;
   addSuggestedItem: (title: string) => Promise<void>;
 };
 
@@ -63,6 +65,8 @@ function asCategory(value: unknown): PackingCategory {
 }
 
 export function LittleGuyProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const assertAccount = useAccountGuard(user?.id ?? null);
   const reminders = useReminders();
   const trips = useTrips();
   const places = usePlaces();
@@ -151,6 +155,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
 
   const execute = useCallback(
     async (call: AIToolCall): Promise<unknown> => {
+      assertAccount();
       const protectedCall = protectNecessitiesFromPacking(call);
       const validated = protectedCall ?? validateToolCall(call);
       if (!validated.ok) return { error: validated.message };
@@ -174,12 +179,13 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
           const placeName = typeof args.placeName === 'string' ? args.placeName : undefined;
           const dueAt = typeof args.dueAt === 'string' ? args.dueAt : undefined;
           const title = String(args.title);
+          let result;
           if (args.category === 'onTheWayBack') {
-            await reminders.addOnTheWayBack(title, placeName);
+            result = await reminders.addOnTheWayBack(title, placeName);
           } else if (args.category === 'beforeUgo') {
-            await reminders.addAlways(title);
+            result = await reminders.addAlways(title);
           } else {
-            await reminders.addReminder({
+            result = await reminders.addReminder({
               title,
               category: 'specific',
               dueAt: dueAt ?? null,
@@ -188,6 +194,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
                 : null,
             });
           }
+          if (result.status === 'unchanged') return { success: false, error: 'that item is already on your list. nothing was added.' };
           setJustSaved(true);
           return creationResult(title);
         }
@@ -255,7 +262,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
           return { success: true, deletedCount: 1 };
         }
         case 'createTrip': {
-          const trip = await trips.createTrip({
+          const result = await trips.createTrip({
             title: String(args.title),
             destination: String(args.destination),
             startDate: typeof args.startDate === 'string' ? args.startDate : null,
@@ -264,9 +271,10 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
             accommodation: typeof args.accommodation === 'string' ? args.accommodation : null,
             transportation: typeof args.transportation === 'string' ? args.transportation : null,
           });
-          if (!trip) return { success: false, error: "i couldn't confirm that trip was saved." };
+          if (!result) return { success: false, error: "i couldn't confirm that trip was saved." };
+          if (result.status === 'unchanged') return { success: false, error: 'that trip is already in your list. nothing was added.' };
           setJustCreatedTrip(true);
-          return creationResult(trip.destination);
+          return creationResult(result.entity.destination);
         }
         case 'updateTrip': {
           const id = resolveTripId(ctx, args);
@@ -315,7 +323,8 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
         case 'addPackingItem': {
           const trip = tripByHint(args.tripId ?? args.destination);
           if (!trip) return { error: 'which trip?' };
-          await trips.addPackingItem(trip.id, String(args.title), asCategory(args.category));
+          const result = await trips.addPackingItem(trip.id, String(args.title), asCategory(args.category));
+          if (result.status === 'unchanged') return { success: false, error: 'that item is already on the packing list. nothing was added.' };
           setJustSaved(true);
           return creationResult(String(args.title));
         }
@@ -370,14 +379,16 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
         }
         case 'getPersonalNecessities':
           return reminders.personalNecessities.map((item) => item.title);
-        case 'addPersonalNecessity':
-          await reminders.addAlways(String(args.title));
+        case 'addPersonalNecessity': {
+          const result = await reminders.addAlways(String(args.title));
+          if (result.status === 'unchanged') return { success: false, error: 'that essential is already on your list. nothing was added.' };
           setJustSaved(true);
           return creationResult(String(args.title));
+        }
         case 'addIntention': {
           const trip = tripByHint(args.tripId ?? args.destination);
           if (!trip) return { error: 'which trip should hold this?' };
-          await trips.addIntention({
+          const result = await trips.addIntention({
             tripId: trip.id,
             title: String(args.title),
             type: (['food', 'place', 'activity', 'other'].includes(String(args.type))
@@ -386,6 +397,7 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
             placeName: typeof args.placeName === 'string' ? args.placeName : undefined,
             note: typeof args.note === 'string' ? args.note : undefined,
           });
+          if (result.status === 'unchanged') return { success: false, error: 'that plan is already in your trip. nothing was added.' };
           setJustSaved(true);
           return creationResult(String(args.title));
         }
@@ -422,13 +434,14 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
           return null;
       }
     },
-    [places, reminders, snapshot, trips, weather],
+    [places, reminders, snapshot, trips, weather, assertAccount],
   );
 
   const send = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed || busy) return;
+      if (!trimmed || busy) return false;
+      assertAccount();
       setMessages([...session.visible(), { role: 'user', content: trimmed }]);
       setBusy(true);
       setJustSaved(false);
@@ -443,21 +456,24 @@ export function LittleGuyProvider({ children }: { children: ReactNode }) {
           context: snapshot(),
           execute,
         });
+        assertAccount();
         session.replace(turn.messages);
         setMessages(session.visible());
+        return !turn.unavailable;
       } catch {
         const next = [
           ...session.visible(),
           { role: 'user' as const, content: trimmed },
-          { role: 'assistant' as const, content: "hmm, i can't reach my little brain right now ♡" },
+          { role: 'assistant' as const, content: "i couldn't finish that. your text is still here — please try again ♡" },
         ];
         session.replace(next);
         setMessages(session.visible());
+        return false;
       } finally {
         setBusy(false);
       }
     },
-    [busy, execute, preferences.privacy.aiParsingEnabled, session, snapshot],
+    [busy, execute, preferences.privacy.aiParsingEnabled, session, snapshot, assertAccount],
   );
 
   const addSuggestedItem = useCallback(

@@ -12,6 +12,8 @@ import {
 import { authClient, toAuthError, type AuthSession, type AuthUser } from '@/lib/auth';
 import { signOutWithCleanup } from '@/lib/auth/sign-out-cleanup';
 import { clearOpeningSession } from '@/lib/opening-session';
+import { removeLocalAccount } from '@/lib/storage/preferences-storage';
+import { localRepository } from '@/lib/sync/local';
 
 export type AuthStatus = 'restoring' | 'signed-out' | 'signed-in';
 
@@ -104,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    setStatus('restoring');
     try {
       await signOutWithCleanup(() => authClient.signOut());
     } finally {
@@ -116,20 +119,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteAccount = useCallback(async () => {
+    let cloudDeleted = false;
     setIsSubmitting(true);
+    setStatus('restoring');
     try {
       await signOutWithCleanup(() => authClient.deleteAccount());
+      cloudDeleted = true;
+      if (session?.user.id) {
+        await localRepository.stopAccount(session.user.id);
+        await removeLocalAccount(session.user.id);
+      }
       clearOpeningSession();
       if (isMounted.current) {
         setSession(null);
         setStatus('signed-out');
       }
     } catch (error) {
+      if (isMounted.current) {
+        if (cloudDeleted) setSession(null);
+        setStatus(cloudDeleted ? 'signed-out' : 'signed-in');
+      }
       throw toAuthError(error);
     } finally {
       if (isMounted.current) setIsSubmitting(false);
     }
-  }, []);
+  }, [session]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

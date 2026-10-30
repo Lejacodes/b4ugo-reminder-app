@@ -73,7 +73,7 @@ export function PlaceAutocomplete({
     async function loadOrigin() {
       const status = await deviceLocationService.getPermissionStatus();
       const granted =
-        status === 'granted' || (await deviceLocationService.requestPermission()) === 'granted';
+        status === 'granted';
       if (!granted || cancelled) return;
 
       const here = await deviceLocationService.getCurrentPosition({ highAccuracy: true });
